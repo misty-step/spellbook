@@ -1,3 +1,13 @@
+# [0.5.2](https://github.com/misty-step/mistystack/compare/v0.5.1...v0.5.2) (2026-11-14)
+<!-- landmark:protected-release previous=v0.5.1 source=6ffb69b16666901031107c4f5b9d1c4d1b109e0044eb0719052a09789620e356 -->
+
+### Features
+
+* **check:** enforce ADR 0029 verification contract and verified cursor (#704) ([8ccd2ed](https://github.com/misty-step/mistystack/commit/8ccd2eda252d333ed629fd75e7edb64683273256))
+
+### Bug Fixes
+
+* **antigravity:** align cloud resource skill discovery note with live ACE VM behavior (#703) ([2b57653](https://github.com/misty-step/mistystack/commit/2b576536c0487e3c6e57f66e5612356e43e535e3))
 # [0.5.1](https://github.com/misty-step/mistystack/compare/v0.5.0...v0.5.1) (2026-11-14)
 <!-- landmark:protected-release previous=v0.5.0 source=3aa294a061dcbe3e8dedeff31d9dab63745fd9c511d8325187d52431fde5d399 -->
 
