@@ -7,9 +7,15 @@ usage() {
   printf '%s\n' \
     'Usage: scripts/verify [all]' \
     '       scripts/verify plugin [--strict] [--lint-only]' \
+    '       scripts/verify doctor' \
+    '       scripts/verify fast' \
+    '       scripts/verify verify [--changed [base]] [--surface <plugin|site>] [--shard <i>/<n>]' \
     '' \
     'all: maintained tests and structural lint; no native installation.' \
     'plugin: maintained tests and isolated Claude, Codex, pi and Antigravity install checks.' \
+    'doctor: environment prerequisites, surface closure completeness, workflow and review-bot hygiene.' \
+    'fast: <=120s budgeted shell, version, strict lint and maintained contract suites.' \
+    'verify: <=300s/surface real verification with fail-closed --changed closure and --shard.' \
     '' \
     'Plugin-only options:' \
     '  --strict       Fail on broken relative Markdown links and unknown skill names.' \
@@ -23,7 +29,7 @@ selection=${1:-all}
 if [ "$#" -gt 0 ]; then shift; fi
 case "$selection" in
   all) [ "$#" -eq 0 ] || bad_usage; set -- --lint-only ;;
-  plugin) ;;
+  plugin|doctor|fast|verify) ;;
   -h|--help) [ "$#" -eq 0 ] || bad_usage; usage; exit 0 ;;
   *) bad_usage ;;
 esac
@@ -36,6 +42,12 @@ trap 'rm -rf -- "$work"' 0
 trap 'exit 130' 2
 trap 'exit 143' 15
 export TMPDIR="$work"
+case "$selection" in
+  doctor|fast|verify)
+    bun scripts/check-runner.ts "$selection" "$@"
+    exit 0
+    ;;
+esac
 printf 'Source: %s (%s)\n' "$(git rev-parse HEAD)" "$selection"
 if [ -n "$(git status --porcelain)" ]; then
   printf 'Note: plugin proof and tests read working files.\n'

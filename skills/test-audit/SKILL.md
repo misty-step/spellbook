@@ -18,7 +18,12 @@ concrete uncertainty.
 
 Preserve independent access, data, migration, package and protocol contracts.
 Negative cases must reach the guard. Remove copied inventories, mock echoes and
-duplicate layers, not the contract they accidentally protected.
+duplicate layers, not the contract they accidentally protected. When repairing
+`check_budget_exceeded` (`<= 120s` `fast`, `<= 300s` per `verify` surface/shard)
+or maintaining suites:
+- replace repeated onboarding/setup replays with deterministic pre-baked state fixtures after one cold-onboarding smoke check;
+- move parameter combinations to narrow state/data checks and keep one representative on the full runtime surface unless surface logic branches on the variant;
+- remove source-text snapshots and generated-doc drift assertions from functional suites (`MIS-1115`) so untouched slices stay green.
 
 Run affected checks and the actual consumer path through the `verification` skill.
 Report deleted proof, retained contracts and residual risk in the existing PR,

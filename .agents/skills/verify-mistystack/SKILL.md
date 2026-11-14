@@ -21,12 +21,18 @@ not evidence that the method loaded.
    the working tree. Keep output outside the checkout and state whether that
    source matches the recorded commit.
 2. **Select one proof command.** On the slice's Boat worker, run
-   `./scripts/check plugin --strict` when installation/loading is affected,
-   otherwise use `./scripts/check plugin --strict --lint-only`. Both run upstream skill-lock
-   checks, strict references and maintained skill, release-protection
-   and secret-scanner tests. Do not run both selections and duplicate the suites.
+   `./scripts/check doctor` and `./scripts/check fast` (`<= 120s`), then select
+   the surface proof (`<= 300s` per surface or shard): `./scripts/check verify --changed`
+   when filtering by surface closure (`non-exec` skips runtime suites cleanly;
+   unmapped paths fail closed), `./scripts/check verify --surface plugin` (or
+   `./scripts/check plugin --strict`) when installation/loading is affected, and
+   `./scripts/check verify --surface site` when `site/` or docs are affected.
+   Release CI runs `./scripts/check doctor` and `./scripts/check plugin --strict --lint-only`
+   so upstream skill-lock checks, strict references and maintained skill,
+   release-protection and secret-scanner tests pass without duplicating native
+   installs. Do not run duplicate `plugin` selections back-to-back.
    Require exit 0 and retain optional Landmark replay results separately from
-   skips. `./scripts/check --help` identifies the maintained flags.
+   skips. `./scripts/check --help` identifies all maintained subcommands and flags.
 3. **Observe native installation and loading.** The full selection creates
    disposable homes and projects for each available Claude Code, Codex, pi and
    Antigravity CLI, refuses escaping native configuration paths, installs through the

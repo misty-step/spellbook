@@ -5,6 +5,12 @@ Records explain trade-offs; current method guidance lives in the
 
 ## Current
 
+- [0029](0029-agentic-verification-and-release-trains.md): standard `./scripts/check`
+  contract (`fast <= 120s`, `verify <= 300s/shard`, `doctor`), fail-closed surface
+  closures, check-authoring laws, coalesced `refs/heads/verified` trunk sweeps with
+  parallel bisect auto-revert, clean-runner Merkle proof receipts and pinned-SHA
+  release trains. Refines [0023](0023-live-verification-and-release-gate.md) and
+  supersedes its release-only CI phrasing where trunk sweeps operate.
 - [0028](0028-spec-drives-the-application.md): `SPEC.md` is the single
   implementation-free target state per program (folding `DOMAIN.md` and
   `USER_STORIES.md`), reconciling drift directly to homeostasis without
@@ -30,7 +36,9 @@ Records explain trade-offs; current method guidance lives in the
   proof, merge without CI/review, fast CI and one critical assessment at release;
   one snapshot-backed Boat worker per slice and open-ended watchdog supervision.
   Supersedes older delivery/review/lifecycle instructions, including 0022's
-  shipping and placement provisions and the historical Foundation PR obligations.
+  shipping and placement provisions and the historical Foundation PR obligations;
+  check contract, `refs/heads/verified` sweeps and pinned release trains are
+  refined by [0029](0029-agentic-verification-and-release-trains.md).
 
 - [0022](0022-pstack-governs-owner-rulings.md): pstack governs; Misty keeps only
   the owner's surviving deltas. Its governing rule is superseded by 0026; its

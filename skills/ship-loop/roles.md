@@ -26,8 +26,8 @@ judges, or CI. The [ship loop](SKILL.md) owns delivery order.
 Outcome and why: <consumer change and SPEC.md section / issue links>.
 Terms: <SPEC.md terms>.
 Raw material: <failing run, logs, data or source links>.
-Oracle: <real consumer path and exact affected checks>.
-Scope: <owned paths, acceptance criteria, base branch and PR target>.
+Oracle: <real consumer path, ./scripts/check fast, and ./scripts/check verify --changed>.
+Scope: <owned paths, acceptance criteria, origin/verified (or default) base branch, target>.
 Keep: <load-bearing behavior to preserve>.
 Effort: <uncertainty and changed-path risk>.
 
@@ -35,14 +35,16 @@ Read the repository instructions, Misty and ship-loop. Use one snapshot-backed
 Boat worker for this slice and the watchdog for open-ended supervision.
 Implement the complete scope, migrate callers and delete obsolete paths.
 
-Prove the affected running-app journey through the verification skill. For
-ordering, concurrency or durability, use the formal verification generator.
-Retain the observed result and narrow affected native-check evidence.
+Prove the affected running-app journey through the verification skill, plus
+`./scripts/check fast` and affected `./scripts/check verify --changed` within
+budget (`<= 120s` fast, `<= 300s` per surface/shard). For ordering, concurrency
+or durability, use the formal verification generator. Retain observed output.
 
 Open a PR with a Conventional Commit title, reconciled SPEC.md section (and Fixes
 <issue> when an operational tracker item exists), Rigor: <tier> — <risk>, and
-concrete observed verification.
-Once your real-path proof passes, squash-merge yourself without CI or review.
+concrete observed verification (or push directly where trusted-main review is active).
+Once your real-path proof and affected checks pass, squash-merge yourself without
+PR CI or review bots.
 Do not rebase merely to catch up; resolve actual conflicts and repeat the
 affected path. Preserve other writers' commits.
 

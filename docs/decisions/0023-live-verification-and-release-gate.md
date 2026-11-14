@@ -1,6 +1,10 @@
 # 0023: Verify the running product, merge, then gate the release
 
-Status: accepted, 2026-11-03. Owner directive from Phaedrus. Supersedes the
+Status: accepted, 2026-11-03. Owner directive from Phaedrus. Refined on 2026-11-14 by
+[0029](0029-agentic-verification-and-release-trains.md) for `./scripts/check`
+budgets and surface closures, `refs/heads/verified` trunk sweeps and pinned-SHA
+release trains (superseding only the release-only CI phrasing below where
+automated trunk sweeps run). Supersedes the
 shipping, execution-lifecycle and supervision provisions of
 [0022](0022-pstack-governs-owner-rulings.md), the delivery machinery in
 [0020](0020-github-and-linear-replace-entire.md) and
