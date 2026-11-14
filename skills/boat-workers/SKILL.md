@@ -112,7 +112,13 @@ individual probe that must fail promptly, such as a network or readiness probe;
 it is not a limit on the agent or slice. After a transport failure, inspect the
 existing command before retrying: it may still be running.
 
-The default `--no-env` worker runs commands without owner secrets. An integrated
+The default `--no-env` worker runs commands without owner secrets. Mutable author
+slice workers prove PR slices and pre-land `./scripts/check` runs, never
+release-trusted proof receipts: release receipts come only from clean-checkout
+`--no-env` non-author runners (verifier, coalesced `refs/heads/verified` sweep,
+or release CI) keyed by surface closure and shared-core git-blob Merkle hashes.
+Parallel surface shards (`--shard`) and trunk culprit bisection run in separate
+non-author Boat workers concurrently so one failure never serializes others. An integrated
 agent requires an already authorized, least-privilege credential route and its
 self-contained brief; a worker does not inherit the coordinator's method or
 skills. Do not copy a local auth store or enable broad credentials just to make

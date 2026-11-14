@@ -81,19 +81,26 @@ Terms, invariants and consumer contracts live in [SPEC.md](SPEC.md). Maintainers
 
 ```sh
 ./scripts/bootstrap
-./scripts/check
+./scripts/check doctor
+./scripts/check fast
+./scripts/check verify [--changed [base]] [--surface <plugin|site>] [--shard <i>/<n>]
 ./scripts/check plugin --strict
 ```
 
-`check` runs the maintained test suites and plugin lint sequentially. Release-only
-CI runs `./scripts/check plugin --strict --lint-only`: strict lint checks relative
-Markdown link resolution, named skill references and native manifests;
-installation is explicitly unproved. The full `plugin --strict` selection
-installs in disposable homes through every available Claude Code, Codex, pi and
-Antigravity CLI. Missing CLIs are named as skipped, not passed. These no-model checks prove
-native installation, skill inventory and core hook/extension registration, not
-live model behavior. See the harness notes for fresh-session proof,
-`./scripts/check --help` for gate options and
+`doctor` validates required tools, workflow/review-bot hygiene and complete
+`git ls-files` coverage in the surface closure. `fast` (`<= 120s`) runs shell,
+version, strict link/skill lint and maintained unit/contract suites. `verify`
+(`<= 300s` per surface or shard) runs the real `plugin` and `site` checks across
+`--changed` closures (`non-exec` edits skip runtime suites cleanly while
+unmapped paths fail closed) or explicit `--surface` / `--shard` selections.
+Release CI runs `./scripts/check doctor` and `./scripts/check plugin --strict --lint-only`:
+strict lint checks relative Markdown link resolution, named skill references and
+native manifests while leaving native installation unproved. The full `plugin --strict`
+selection installs in disposable homes through every available Claude Code, Codex,
+pi and Antigravity CLI. Missing CLIs are named as skipped, not passed. These
+no-model checks prove native installation, skill inventory and core
+hook/extension registration, not live model behavior. See the harness notes for
+fresh-session proof, `./scripts/check --help` for gate options and
 [verify-mistystack](.agents/skills/verify-mistystack/SKILL.md) for the complete
 evidence contract. No check installs into an operator's live profile.
 

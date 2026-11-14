@@ -10,10 +10,12 @@ metadata:
 
 # Verification
 
-Build, verify the changed real consumer path, then merge without CI,
-independent review or a judge as a merge gate. The [delivery procedure](../ship-loop/SKILL.md)
-places fast CI and one critical-correctness/security review at the pre-deploy
-release gate, followed by deployment and a live journey check.
+Build, drive the changed real consumer path with `./scripts/check fast` and
+affected `./scripts/check verify --changed`, then land without PR CI queues or
+review bots. The [delivery procedure](../ship-loop/SKILL.md) combines coalesced
+post-land `refs/heads/verified` sweeps, clean-runner Merkle proof receipts and
+one critical-correctness/security assessment on a pinned release candidate,
+followed by deployment and a live journey check.
 
 ## 1. Name the proof
 
@@ -25,8 +27,19 @@ boundary. For fixes, comparisons, persistence and performance, capture a baselin
 with the same fixture; show the check rejecting the relevant base defect or an
 injected fault, then passing on the candidate.
 
-- Product journey: before merge, drive the built, running app through the repo's
-  verification skill and feature map in production-like isolation. Cover success,
+- **Jump to state via fixtures, never replay setup.** Keep one cold-onboarding
+  smoke journey from initial boot or sign-up; every feature check loads a
+  deterministic pre-baked state fixture (seeded DB snapshot, emulator save-state,
+  pre-authed browser state) right before the decision point under test.
+- **Collapse combinatorial loops.** Prove parameter combinations at the narrowest
+  state or data boundary and drive one representative through the full runtime
+  surface unless surface logic itself branches on that variant.
+- **Assert observable behavior, never source text (`MIS-1115`).** Keep source-byte
+  assertions and generated-doc drift checks out of functional `fast` and `verify`
+  suites so unrelated slices do not break on untouched source files.
+
+- Product journey: before merge, drive the built, running app through the
+  repository's verification skill and feature map in production-like isolation. Cover success,
   rejection and recovery where the change reaches them. Read consequential state
   at its owner; sender success is not delivery. After deployment, repeat the
   changed journey on the live surface within authorized scope.
@@ -35,8 +48,10 @@ injected fault, then passing on the candidate.
 - CLI/library/internal change: exercise the real consumer or composition boundary.
 
 For a defect, trace its mechanism and fix the failure class at the highest layer
-that can hold it: structure, automated check, guidance, then human review. Use the
-`test-audit` skill to retain one primary proof per consumer contract.
+that can hold it: structure, automated check, guidance, then human review. Use
+[test-audit](../test-audit/SKILL.md) to retain one primary proof per consumer
+contract inside zero-sum `./scripts/check` budgets (`<= 120s` `fast`, `<= 300s`
+per `verify` surface or shard).
 
 Widen for shared config, lockfiles, auth, migrations or uncertain impact.
 Ordering, concurrency and durability changes need the applicable formal check

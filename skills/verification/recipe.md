@@ -4,9 +4,9 @@ Each product repository carries one skill at `.agents/skills/verify-<app>/SKILL.
 
 ## Contents
 
-- **Launch.** The one command that starts the product with test configuration and production-like seed data, and how to tell it is ready.
-- **Doctor.** A fast check that the environment can run the recipe, which names what is missing instead of failing later.
-- **Drive.** How to exercise the product on the surface its users touch: the browser, the CLI, the API. Include success, rejection and recovery.
+- **Launch.** The one command that starts the product with test configuration and deterministic pre-baked state fixtures, and how to tell it is ready.
+- **Doctor.** `./scripts/check doctor`, verifying environment prerequisites, complete tracked-file surface closures and absence of blocking PR CI/bots instead of failing later.
+- **Drive.** `./scripts/check verify` and the narrow surface commands to exercise the product on the surface its users touch: the browser, the CLI, the API, jumping straight to decision points after one cold-onboarding smoke journey. Include success, rejection and recovery.
 - **Accounts.** The QA identity and role each journey needs, under the [QA sign-in contract](SKILL.md#qa-sign-in-contract). No credentials in the file.
 - **Feature map.** Every user journey, how to reach it and what to observe when it works. An agent proving a change finds the affected journeys here.
 - **Formal checks.** For each modelled property: the specification, the tool and version, the rerun command, assumptions and bounds, per [Formal properties](SKILL.md#formal-properties).

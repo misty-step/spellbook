@@ -119,6 +119,27 @@ jobs:
           github-token: ${{ github.token }}
           target-sha: ${{ needs.prepare.outputs.candidate }}
           synthesis: 'false'
+      - name: Advance verified cursor to published candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE: ${{ needs.prepare.outputs.candidate }}
+        run: |
+          if current="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/verified" --jq .object.sha 2>/dev/null)"; then
+            if [ "$current" = "$CANDIDATE" ]; then
+              echo "verified already at $CANDIDATE"
+            else
+              status="$(gh api "repos/$GITHUB_REPOSITORY/compare/${current}...${CANDIDATE}" --jq .status)"
+              if [ "$status" = "ahead" ]; then
+                gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/heads/verified" -f sha="$CANDIDATE" -F force=false >/dev/null
+                echo "Fast-forwarded verified: $current -> $CANDIDATE"
+              else
+                echo "Leaving verified at $current (compare status: $status)"
+              fi
+            fi
+          else
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/heads/verified" -f sha="$CANDIDATE" >/dev/null
+            echo "Created verified at $CANDIDATE"
+          fi
   deploy:
     needs: [prepare, verify, publish]
     uses: ./.github/workflows/site-deploy.yml

@@ -47,6 +47,7 @@ jobs:
         run: |
           export PATH="$RUNNER_TEMP/mistystack-release-tools:$PATH"
           export LANDMARK_BIN="$RUNNER_TEMP/mistystack-release-tools/landmark"
+          ./scripts/check doctor
           ./scripts/check plugin --strict --lint-only
       - name: Confirm publication candidate without writing
         env:
