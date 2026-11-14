@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "mcp__Linear__get_*",
+      "mcp__Linear__list_*",
+      "mcp__Linear__save_comment",
+      "mcp__Linear__save_issue",
+      "mcp__Linear__save_status_update",
+      "mcp__github__get_*",
+      "mcp__github__list_*",
+      "mcp__github__issue_read",
+      "mcp__github__pull_request_read",
+      "mcp__github__create_branch",
+      "mcp__github__create_pull_request",
+      "mcp__github__update_pull_request",
+      "mcp__github__add_issue_comment",
+      "mcp__github__add_reply_to_pull_request_comment",
+      "mcp__claude-code-remote__add_repo",
+      "mcp__claude-code-remote__check_repo_access",
+      "mcp__claude-code-remote__list_repos",
+      "mcp__claude-code-remote__subscribe_pr_activity",
+      "Bash(scripts/check)",
+      "Bash(scripts/check *)",
+      "Bash(scripts/verify)",
+      "Bash(scripts/verify *)"
+    ]
+  }
+}
