@@ -1,3 +1,9 @@
+# [0.5.1](https://github.com/misty-step/mistystack/compare/v0.5.0...v0.5.1) (2026-11-14)
+<!-- landmark:protected-release previous=v0.5.0 source=3aa294a061dcbe3e8dedeff31d9dab63745fd9c511d8325187d52431fde5d399 -->
+
+### Bug Fixes
+
+* **design,spec:** enforce SPEC.md and DESIGN.md homeostasis on UI slices (#697) ([57503c4](https://github.com/misty-step/mistystack/commit/57503c4f2490f300e9f60b59bb9d4015f9176d6c))
 # [0.5.0](https://github.com/misty-step/mistystack/compare/v0.4.0...v0.5.0) (2026-11-14)
 <!-- landmark:protected-release previous=v0.4.0 source=db6423fc68c920256b3449539b4a395d8a4e38da18e7c0162fa6ed5290ff5c8c -->
 
