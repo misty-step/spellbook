@@ -30,7 +30,9 @@ and sequence only genuine dependencies. Use
 and [watchdog](../watchdog/SKILL.md) for open-ended supervision.
 
 Implement the smallest complete change. Migrate every caller and delete obsolete
-paths. Before proving, [cut the draft](../misty/principles.md#cut-the-draft-before-proof):
+paths. On UI and product-surface slices, reconcile both `SPEC.md`
+(implementation-free target state per [spec](../spec/SKILL.md)) and `DESIGN.md`
+before proof. Before proving, [cut the draft](../misty/principles.md#cut-the-draft-before-proof):
 if it accumulated wrappers, parallel state or retained legacy code, rewrite it
 from first principles first. Open the PR body with a one-sentence `## Why` in the user's terms. Record
 the reconciled `SPEC.md` section (plus `Fixes MIS-<n>` when closing an operational

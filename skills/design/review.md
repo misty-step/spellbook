@@ -40,8 +40,8 @@ and can complete the task before polishing.
 | Check | Evidence to inspect |
 | --- | --- |
 | Hierarchy | Primary information/action appears first at each size; secondary detail is disclosed; remove redundant labels before adding explanatory copy. |
-| System | Shared spacing, type roles, components and semantic color tokens match adjacent flows in both themes. |
-| Content | Long/missing/localized text and accessible units remain readable; factual claims stay true; errors explain the cause and recovery. |
+| System | Shared spacing, type roles, components and semantic color tokens match adjacent flows in both themes; declared `DESIGN.md` fonts, radii, spacing and semantic tokens match computed styles on the rendered surface, with no orphaned font or token assets. |
+| Content | Long/missing/localized text and accessible units remain readable; factual claims stay true; errors explain the cause and recovery; reject leaked internal spec identifiers (e.g., `"Law 7"`), storage column CSV inputs, raw enum slugs and opaque UUIDs in user-facing copy. |
 | Keyboard | Logical tab order, visible focus, operable controls, dismissal and focus return; no keyboard trap. |
 | Semantics | Correct roles, names and states; heading/landmark structure; form labels and error association; useful image alternatives. |
 | Contrast | Measure text and control/focus contrast in both themes and changed states against the applicable WCAG AA criterion; color alone does not carry meaning. |

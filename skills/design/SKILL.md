@@ -38,14 +38,20 @@ Do not use Mobbin.
 
 ## Method
 
-1. **Frame.** Read the story, existing surface and design conventions. Name the
-   user's task, the behavior to preserve and the outside check that will prove
-   the result. Review-only work produces findings; polish preserves identity;
-   redesign replaces visual structure without silently changing product facts.
-   Done: the target surface and affected states are named.
-2. **Build or inspect.** Reuse tokens and components. Alternatives differ in
-   hierarchy or behavior, not merely color. For motion implementation, naming,
-   review, performance or opportunity-finding, read [motion.md](motion.md).
+1. **Frame.** Read `SPEC.md` and `DESIGN.md` alongside the existing surface and
+   design conventions. Name the user's task, the behavior to preserve and the
+   outside check that will prove the result. Review-only work produces findings;
+   polish preserves identity; redesign replaces visual structure without silently
+   changing product facts. When a redesign or UI change alters routes, views, user
+   flows or visual identity, reconcile [SPEC.md](../spec/SKILL.md) and
+   `DESIGN.md` in the same slice. Done: the target surface, affected states and
+   any spec or design updates are named.
+2. **Build or inspect.** Reuse tokens and components, and keep `DESIGN.md` in
+   exact parity with live stylesheets and assets: never declare fonts, geometry
+   or tokens in `DESIGN.md` that shipped CSS omits, or leave unreferenced
+   font or style assets in the tree. Alternatives differ in hierarchy or
+   behavior, not merely color. For motion implementation, naming, review,
+   performance or opportunity-finding, read [motion.md](motion.md).
    For artifacts, inspect at their actual viewing size; a generated mockup is a
    direction, not evidence of working UI. Any paid generation needs authorization;
    keep private data out of external prompts and generated media out of Git.
