@@ -2,6 +2,8 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
+      "mcp__github",
+      "mcp__Linear",
       "mcp__Linear__get_*",
       "mcp__Linear__list_*",
       "mcp__Linear__save_comment",
