@@ -98,7 +98,7 @@ the site artifact uploaded by CI and does not rebuild it.
 The check is part of the proof command above. Its built-in broken variant removes
 publication's verification dependency and must produce `prepare → publish`.
 Coverage maps to the release workflow and its reusable `ci.yml` / `site-deploy.yml`
-at their last source change, `352958ffd84630ec5756e5a250e4b02bd6673d93`.
+at their last source change, `f922ff019bbc4a0d8aa7618a2159d5468d518a76`.
 When those files change, confirm that this four-job model still describes them
 before advancing that coverage revision.
 
