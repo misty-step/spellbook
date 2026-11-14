@@ -32,15 +32,11 @@ agy plugin list --json
 - **Remote Agents (Antigravity Cloud)** run in isolated Google ACE microVMs that do not sync `~/.gemini/config/plugins/` yet, syncing account-global bundles only from the Antigravity Marketplace once published. In interactive `agy --remote-agent`, wait for login experiment flags to refresh; short-lived subcommands such as `agy --remote-agent models` can exit before refresh and report cloud conversations disabled.
 - **Model selection on Remote Agents:** Composite two-phase models (`Orchestrator (Carbon)` and `Orchestrator (Argon)`) currently fail `remote:startCascade` with `INVALID_ARGUMENT (code 400)` on Antigravity Cloud. Select a direct single-model tier (`Gemini 4 Carbon (High)`, `Gemini 4 Carbon (Medium)`, `Claude Opus 5.5 (High)`, etc.) in the Cloud Project model picker, or use **Remote Control** to run `Orchestrator (Carbon)` against your workstation.
 
-Provisioning `mistystack` in Cloud sessions has two complementary paths (Remote Agents default to `always-proceed (turbo)`):
+Provisioning `mistystack` in Cloud sessions (Remote Agents default to `always-proceed (turbo)`):
 
-1. **Turn-0 full provisioning (GitHub Resource):** Attach `misty-step/mistystack` as a GitHub **Resource** on the Remote Project in Antigravity so `.agents/rules.json` (`core.md`) and `.agents/skills.json` (all bundled skills) load natively on Turn 0, including on small or diagnostic prompts before any shell command runs.
-2. **Zero-Resource repository self-bootstrap (`AGENTS.md`):** Include the current `<!-- mistystack:core -->` block ([Any harness](any.md)) in the target repository's root `AGENTS.md`. On nontrivial work when skills are absent in the container, `rules/core.md` directs the agent to clone `/tmp/mistystack` and read `/tmp/mistystack/skills/misty/SKILL.md`, which routes here; symlink the skill tree once so every bundled skill resolves for the rest of the cloud session:
-
-```sh
-mkdir -p ~/.gemini/config/skills &&
-  ln -sfn /tmp/mistystack/skills/* ~/.gemini/config/skills/
-```
+- **Root `AGENTS.md` (required baseline):** Include the current `<!-- mistystack:core -->` block ([Any harness](any.md)) in the target repository's root `AGENTS.md` so `# Misty Step core` loads on Turn 0 regardless of Resource settings.
+- **GitHub Resource attachment (`/projects` → `Edit` → `Connections`):** Attaching `misty-step/mistystack` mounts the repository on Turn 0 at `/home/antigravity/misty-step/mistystack` (no `git clone` needed) and loads `rules/core.md`. Measured on live ACE microVMs: Antigravity Cloud's `list_skills` / `lookup_skill` index registers `.agents/skills/` only from the primary repository (not secondary Resources' `.agents/skills.json`), so read skills directly on disk at `/home/antigravity/misty-step/mistystack/skills/<name>/SKILL.md` where relative links resolve natively.
+- **Without a Resource attached:** On nontrivial work, `rules/core.md` directs the agent to shallow-clone `https://github.com/misty-step/mistystack.git` to `/tmp/mistystack` and read `/tmp/mistystack/skills/misty/SKILL.md`. Read `/tmp/mistystack/skills/<name>/SKILL.md` directly on disk rather than expecting `lookup_skill` to pick up new symlinks mid-turn (`mkdir -p ~/.gemini/config/skills && ln -sfn /tmp/mistystack/skills/* ~/.gemini/config/skills/` writes to `/shared/user/.gemini`, but `lookup_skill` does not re-index within the same turn).
 
 ## Dispatch and rigor
 
