@@ -28,21 +28,19 @@ agy plugin list --json
 
 ## Remote Agents (Antigravity Cloud) vs. Remote Control
 
-- **Remote Control** (`agy remote-control start`, or App Remote Control) executes on your own workstation and already loads `~/.gemini/config/plugins/mistystack` across every repository without per-project setup.
-- **Remote Agents (Antigravity Cloud)** run in isolated Google VMs that do not sync `~/.gemini/config/plugins/` yet, syncing account-global plugins only from the Antigravity Marketplace once published.
+- **Remote Control** (`agy remote-control start`, or App Remote Control) executes on your own workstation, supports local composite models such as `Orchestrator (Carbon)`, and already loads `~/.gemini/config/plugins/mistystack` across every repository without per-project setup.
+- **Remote Agents (Antigravity Cloud)** run in isolated Google ACE microVMs that do not sync `~/.gemini/config/plugins/` yet, syncing account-global bundles only from the Antigravity Marketplace once published. In interactive `agy --remote-agent`, wait for login experiment flags to refresh; short-lived subcommands such as `agy --remote-agent models` can exit before refresh and report cloud conversations disabled.
+- **Model selection on Remote Agents:** Composite two-phase models (`Orchestrator (Carbon)` and `Orchestrator (Argon)`) currently fail `remote:startCascade` with `INVALID_ARGUMENT (code 400)` on Antigravity Cloud. Select a direct single-model tier (`Gemini 4 Carbon (High)`, `Gemini 4 Carbon (Medium)`, `Claude Opus 5.5 (High)`, etc.) in the Cloud Project model picker, or use **Remote Control** to run `Orchestrator (Carbon)` against your workstation.
 
-To run cloud sessions with **zero manual cloning or Resource setup** per repository:
+Provisioning `mistystack` in Cloud sessions has two complementary paths (Remote Agents default to `always-proceed (turbo)`):
 
-1. Ensure the target repository has a root `AGENTS.md` containing the current `<!-- mistystack:core -->` block ([Any harness](any.md)). Remote Agents load `AGENTS.md` on Turn 0 and default to `always-proceed (turbo)`.
-2. When `mistystack` skills are absent inside the remote container, the core instruction directs the agent itself to run:
+1. **Turn-0 full provisioning (GitHub Resource):** Attach `misty-step/mistystack` as a GitHub **Resource** on the Remote Project in Antigravity so `.agents/rules.json` (`core.md`) and `.agents/skills.json` (all bundled skills) load natively on Turn 0, including on small or diagnostic prompts before any shell command runs.
+2. **Zero-Resource repository self-bootstrap (`AGENTS.md`):** Include the current `<!-- mistystack:core -->` block ([Any harness](any.md)) in the target repository's root `AGENTS.md`. On nontrivial work when skills are absent in the container, `rules/core.md` directs the agent to clone `/tmp/mistystack` and read `/tmp/mistystack/skills/misty/SKILL.md`, which routes here; symlink the skill tree once so every bundled skill resolves for the rest of the cloud session:
 
 ```sh
-git clone --depth 1 https://github.com/misty-step/mistystack.git /tmp/mistystack &&
-  mkdir -p ~/.gemini/config/skills &&
+mkdir -p ~/.gemini/config/skills &&
   ln -sfn /tmp/mistystack/skills/* ~/.gemini/config/skills/
 ```
-
-Linking all `skills/*` into `~/.gemini/config/skills/` exposes `spec` and the remaining bundled skills for the rest of the cloud session without further clones. Attaching `misty-step/mistystack` as a GitHub **Resource** on a Remote Project also works via `.agents/skills.json` and `.agents/rules.json`, but is optional once `AGENTS.md` carries the self-bootstrapping core.
 
 ## Dispatch and rigor
 
