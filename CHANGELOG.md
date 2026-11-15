@@ -1,3 +1,9 @@
+# [0.5.4](https://github.com/misty-step/mistystack/compare/v0.5.3...v0.5.4) (2026-11-15)
+<!-- landmark:protected-release previous=v0.5.3 source=0faab81085036202f190789da6c4213f68a40dd24fc4931a1278c1fcd10852c1 -->
+
+### Bug Fixes
+
+* **daybook:** keep verification procedures with installed guidance (#708) ([732d4b9](https://github.com/misty-step/mistystack/commit/732d4b9eee9c1241393862bd58b06ff418bee175))
 # [0.5.3](https://github.com/misty-step/mistystack/compare/v0.5.2...v0.5.3) (2026-11-15)
 <!-- landmark:protected-release previous=v0.5.2 source=29a17030267e5f03af7a493904648731c8d3890be9ac1c6b6a22fdccab6f26dc -->
 
