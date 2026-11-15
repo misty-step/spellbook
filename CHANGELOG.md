@@ -1,3 +1,13 @@
+# [0.5.6](https://github.com/misty-step/mistystack/compare/v0.5.5...v0.5.6) (2026-11-15)
+<!-- landmark:protected-release previous=v0.5.5 source=63446a8484b1a7cc537e876923946b6f2386ca52266b4aa9f3412ab25340b06e -->
+
+### Features
+
+* **skills:** add explicit coordinator role for Chief of Staff and project owners ([fd30cb5](https://github.com/misty-step/mistystack/commit/fd30cb5a8b2cca6ab9488bf23ae735fcf908447f))
+
+### Bug Fixes
+
+* **skills:** simplify coordinator and send only to live agents ([bb49a7a](https://github.com/misty-step/mistystack/commit/bb49a7ae062e50f75a820abb14ea076ea6133bdf))
 # [0.5.5](https://github.com/misty-step/mistystack/compare/v0.5.4...v0.5.5) (2026-11-15)
 <!-- landmark:protected-release previous=v0.5.4 source=60a9597092be35a7bda74c2f6190680c522cc4b68c8b26c91e04902d3f8ecdb3 -->
 

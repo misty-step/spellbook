@@ -1,7 +1,7 @@
 {
   "name": "mistystack",
   "displayName": "Mistystack",
-  "version": "0.5.5",
+  "version": "0.5.6",
   "description": "Misty Step's harness-neutral engineering method.",
   "suggestedPrompts": [
     "Bootstrap or reconcile SPEC.md against the running product",
