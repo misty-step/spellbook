@@ -443,7 +443,7 @@ f_capture_sessions() {
 
 f_sync() {
   say "sync: real Git/gitleaks, merge isolation, editor saves, scanner bypasses and bounded agent episodes"
-  local args=(--script "${DAYBOOK_SYNC_SCRIPT:-$REPO/scripts/sync}" --run-dir "$RUN/sync")
+  local args=(--script "${DAYBOOK_SYNC_SCRIPT:-$HOME/.local/libexec/daybook/sync}" --run-dir "$RUN/sync")
   [ "${DAYBOOK_SYNC_SLOW:-0}" = 1 ] && args+=(--slow)
   run "$PY" -I "$SCRIPTS/check-sync.py" "${args[@]}"
   check sync-behavior "real sync publication, byte preservation, seven scanner bypass rejections, installed copy and bounded remediation pass" same "$RC" 0
@@ -619,7 +619,7 @@ esac
 for CUR in $LIST; do
   {
     dirty=$(git -C "$REPO" status --porcelain -- scripts .agents | grep -q . && echo ' plus uncommitted changes')
-    entry=$INGEST; [ "$CUR" = sync ] && entry="$REPO/scripts/sync"
+    entry=$INGEST; [ "$CUR" = sync ] && entry="${DAYBOOK_SYNC_SCRIPT:-$HOME/.local/libexec/daybook/sync}"
     printf '# verify-daybook: %s\n\nrun %s, host %s, checkout %s at %s%s, entrypoint %s (blob %s)\n' "$CUR" "$(basename "$RUN")" \
       "$HOST" "$(git -C "$REPO" rev-parse --abbrev-ref HEAD)" "$(git -C "$REPO" rev-parse --short HEAD)" "$dirty" "$entry" \
       "$(git hash-object "$entry" | cut -c1-12)" | red

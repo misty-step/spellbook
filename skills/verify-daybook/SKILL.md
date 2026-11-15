@@ -44,3 +44,7 @@ The optional retired-site check also requires explicit deployment URLs and a
 permitted QA note/title/query; read its script header before use. Missing inputs
 leave those checks unproved. `check-sync.py --script` and `run-ingest.py --script`
 select the actual product executable; no helper resolves it from the skill path.
+
+The sync journey defaults to the installed `~/.local/libexec/daybook/sync`;
+set `DAYBOOK_SYNC_SCRIPT` to test a reviewed candidate from its runtime owner.
+The vault does not own that executable.

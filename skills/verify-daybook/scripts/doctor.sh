@@ -15,7 +15,7 @@ ONLY=""
 [ "${1:-}" = "--only" ] && ONLY=${2:?sections}
 export GIT_OPTIONAL_LOCKS=0
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
-SLUG=${DAYBOOK_REPOSITORY:-$(gh repo view --repo "$(git -C "$MAIN" remote get-url origin)" --json nameWithOwner -q .nameWithOwner 2>/dev/null)}
+SLUG=${DAYBOOK_REPOSITORY:-}
 
 HOST=$(uname -n)
 FAILS=0
@@ -36,9 +36,10 @@ fi
 out INFO vault "observing $(tl "$MAIN"); change DAYBOOK_VAULT to select another checkout"
 
 if want privacy; then
+  [ -n "$SLUG" ] || { out FAIL repo-private "set DAYBOOK_REPOSITORY to the authorized repository"; exit 1; }
   vis=$(gh repo view "$SLUG" --json visibility -q .visibility 2>/dev/null)
   [ "$vis" = PRIVATE ] && out PASS repo-private "$SLUG visibility PRIVATE" || out FAIL repo-private "private visibility could not be confirmed"
-  for repo in "$MAIN" "$REPO"; do
+  for repo in "$MAIN"; do
     names=$(git -C "$repo" remote | sort -u | tr '\n' ' ')
     bad=$(git -C "$repo" remote -v | awk '{print $2}' | sort -u |
       grep -v -E "^(https://github\\.com/|git@github\\.com:|ssh://git@github\\.com/)$SLUG(\\.git)?$")
