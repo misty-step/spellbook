@@ -54,7 +54,10 @@ exhaustive audit or quiz for ordinary tasks.
    name a concrete check that could falsify each important uncertain claim.
    Exercise only safe, authorized probes; proposed checks remain proposed.
 6. **Give the model back to the user.** Close with the journey, key trade-offs
-   and unresolved questions at a level they can explain themselves. Offer an
+   and unresolved questions at a level they can explain themselves. Carry the
+   same evidence labels and scope limits into this recap: compression must not
+   turn inferred rationale into a recorded decision or a local finding into a
+   system-wide guarantee. Offer an
    optional teachback or a few defense questions, such as how a duplicate request
    behaves or which constraint favors the chosen structure. If they take it up,
    use gaps in their explanation to revisit the relevant evidence. Do not claim
