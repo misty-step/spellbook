@@ -12,8 +12,10 @@ metadata:
 
 Locate the selected vault through [daybook](../daybook/SKILL.md). Set `DAYBOOK_VAULT` to its absolute checkout path. This installed skill owns
 the `scripts/` helpers; set `DAYBOOK_VERIFY` to this installed skill directory.
-The vault's `docs/verification/` holds product expectations and feature recipes.
-Helpers never infer a vault from their installed location. Read the changed journey's recipe first.
+The vault's `docs/verification/` holds contextual product expectations and
+historical evidence. This skill's [journey guide](references/journeys.md) owns
+driving instructions. Helpers never infer a vault from their installed location.
+Read the changed feature's expectations and select its journey from that guide.
 
 1. Run `$DAYBOOK_VERIFY/scripts/doctor.sh` for read-only configured health. Select
    live checkout with `DAYBOOK_VAULT`; keep FAIL and WARN/unverified explicit.
