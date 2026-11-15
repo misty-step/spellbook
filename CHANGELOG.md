@@ -1,3 +1,9 @@
+# [0.5.3](https://github.com/misty-step/mistystack/compare/v0.5.2...v0.5.3) (2026-11-15)
+<!-- landmark:protected-release previous=v0.5.2 source=29a17030267e5f03af7a493904648731c8d3890be9ac1c6b6a22fdccab6f26dc -->
+
+### Features
+
+* **skills:** separate context vaults from executable guidance (#706) ([444edb9](https://github.com/misty-step/mistystack/commit/444edb91ee87738f28532428f12454c55112f8b9))
 # [0.5.2](https://github.com/misty-step/mistystack/compare/v0.5.1...v0.5.2) (2026-11-14)
 <!-- landmark:protected-release previous=v0.5.1 source=6ffb69b16666901031107c4f5b9d1c4d1b109e0044eb0719052a09789620e356 -->
 
