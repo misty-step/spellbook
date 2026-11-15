@@ -1,0 +1,36 @@
+---
+name: herdr
+description: "When Herdr is mentioned, inspecting its spaces or agents, or checking session identity: distinguish the current hc/herdr-app runtime from the legacy herdr CLI."
+metadata:
+  owner: phaedrus
+  prevents: "2026-11-14: active agent guidance lived in a context vault, coupling instruction discovery to private data."
+  source: "Misty Step; provenance in ATTRIBUTION.md#skill-provenance."
+  sunset: "2026-12-14"
+---
+
+# Herdr routing
+
+1. **Identify before choosing a manual.** Inspect `HC_TERMINAL_ID` and
+   `command -v hc herdr-app herdr`. `HC_TERMINAL_ID` is a core terminal address;
+   confirm it with `hc get "$HC_TERMINAL_ID"`. Use `herdr-app ls` to associate
+   terminals with visible spaces, tabs and panes. A terminal may have no pane.
+   If the variable is absent, `hc ls` and `herdr-app ls` can still establish
+   a running core/window; absence alone does not establish unavailability.
+2. **Current app:** read `hc --skill` for terminal and agent lifecycle and
+   `herdr-app --skill` for visible spaces, tabs, panes and focus. These installed
+   manuals own syntax. Launch Codex with `--no-daemon` so its tools run inside
+   its hc terminal.
+3. **Legacy CLI:** resolve `herdr` and inspect its version. PATH may select
+   different installations. Read `herdr --skill` only for an explicitly legacy
+   task/session, after checking its own `HERDR_ENV=1` context. That gate does
+   not apply to the current app. Missing `HERDR_ENV` is normal in herdr-core;
+   `TERM_PROGRAM=ghostty` is compatibility metadata, not window identity.
+4. **Coordinator and worker:** when serving as the owner's chief-of-staff
+   coordinator in Herdr, delegate execution into agents in separate, named
+   Herdr spaces. Read-only coordination and inspection stay with the coordinator.
+   A delegated worker executes its assigned slice directly; this rule does not
+   require recursive delegation. Read the installed manuals before launch.
+5. **Preserve the workspace.** Inspect live IDs before mutations. Discovery
+   does not authorize restarting the app/core, changing credentials, granting
+   hook trust or changing other sessions. Use ordinary file/skill discovery
+   when automatic injection is absent. Clean up only owned resources.

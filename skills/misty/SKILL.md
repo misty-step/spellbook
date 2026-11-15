@@ -108,6 +108,9 @@ The same rules cover pull requests, commit messages, documents and comments in t
 
 | When | Read |
 | --- | --- |
+| Personal context, journals, documents, artifacts or scratchpads | [daybook](../daybook/SKILL.md), including its workflow and optional lens routes |
+| Herdr identity, spaces or agent coordination | [herdr](../herdr/SKILL.md) |
+| Writing a work artifact for a reader without the conversation | [artifact-standard](../artifact-standard/SKILL.md) |
 | Unsettled product intent, domain terms, decisions needed from several people | [grilling](../grilling/SKILL.md), [domain-modeling](../domain-modeling/SKILL.md), [to-questionnaire](../to-questionnaire/SKILL.md), with the [shaping facts](shaping.md) |
 | Writing, bootstrapping or reconciling `SPEC.md` against the running product | [spec](../spec/SKILL.md) |
 | An unfamiliar API, dependency or claim to check against sources | [research](../research/SKILL.md) |
