@@ -2,6 +2,12 @@
 
 Mistystack is Misty Step's harness-neutral engineering method for humans and coding agents, paired with a public handbook and skill-finder site. One canonical content tree in open Agent Skills format serves every supported harness through universal instructions and thin native adapters, while a small always-on core stands alone for small work and routes nontrivial work to one self-contained mode page and on-demand task skills.
 
+Maintained executable agent guidance, skills and harness primitives belong to Mistystack.
+Daybook holds contextual material: human and agent journals, documents, artifacts and
+scratchpads. Portable procedures discover vault locations from local context; public
+packages contain no private vault content. Local vault AGENTS.md files are bootstrap
+pointers, not a second behavioral source.
+
 Private fleet runtime setup, credentials, host automation and operator scheduling belong outside Mistystack in `misty-step/workstation`, never copied into the public method.
 
 ## Terms
@@ -54,7 +60,7 @@ Private fleet runtime setup, credentials, host automation and operator schedulin
 
 ### Install, setup and verification gate
 
-- `setup-mistystack` and `recompile` remain excluded from automatic model discovery (`disable-model-invocation`) while staying readable directly via `misty`'s route table.
+- `daily-retro`, `setup-mistystack` and `recompile` remain excluded from automatic model discovery (`disable-model-invocation`) while remaining directly readable at their installed entrypoints.
 - Explicitly invoking `setup-mistystack` installs or upgrades the shared tree through the active harness's native lifecycle without disturbing unrelated plugins, foreign settings or credentials, maps `rigor-light`, `rigor-standard` and `rigor-critical` in native configuration where subagents exist (inline on pi and universal installs), reads back persisted assignments and honors symlink safety.
 - One verification entrypoint (`./scripts/check`) enforces fast (`<= 120s`), verify (`<= 300s` per surface/shard, `--changed`, `--surface`, `--shard`) and `doctor` (repo workflow hygiene plus complete tracked-file closure coverage, including non-exec cutoffs and fail-closed unmapped paths), checking release-protection, secret-scanning, manifest/skill metadata contracts, offline vendored lock integrity, relative Markdown link and skill-name resolution, and disposable isolated native installations across all available Claude Code, Codex, pi and Antigravity CLIs (naming missing CLIs or lint-only runs explicitly as unproved rather than passes).
 
