@@ -238,7 +238,7 @@ export function lintPlugin(root: string, strict = false) {
 			const name = basename(dirname(file));
 			if (frontmatter.name !== name) errors.push(`${file}: name must equal directory ${name}`);
 			if (!nonempty(frontmatter.description)) errors.push(`${file}: description must be non-empty`);
-			if (["recompile", "setup-mistystack"].includes(name) && frontmatter["disable-model-invocation"] !== true) {
+			if (["recompile", "setup-mistystack", "coordinator"].includes(name) && frontmatter["disable-model-invocation"] !== true) {
 				errors.push(`${file}: disable-model-invocation must be true`);
 			}
 			if (!vendored.has(file)) {

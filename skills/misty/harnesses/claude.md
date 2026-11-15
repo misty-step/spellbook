@@ -42,7 +42,7 @@ not require `CLAUDE.md` or a duplicate standing-instruction file.
 Invoke `/mistystack:misty` or `/mistystack:<skill-name>` through Claude's native
 skill mechanism. Follow Misty's [ship-loop link](../../ship-loop/SKILL.md) relative to
 the installed skill file, not the working directory or a source checkout.
-Recompile and setup-mistystack retain
+Recompile, setup-mistystack and coordinator retain
 `disable-model-invocation: true`: Claude does not invoke them automatically,
 while a user can invoke them explicitly or read their installed files.
 Check discovery and explicit reachability separately.

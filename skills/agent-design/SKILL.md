@@ -29,7 +29,7 @@ and context contract:
 
 ## Skill frontmatter
 
-Every skill directory exposes a `SKILL.md` whose `name` matches its directory and whose `description` is non-empty and trigger-first. Vendored skills keep their upstream metadata untouched; plugin lint validates their provenance and file hashes from the lock in `vendor/`. `recompile` and `setup-mistystack` remain explicit-only (`disable-model-invocation: true`).
+Every skill directory exposes a `SKILL.md` whose `name` matches its directory and whose `description` is non-empty and trigger-first. Vendored skills keep their upstream metadata untouched; plugin lint validates their provenance and file hashes from the lock in `vendor/`. `recompile`, `setup-mistystack` and `coordinator` remain explicit-only (`disable-model-invocation: true`).
 
 For Misty-authored skills, `metadata.prevents` cites observed failure evidence, and `metadata.owner` and `metadata.sunset` identify who reviews drift and when. Short `metadata.source` values point to [ATTRIBUTION.md](../../ATTRIBUTION.md#skill-provenance), which owns full directory-level provenance including supporting files.
 

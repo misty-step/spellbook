@@ -69,6 +69,7 @@ A subagent starts with none of your context, returns a summary instead of the ev
 - **Bulk reading or searching** where you need the conclusion and not the detail.
 - **A second opinion** on a decision that is expensive to get wrong. That means the same prompt on a different model family; a repeat on the same family is not a second opinion.
 - **Supervision** of open-ended runs, through [watchdog](../watchdog/SKILL.md).
+- **A coordinator role** the user invoked or a launch brief assigned: [coordinator](../coordinator/SKILL.md) says which work that role delegates.
 
 Keep code-coupled work (one feature, one migration) with one owner. Do not delegate a lookup you could finish in a few tool calls. Do not ask an agent to review work in the abstract when you could run it instead: spend those tokens on the real-path check, or on a formal check where order, concurrency or durability matter.
 
@@ -110,6 +111,7 @@ The same rules cover pull requests, commit messages, documents and comments in t
 | --- | --- |
 | Personal context, journals, documents, artifacts or scratchpads | [daybook](../daybook/SKILL.md), including its workflow and optional lens routes |
 | Herdr identity, spaces or agent coordination | [herdr](../herdr/SKILL.md) |
+| Acting as the user's Chief of Staff or a project owner, when invoked or assigned | [coordinator](../coordinator/SKILL.md) |
 | Writing a work artifact for a reader without the conversation | [artifact-standard](../artifact-standard/SKILL.md) |
 | Unsettled product intent, domain terms, decisions needed from several people | [grilling](../grilling/SKILL.md), [domain-modeling](../domain-modeling/SKILL.md), [to-questionnaire](../to-questionnaire/SKILL.md), with the [shaping facts](shaping.md) |
 | Writing, bootstrapping or reconciling `SPEC.md` against the running product | [spec](../spec/SKILL.md) |
