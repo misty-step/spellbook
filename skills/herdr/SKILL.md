@@ -25,11 +25,19 @@ metadata:
    task/session, after checking its own `HERDR_ENV=1` context. That gate does
    not apply to the current app. Missing `HERDR_ENV` is normal in herdr-core;
    `TERM_PROGRAM=ghostty` is compatibility metadata, not window identity.
-4. **Coordinator roles:** the Chief of Staff, project owner and task agent roles
-   apply only when the user invokes [coordinator](../coordinator/SKILL.md) or a
-   parent's launch brief assigns one. That page owns their delegation, labels
-   and recovery. Read the installed manuals before any launch.
+4. **Coordinator roles:** the Chief of Staff, project owner, understanding lane
+   and task agent roles apply only when the user invokes
+   [coordinator](../coordinator/SKILL.md) or a parent's launch brief assigns one.
+   Read the installed manuals before any launch.
 5. **Preserve the workspace.** Inspect live IDs before mutations. Discovery
    does not authorize restarting the app/core, changing credentials, granting
    hook trust or changing other sessions. Use ordinary file/skill discovery
    when automatic injection is absent. Clean up only owned resources.
+6. **Message only a live agent.** A terminal whose agent exited can be a shell
+   that keeps its labels, and text sent there runs as commands. Read `hc get`
+   first. For `idle` or `working`, use `hc send --if <that status>`. For `done`,
+   run `hc interrupt`; if it then shows `idle`, send with `--if idle`. If it
+   stays `done`, or shows anything else, send nothing: tell the user, who can
+   resume it in its space, and check again later. Never use `--force`. An agent
+   that expects messages stays in its turn with `hc wait --children any`, where
+   it shows `working`.
