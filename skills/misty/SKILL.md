@@ -124,6 +124,7 @@ The same rules cover pull requests, commit messages, documents and comments in t
 | Running agents to supervise | [watchdog](../watchdog/SKILL.md) |
 | Looking back on a session | [retro](../retro/SKILL.md), with the [shaping facts](shaping.md#looking-back) |
 | A vague, ambitious or summary-only request, or a brief about to be handed off | [deepen](../deepen/SKILL.md) |
+| Helping the user understand and defend architecture, data relationships and design choices | [whiteboard-defense](../whiteboard-defense/SKILL.md) |
 | Prompts, skills, `AGENTS.md` or agent tools | [agent-design](../agent-design/SKILL.md) |
 | A whole-project audit, a new project or a stack decision | [foundation](../foundation/SKILL.md) |
 | Routing work by a typed model decision | [classified handoffs](classified-handoffs.md) |
