@@ -40,7 +40,7 @@ the method into an extension. A package on disk is not proof the extension ran.
 Invoke `/skill:misty` or `/skill:<skill-name>`, or read the installed skill. Follow its
 [ship-loop link](../../ship-loop/SKILL.md) relative to that installed file, not the
 working directory or source checkout. pi enforces skill metadata and
-`disable-model-invocation: true`: recompile and setup-mistystack
+`disable-model-invocation: true`: recompile, setup-mistystack and coordinator
 remain out of automatic model invocation while explicit invocation and installed-file
 reads can reach them.
 Prove discovery and explicit reachability separately.

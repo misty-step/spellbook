@@ -18,7 +18,7 @@ function fixture() {
 		mkdirSync(dirname(join(root, path)), { recursive: true });
 		writeFileSync(join(root, path), content);
 	};
-	const skill = (name: string, body = "Run the owned check.") => `---\nname: ${name}\ndescription: "When changing the consumer path."\n${name.startsWith("principle-") || name === "recompile" || name === "setup-mistystack" ? "disable-model-invocation: true\n" : ""}metadata:\n  owner: phaedrus\n  prevents: "A recorded consumer failure."\n  source: "owner/repo@0123456789abcdef/source"\n  sunset: "2026-11-27"\n---\n${body}\n`;
+	const skill = (name: string, body = "Run the owned check.") => `---\nname: ${name}\ndescription: "When changing the consumer path."\n${name.startsWith("principle-") || name === "recompile" || name === "setup-mistystack" || name === "coordinator" ? "disable-model-invocation: true\n" : ""}metadata:\n  owner: phaedrus\n  prevents: "A recorded consumer failure."\n  source: "owner/repo@0123456789abcdef/source"\n  sunset: "2026-11-27"\n---\n${body}\n`;
 	put("skills/misty/SKILL.md", skill("misty"));
 	put("rules/core.md", "---\ntrigger: always_on\nalwaysApply: true\n---\n# Core\n\n- Load misty.\n");
 	put("assets/logo.svg", '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"></svg>\n');
@@ -418,7 +418,7 @@ test("a missing router is an error even when another valid skill exists", () => 
 	expect(lintPlugin(root).errors).toEqual(["skills/misty/SKILL.md: missing router"]);
 });
 
-test.each(["recompile", "setup-mistystack"])(
+test.each(["recompile", "setup-mistystack", "coordinator"])(
 	"requires boolean true to keep %s explicit-only",
 	name => {
 		const { root, put, skill } = fixture();

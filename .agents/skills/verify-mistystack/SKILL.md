@@ -41,8 +41,8 @@ not evidence that the method loaded.
    lint-only selection explicitly skips installation and does not prove loading.
 
    These no-model inventory checks prove installation and registration, not
-   that a model received the core, that explicit-only skills (recompile and
-   setup-mistystack) stay out of the automatic list, or that installed bodies
+   that a model received the core, that explicit-only skills (recompile,
+   setup-mistystack and coordinator) stay out of the automatic list, or that installed bodies
    such as `checklist.md#conformance` match the candidate. Follow the matching
    [harness note](../../../skills/misty/SKILL.md) for fresh-session proof: use an
    existing subscription only if it works without copying credential files;

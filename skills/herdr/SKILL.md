@@ -25,11 +25,10 @@ metadata:
    task/session, after checking its own `HERDR_ENV=1` context. That gate does
    not apply to the current app. Missing `HERDR_ENV` is normal in herdr-core;
    `TERM_PROGRAM=ghostty` is compatibility metadata, not window identity.
-4. **Coordinator and worker:** when serving as the owner's chief-of-staff
-   coordinator in Herdr, delegate execution into agents in separate, named
-   Herdr spaces. Read-only coordination and inspection stay with the coordinator.
-   A delegated worker executes its assigned slice directly; this rule does not
-   require recursive delegation. Read the installed manuals before launch.
+4. **Coordinator roles:** the Chief of Staff, project owner and task agent roles
+   apply only when the user invokes [coordinator](../coordinator/SKILL.md) or a
+   parent's launch brief assigns one. That page owns their delegation, labels
+   and recovery. Read the installed manuals before any launch.
 5. **Preserve the workspace.** Inspect live IDs before mutations. Discovery
    does not authorize restarting the app/core, changing credentials, granting
    hook trust or changing other sessions. Use ordinary file/skill discovery

@@ -46,8 +46,8 @@ check `hooks/list` trust status again after a refresh.
 Use Codex's native skill mechanism with `mistystack:misty` or
 `mistystack:<skill-name>`. Follow Misty's [ship-loop link](../../ship-loop/SKILL.md)
 relative to its installed file, not the working directory or a checkout copy.
-Codex does not enforce `disable-model-invocation`; recompile
-and setup-mistystack also carry `agents/openai.yaml` with
+Codex does not enforce `disable-model-invocation`; recompile,
+setup-mistystack and coordinator also carry `agents/openai.yaml` with
 `policy.allow_implicit_invocation: false`. Check that they are excluded from
 implicit invocation while explicit invocation and installed-file reads still
 reach them.
