@@ -1,3 +1,9 @@
+# [0.5.5](https://github.com/misty-step/mistystack/compare/v0.5.4...v0.5.5) (2026-11-15)
+<!-- landmark:protected-release previous=v0.5.4 source=60a9597092be35a7bda74c2f6190680c522cc4b68c8b26c91e04902d3f8ecdb3 -->
+
+### Features
+
+* **skills:** explain and defend system design from evidence (#710) ([b78a1d6](https://github.com/misty-step/mistystack/commit/b78a1d6d04e609b19305d7e0d87181bf68837ef0))
 # [0.5.4](https://github.com/misty-step/mistystack/compare/v0.5.3...v0.5.4) (2026-11-15)
 <!-- landmark:protected-release previous=v0.5.3 source=0faab81085036202f190789da6c4213f68a40dd24fc4931a1278c1fcd10852c1 -->
 
