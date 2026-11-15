@@ -19,8 +19,10 @@ settings. Never change the synchronizer's locks/index/refs or restart the core.
 Do not claim preservation until installed readback succeeds.
 
 The adjacent `entire-redactors.yaml` is the maintained generic token-shape
-redaction pack. Install/link it into the native `.entire/redactors/` directory
-when preserving an existing deployment; it contains synthetic examples only.
+redaction pack. Copy it as a regular file into the native `.entire/redactors/`
+directory when preserving an existing deployment; Entire 0.12.2 skips symlinked
+packs. Read back the installed bytes and native pack loading. The resource
+contains generic patterns, not private matching inputs.
 Private matching inputs and auth state stay in local configuration. Reuse the
 vendor's native validation/probe for a change; moving ownership does not grant
 permission to publish session captures.
