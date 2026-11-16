@@ -35,9 +35,14 @@ metadata:
    when automatic injection is absent. Clean up only owned resources.
 6. **Message only a live agent.** A terminal whose agent exited can be a shell
    that keeps its labels, and text sent there runs as commands. Read `hc get`
-   first. For `idle` or `working`, use `hc send --if <that status>`. For `done`,
-   run `hc interrupt`; if it then shows `idle`, send with `--if idle`. If it
-   stays `done`, or shows anything else, send nothing: tell the user, who can
-   resume it in its space, and check again later. Never use `--force`. An agent
-   that expects messages stays in its turn with `hc wait --children any`, where
-   it shows `working`.
+   first. For `idle` or `working`, send with `hc send --if <that status>`.
+   `done` means the agent is still in the foreground with its turn finished;
+   Claude Code stays `done` at its prompt, and `hc interrupt` does not change
+   that. Send to it without `--if` only when `state` is `live` and
+   `foreground.argv[0]` is that agent's program, not a shell (`claude` for
+   `claude-code`, `agy` for `antigravity`). When an
+   agent exits, its status clears (hc shows it as silent) and a shell or
+   `finished` replaces it. For that, or `blocked` or `error`, send nothing: tell
+   the user, who can resume it in its space. Never use `--force`, and never
+   interrupt an agent in order to message it. An agent that expects messages
+   stays in its turn with `hc wait --children any`, where it shows `working`.
