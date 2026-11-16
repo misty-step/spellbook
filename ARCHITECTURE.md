@@ -6,8 +6,9 @@ descriptive. Target behavior is in [SPEC.md](SPEC.md) and the reasons for each
 choice are in [decision records](docs/decisions/index.md). When this page and
 the code disagree, the code is right and this page is stale.
 
-Baseline: `master` at `d442a18` (release `v0.5.6`), traced 2026-11-15.
-Citations are `path:line` at that revision. Claims marked **(inferred)** come
+Baseline: traced at `master` `d442a18` (release `v0.5.6`) on 2026-11-15, then
+updated through `22b7938` (#715 coordinator spaces, #716 provisioning, #717
+recompile grading). Citations are `path:line` at `22b7938`. Claims marked **(inferred)** come
 from reading code or docs without running them. The evidence section at the end
 lists what was actually run.
 
@@ -19,6 +20,9 @@ lists what was actually run.
 | Core | `rules/core.md` | Seven always-on lines. They route nontrivial work to `misty` (`rules/core.md:11`). |
 | Mode | `skills/misty/SKILL.md` | The method on one page, linking to each task skill (`skills/misty/SKILL.md:24`, `:108-134`). |
 | Harness notes | `skills/misty/harnesses/{any,claude,codex,pi,antigravity}.md` | The only place where per-harness mechanics are allowed. |
+| Roles and provisioning | `skills/ship-loop/roles.md` | Rigor tiers (`:8`), and since #716 the one provisioning card: model class and effort per agent role (`:23-66`). Concrete models are "host facts" kept outside Mistystack (`:26-29`). |
+| Coordination | `skills/coordinator/SKILL.md`, `skills/coordinator/briefs.md` | One Herdr space per project with Ownership and Understanding tabs (`SKILL.md:23-35`), and copy-ready launch briefs (`briefs.md`). |
+| Recompile | `skills/recompile/SKILL.md`, `skills/recompile/grading.md` | Rebuild rounds and their grading protocol: gates, then classify and decide (`grading.md:9-56`). This is method only; no code in this repository runs it. |
 | Claude adapter | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `adapters/claude/agents/*.md` | Skills, three rigor agents, and a SessionStart hook that injects the core. |
 | Codex adapter | `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json`, `adapters/codex/hooks.json`, `adapters/codex/agents/*.toml` | Skills plus the SessionStart hook. The rigor agents ship as templates the user installs separately. |
 | pi adapter | `package.json` (`pi` key), `adapters/pi/core.ts` | Skills plus an extension that appends the core to the system prompt. |
@@ -117,6 +121,9 @@ manifest version labels and the site. It does not gate plugin content.
    per-tier `effort` (`adapters/claude/agents/rigor-*.md:1-11`). The Codex
    agents name the installed skill and pin a model
    (`adapters/codex/agents/rigor-*.toml:1-11`).
+   Which model class and effort each agent gets is chosen from the
+   provisioning card (`skills/ship-loop/roles.md:23-66`). The harness note
+   says how to set them (`skills/misty/SKILL.md:76`).
 5. Explicit-only skills set `disable-model-invocation: true`. Codex does not
    honor that flag, so `recompile`, `setup-mistystack`, `coordinator` and
    `daily-retro` also carry `agents/openai.yaml` with
@@ -315,6 +322,11 @@ Measured on 2026-11-15:
   `LANDMARK_BIN`), 4.1 s. The test helper copies the parent environment into
   the nested run (`:190`). On `d442a18`, release run `43774972013` passed
   138 of 138.
+- #715 changed the assertion to `Ran 1 test across 1 file`
+  (`scripts/verify-plugin.test.ts:308-309`). At `22b7938` plus this page,
+  inside Claude Code with `AGENT=1` and `CLAUDECODE=1` set: `doctor` passed
+  with 263 files mapped, and `fast` passed with 118 pass, 20 skip, 0 fail
+  (3.6 s, within the 120 s budget).
 - Release run `43774972013` (dispatched at `bb49a7a`): prepare, verify/verify,
   verify/site, publish and deploy all succeeded, and the protected release
   check said "candidate is fresh; master would publish v0.5.6".
@@ -339,65 +351,77 @@ Not run:
 The owner decides each one: change SPEC.md, change the code, or record the
 deviation. None is fixed on this branch.
 
-1. **Explicit-only skills.** `SPEC.md:64` names four skills: `daily-retro`,
+1. **Explicit-only skills.** `SPEC.md:65` names four skills: `daily-retro`,
    `setup-mistystack`, `recompile` and `coordinator`. In the repository eight
    skills set `disable-model-invocation: true`. The other four are vendored
    (`grill-me`, `grill-with-docs`, `retro`, `to-questionnaire`). Lint enforces
    the flag on only three of SPEC's four and omits `daily-retro`
    (`scripts/verify-plugin.ts:241`). The harness notes list three
    (`claude.md:45-47`, `pi.md:43-45`) or two (`any.md:49`).
-2. **Shaping route.** `SPEC.md:70` routes unsettled intent through `grilling`,
+2. **Shaping route.** `SPEC.md:71` routes unsettled intent through `grilling`,
    `grill-me`, `grill-with-docs`, `domain-modeling` and `to-questionnaire`.
    Three of those are explicit-only, so on Claude Code and pi the model cannot
    invoke them on its own initiative. Is that intended?
-3. **Core length.** `SPEC.md:44` says at most 20 lines *including
+3. **Core length.** `SPEC.md:45` says at most 20 lines *including
    frontmatter*. Lint counts body lines only (`scripts/verify-plugin.ts:257-261`).
    The core is 13 lines today, so nothing fails yet.
-4. **Native installs in `./scripts/check`.** `SPEC.md:66` says the entry point
+4. **Native installs in `./scripts/check`.** `SPEC.md:67` says the entry point
    checks disposable native installs across all available CLIs. Only
    `verify --surface plugin` and `plugin` do that. `fast` is lint-only
    (`check-runner.ts:380`). Release CI runs the older unbudgeted
    `plugin --strict --lint-only` rather than `fast` (`ci.yml:51`), so no release
    exercises a native install. The `plugin` and `all` selections
    (`scripts/verify:30-32`) are not in SPEC's contract.
-5. **Secret scanning in the check.** `SPEC.md:66` lists secret scanning among
+5. **Secret scanning in the check.** `SPEC.md:67` lists secret scanning among
    what `./scripts/check` checks. The check runs *tests of* the scanner gate
    (`scripts/trufflehog-gate.test.ts`), not a scan. Real scans exist only in
    opt-in local hooks. Release CI downloads gitleaks and never invokes it.
-6. **Proof receipts.** `SPEC.md:36`, `:39` and `:84-85` define clean-runner
+6. **Proof receipts.** `SPEC.md:37`, `:40` and `:85-86` define clean-runner
    Merkle proof receipts and say the release gate consumes them. No code in
    this repository mints, stores or reads one. ADR 0029 assigns them to
    `misty-step/conductor` (`docs/decisions/0029-agentic-verification-and-release-trains.md:36`). Mistystack's release
    always takes the fallback of running checks directly.
-7. **Train pinning.** `SPEC.md:39` says newer trunk landings "wait for the next
+7. **Train pinning.** `SPEC.md:40` says newer trunk landings "wait for the next
    train". In the workflow, a landing between dispatch and `prepare` fails the
    train, because `origin/master` must equal `source` (`landmark-release.yml:40`).
    Also, the tested candidate is the generated-notes merge commit, not the
    dispatched `source` (`:90-96`).
-8. **Release gate versus publication.** `SPEC.md:39` calls the release gate
+8. **Release gate versus publication.** `SPEC.md:40` calls the release gate
    "pre-publication". Plugin content is published to users when it merges to
    `master` (see "Distribution"). Only the tag, the manifest versions and the
    site wait for the gate.
-9. **Review previews.** `SPEC.md:112` says review previews identify their
+9. **Review previews.** `SPEC.md:113` says review previews identify their
    commit, link affected pages and carry `noindex`. No workflow creates a
    preview. Only `preview_urls: true` (`site/wrangler.jsonc:23`) and a
    `workers.dev` `noindex` header (`site/public/_headers:14-15`) exist.
-10. **Telemetry.** `SPEC.md:113` describes protected, non-blocking telemetry.
+10. **Telemetry.** `SPEC.md:114` describes protected, non-blocking telemetry.
     The site sends none that this trace found, and the decision index still
     lists telemetry as open (`docs/decisions/index.md:61`).
-11. **Recovery.** `SPEC.md:85` says the release recovers safely on failure, and
+11. **Recovery.** `SPEC.md:86` says the release recovers safely on failure, and
     `docs/release-convention.md:63-66` calls for native rollback. The workflow
     has no rollback or recovery step (inferred to be manual, `release-watch`).
-12. **Rigor-critical strength on Codex.** `SPEC.md:59` says `rigor-critical`
-    is never weaker than the dispatching session. The Codex templates hard-code
-    `model = "gpt-6.1-sol"` for all three tiers, and standard and critical
-    share `high` effort (`adapters/codex/agents/rigor-*.toml:3-4`). The
-    Claude agents use `model: inherit`.
-13. **Harness-neutral content.** Invariant 4 (`SPEC.md:47`) forbids naming
-    host-specific tools in the shared tree. `skills/coordinator`, `skills/herdr`
-    and the `misty` route table (`skills/misty/SKILL.md:113`) name Herdr and
-    `hc`. Does Herdr count as a harness-specific tool?
-14. **Provenance shape.** `SPEC.md:45` requires a *quoted ISO* `sunset` and a
+12. **Rigor models in the shipped agents.** #716 sharpened this question
+    rather than settling it.
+    - `SPEC.md:60` and the provisioning card say critical work is "frontier,
+      never weaker than the dispatcher" (`skills/ship-loop/roles.md:46`).
+    - The Provisioning term says concrete models live in the host's card,
+      outside Mistystack (`SPEC.md:29`, `roles.md:26-29`).
+    - The Codex templates still ship a concrete model, `gpt-6.1-sol`, for all
+      three tiers, and standard and critical share `high` effort
+      (`adapters/codex/agents/rigor-*.toml:3-4`). The card says standard is
+      `medium` (`roles.md:45`).
+    - The Claude agents use `model: inherit`, so the light tier runs on the
+      session's model rather than the card's `fast` class (`roles.md:44`,
+      `adapters/claude/agents/rigor-light.md:4`).
+13. **Harness-neutral content.** Invariant 4 (`SPEC.md:48`) forbids naming
+    host-specific tools in the shared tree. #715 adds more names: the
+    coordinator now names Herdr spaces and tabs (`skills/coordinator/SKILL.md:23-35`)
+    and gives exact `hc` and `herdr-app` commands (`skills/coordinator/briefs.md:9-18`).
+    `skills/herdr` and the `misty` route table (`skills/misty/SKILL.md:113`)
+    also name them. Is Herdr a host tool that belongs in
+    `skills/misty/harnesses/` or the workstation plugin, or a portable
+    dependency the shared tree may name?
+14. **Provenance shape.** `SPEC.md:46` requires a *quoted ISO* `sunset` and a
     `source` backed by ATTRIBUTION.md records. Lint checks only that `sunset`
     is a non-empty string and that dates are quoted
     (`scripts/verify-plugin.ts:21-23`, `:249`). It does not check the ISO
@@ -415,12 +439,6 @@ The following records disagree with the repository but are not SPEC.md:
     retired. These are dead allowlist entries.
 17. `landmark-release.yml:81` still cites "US-015", a story ID that ADR 0028
     removed. `scripts/check:2` cites the historical "ADR-004".
-18. `./scripts/check fast` fails whenever an agent runs it inside Claude Code,
-    or anywhere `AGENT=1` is set. One test asserts on Bun's per-test output,
-    and Bun suppresses that output for agents (see Evidence). That breaks the
-    method's own pre-land check exactly where agents run it.
-    `scripts/verify-plugin.test.ts:190` could strip those variables, or the
-    test could assert on exit status instead of output.
-19. **(Inferred)** `verify-mistystack` lives in `.agents/skills/`, which Claude
+18. **(Inferred)** `verify-mistystack` lives in `.agents/skills/`, which Claude
     Code does not scan natively (`skills/misty/harnesses/any.md:21`). A Claude
     session in this repository would not discover it without being told the path.
