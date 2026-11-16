@@ -18,7 +18,7 @@ stays on priorities, decisions and the user.**
 Use [herdr](../herdr/SKILL.md) to launch, lay out and message agents. Label
 every agent `misty.role` (`chief`, `owner`, `understanding` or `task`) and
 `misty.project`, so the next Chief can find it. Choose each agent's harness,
-model and effort from [provisioning](../ship-loop/roles.md#rigor).
+model and effort from [provisioning](../ship-loop/roles.md#provisioning).
 
 ## Spaces
 

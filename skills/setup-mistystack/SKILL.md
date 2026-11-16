@@ -48,12 +48,9 @@ supply the method to every adapter.
    responsibilities. Inspect the active harness's accessible models, supported
    reasoning levels and existing assignments without exposing credentials. A
    catalog entry or shipped template is not proof of provider entitlement. Keep
-   usable existing choices; carry settled budget choices forward. Where the
-   harness exposes an effort or reasoning level, start interactive work at
-   medium, long unattended work at high and fully specified subagent slices at
-   low, and go above high only where a measured gain justifies the tokens;
-   rerun that choice when the model changes rather than carrying it over. Then ask for missing
-   budget or provider choices together. The matching note's dispatch and rigor
+   usable existing choices; carry settled budget choices forward. Choose model
+   class and effort from [provisioning](../ship-loop/roles.md#provisioning).
+   Then ask for missing budget or provider choices together. The matching note's dispatch and rigor
    section says what is assignable in that harness, including harnesses that run
    rigor inline.
    **Complete when:** every applicable native assignment uses an accessible model
