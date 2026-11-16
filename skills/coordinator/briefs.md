@@ -11,7 +11,7 @@ one named for the project with `herdr-app do space.new --focus false` (see
 `herdr-app commands` for its arguments). Then:
 
 ```sh
-hc run --bg --outlive-parent --keep --name <project>-<role> --cwd <repository> \
+hc run --bg --outlive-parent --name <project>-<role> --cwd <repository> \
   --label herdr.space=<space id> --label misty.role=<role> --label misty.project=<project> \
   <agent command> "<brief>"
 herdr-app ls                                   # find the new tab's ID
@@ -22,7 +22,9 @@ A `herdr.space` label opens a new tab, which Herdr names by its number. The
 `where` label follows the tab's name, so set the name with `tab.rename` and not
 with `where`. Add `--label herdr.tab=<tab id>` to put the agent in an existing tab
 instead. Task agents that start, finish and are removed within a project owner's
-session can drop `--outlive-parent` and `--keep`.
+session can drop `--outlive-parent`. Never add `--keep`: it leaves a shell
+carrying the agent's labels after the agent exits, where a report would run as
+commands.
 
 ## Owner
 
