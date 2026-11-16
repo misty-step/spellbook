@@ -26,6 +26,7 @@ Private fleet runtime setup, credentials, host automation and operator schedulin
 - **Recompile review:** the monthly and model-capability-triggered review considering a blank-sheet rebuild from `SPEC.md` (explicitly choosing whether to keep or regenerate UI craft in `DESIGN.md`, and protecting live user data at cutover). Keeping the current system is a valid conclusion.
 - **Exemplar:** a person, codebase, piece of writing or product whose perspective Mistystack deliberately channels ([Exemplars](docs/exemplars.md)).
 - **Rigor role:** `rigor-light`, `rigor-standard` or `rigor-critical`, classifying changed-path risk independently of any specific model; model and reasoning assignments live solely in harness-native configuration.
+- **Provisioning:** choosing an agent's harness, model class (frontier, build, reader or fast) and effort from its role and work, with each vendor's models run in that vendor's own harness; concrete models, accounts and reserved models live in the host's provisioning card, outside Mistystack.
 - **Task agent:** an independent worker briefed with outcome, terms, raw material, Oracle, owned scope, preserved behavior, rigor and return expectations.
 - **Oracle:** a check outside the agent that can disprove completion, stated as a concrete command or real user path.
 - **Local development environment:** the environment where the agent executes; each harness note owns its environment constraints.

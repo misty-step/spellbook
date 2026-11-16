@@ -73,10 +73,9 @@ choices in skill prose or edit plugin-cache copies as durable configuration.
 Retain actual agent/model identity from an authorized dispatch before claiming a
 chosen mapping works.
 
-## Effort and updates
+## Long turns
 
-Run interactive sessions at `medium` and long unattended work at `high`. Effort,
-not prompt wording, controls how much the model thinks. During a long turn the
+[Provisioning](../../ship-loop/roles.md#provisioning) sets effort by role. During a long turn the
 model may go quiet between tool calls; that is expected for unattended work, and
 the closing report carries what the reader needs.
 

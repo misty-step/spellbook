@@ -44,7 +44,7 @@ Without the core, the method still loads when the model picks the `misty` skill 
 
 ## 3. Roles and effort
 
-Do the work in the main session, and use the harness's own subagent mechanism with [Misty's brief](../SKILL.md#the-brief) where [delegation](../SKILL.md#delegation) has a reason. The [rigor tier](../../ship-loop/roles.md#rigor) sets how deep the proof goes; it does not need a dedicated agent definition. Choose models and effort in the harness's own configuration: a role that carries critical work runs on the strongest model available, and a fully specified slice can run on a fast one.
+Do the work in the main session, and use the harness's own subagent mechanism with [Misty's brief](../SKILL.md#the-brief) where [delegation](../SKILL.md#delegation) has a reason. The [rigor tier](../../ship-loop/roles.md#rigor) sets how deep the proof goes; it does not need a dedicated agent definition. Choose models and effort in the harness's own configuration, by [provisioning](../../ship-loop/roles.md#provisioning).
 
 `recompile` and `setup-mistystack` ask not to be invoked automatically. A harness that ignores that request will list them with the others, which does no harm.
 
