@@ -1,3 +1,17 @@
+# [0.5.7](https://github.com/misty-step/mistystack/compare/v0.5.6...v0.5.7) (2026-11-16)
+<!-- landmark:protected-release previous=v0.5.6 source=8b87cf5c5b66d8447b0db7a1d1665f9783412cbc7786e1384e08904bc05bb9a5 -->
+
+### Features
+
+* **coordinator:** one Herdr space per project with Ownership and Understanding tabs (#715) ([f70d1f6](https://github.com/misty-step/mistystack/commit/f70d1f66ccd4aaecfa4cad1cd788dae269107d4b))
+* **roles:** one provisioning card for harness, model class and effort (#716) ([a8e06ee](https://github.com/misty-step/mistystack/commit/a8e06ee5e3faebd97ce2c46c9e8e3c67ab623992))
+* **recompile:** rebuild seat inputs, round triggers and a grading protocol (#717) ([22b7938](https://github.com/misty-step/mistystack/commit/22b7938cc5e94f031ce668bd16ab1ee969c9aff4))
+
+### Bug Fixes
+
+* **herdr:** message a done agent that is still in the foreground (#718) ([b94c4d5](https://github.com/misty-step/mistystack/commit/b94c4d55e4c3bce1132f20b86722a173b8da542b))
+* **coordinator:** launch owners without --keep (#720) ([5cf8dd0](https://github.com/misty-step/mistystack/commit/5cf8dd0d803e62e339323a8f662b741c09b17ea2))
+* **herdr:** send to a done agent only when its terminal is not kept (#721) ([6d95d94](https://github.com/misty-step/mistystack/commit/6d95d949bdaac285524d04b0c3b507414655d368))
 # [0.5.6](https://github.com/misty-step/mistystack/compare/v0.5.5...v0.5.6) (2026-11-15)
 <!-- landmark:protected-release previous=v0.5.5 source=63446a8484b1a7cc537e876923946b6f2386ca52266b4aa9f3412ab25340b06e -->
 
