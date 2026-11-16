@@ -20,6 +20,50 @@ through the harness's native configuration. Select `rigor-<tier>` where native
 agents exist; name the responsibility in the brief. Risk does not add PR reviewers,
 judges, or CI. The [ship loop](SKILL.md) owns delivery order.
 
+## Provisioning
+
+Before launching an agent, choose its harness, model class and effort from the
+agent's role and the work in front of it. Concrete models, accounts, quotas and
+reserved models are host facts. They live in the host's provisioning card, which
+its standing context names, and that card binds each class below to a real seat.
+Keep native assignments in harness configuration as
+[setup-mistystack](../setup-mistystack/SKILL.md) describes.
+
+| Model class | What it is for |
+| --- | --- |
+| frontier | Planning, design, review, second opinions, recompiles and critical work |
+| build | Multi-file features with a clear brief |
+| reader | Long-context or multimodal reading and synthesis |
+| fast | Lookups, readbacks and fully specified small slices |
+
+| Agent | Class | Effort |
+| --- | --- | --- |
+| Chief of Staff | frontier | medium, interactive |
+| Project owner | frontier or build | high, long and unattended |
+| Understanding lane | reader or build | medium |
+| Builder, light tier | fast | low |
+| Builder, standard tier | build | medium |
+| Builder, critical tier | frontier, never weaker than the dispatcher | high |
+| Release reviewer, second opinion, recompile grader | frontier from a different model family than the author's | high |
+| Lookup or readback | fast | low |
+
+- **Vendor harness.** Run a vendor's models in that vendor's own harness, and
+  other model families in a neutral harness. In the November 2026 Conductor
+  rebuild trial, the only seat that ran a vendor model through a neutral
+  harness was the only build that would not start on its target runtime, the
+  only metered bill and the only one to hang.
+- **Effort.** Interactive work starts at medium, long unattended work at high
+  and fully specified slices at low. Go above high only where a measured gain
+  justifies the tokens, and re-check the choice when the model changes. Effort,
+  not prompt wording, sets how much the model thinks.
+- **Fallback.** When a seat fails or runs out of quota, retry once on the next
+  class up or on another account. A host's reserved models are not a fallback
+  for non-critical work.
+- **A usage limit is missing evidence, not a failure.** Record it, rerun once,
+  and report the gap rather than a score.
+- **Name the seat.** A launch and its report name the harness, model and effort
+  that actually ran.
+
 ## Builder
 
 ```text
