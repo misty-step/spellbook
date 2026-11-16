@@ -48,4 +48,6 @@ Compare `SPEC.md` against the running product (exercised on its real consumer su
 - **Extra live behavior:** if the running product has user-facing behavior absent from `SPEC.md` that a recent spec edit did not intentionally remove, check Git history and confirm with the owner before deleting unrecorded product value that may be a spec omission.
 - **Confirmed drift:** close the gap directly through one [ship-loop](../ship-loop/SKILL.md) slice when changes are coupled, ephemeral parallel writers in isolated worktrees when slices own disjoint paths and checks, or [recompile](../recompile/SKILL.md) when a blank-sheet rebuild from `SPEC.md` beats patching inherited structure. Keep [Foundation article 3](../foundation/checklist.md#article-3) and the running product in agreement at cutover.
 
+Failures a recompile round traces to a silent or ambiguous `SPEC.md` amend it directly, not as tickets.
+
 **Done when:** the running product matches `SPEC.md` under real-path proof (or confirmed drift is handed directly to the active delivery/rebuild path) and zero backlog tickets were generated from the spec.

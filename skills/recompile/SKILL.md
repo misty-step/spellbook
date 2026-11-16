@@ -1,6 +1,6 @@
 ---
 name: recompile
-description: "Monthly and on a model-capability jump: review rebuilding cleanly from SPEC.md while deciding UI aesthetic continuity and safe production data migration."
+description: "Monthly, or when a model jump, spec amendment or structural friction triggers it: review rebuilding cleanly from SPEC.md, grade rebuilds against the spec and live product, and protect production data at cutover."
 disable-model-invocation: true
 metadata:
   owner: phaedrus
@@ -11,11 +11,20 @@ metadata:
 
 # Recompile
 
-Review monthly and additionally when model capability jumps. Rebuilding from
-[SPEC.md](../spec/SKILL.md) lets stronger models replace accumulated scaffolding
-with a simpler design rather than patching old structure forever; a review may
-still conclude **no rebuild**, because the calendar alone is not a reason to
-rewrite.
+Rebuilding from [SPEC.md](../spec/SKILL.md) lets stronger models replace
+accumulated scaffolding with a simpler design rather than patching old structure
+forever. A review may still conclude **no rebuild**.
+
+**When.** A monthly desk review decides whether to run a rebuild round; the
+calendar alone is never a reason to rewrite. Run a round when one of these fires:
+
+- a model or harness capability jump in the frontier class;
+- a `SPEC.md` amendment that closes gaps an earlier round found, to confirm they
+  closed;
+- structural friction: two consecutive ship-loop slices each needed a
+  behavior-preserving reshape, or reconciliation finds drift that patching has
+  not closed;
+- an incident whose root cause is inherited structure.
 
 1. **Recover target state and cutover choices.** Read the project's `SPEC.md`
    ([spec](../spec/SKILL.md)), `docs/decisions/` and actual user evidence. Settle
@@ -31,8 +40,19 @@ rewrite.
 2. **Start blank.** Before inspecting legacy implementation internals, describe
    the simplest system achievable with today's capabilities that satisfies
    `SPEC.md` (and `DESIGN.md` if kept). Name which new capability removes a
-   previous constraint. **Done when:** the blank-sheet design explains the user
-   outcome without treating inherited modules or stacks as requirements.
+   previous constraint. A rebuild seat sees only:
+   - `SPEC.md` at a pinned revision, and `DESIGN.md` only when the owner kept it;
+   - a **runtime card**: the deploy target and the requirement to run on it
+     through the production entry point, external interfaces, credential scope,
+     data that must survive and check budgets. It is taken from accepted
+     decision records that state an owner or platform constraint, and it names
+     no module, schema or library;
+   - the **acceptance list** from [grading](grading.md#1-before-the-builds).
+
+   Withhold source code, history, `ARCHITECTURE.md`, internal tests, other
+   decision records and postmortems. A lesson a rebuild must keep belongs in
+   `SPEC.md`. **Done when:** the blank-sheet design explains the user outcome
+   without treating inherited modules or stacks as requirements.
 
 3. **Compare.** Now inspect the running system and implementation. Compare keep,
    rebuild part and rebuild all using [foundation](../foundation/SKILL.md),
@@ -41,9 +61,9 @@ rewrite.
    follows from `SPEC.md`, user evidence and current capabilities rather than sunk
    cost or line count.
 
-4. **Prepare live-data protection and acceptance, if rebuilding.** Derive an
-   executable acceptance suite directly from `SPEC.md` so the rebuild is judged
-   against target behavior, not internal test scaffolding. When live production
+4. **Prepare live-data protection and acceptance, if rebuilding.** Grade every
+   rebuild, and live production alongside them, by [grading](grading.md), so a
+   rebuild is judged against target behavior, not its own test scaffolding. When live production
    holds accepted user data, require a one-time cutover migration with a
    non-mutating dry run, explicit refusal before unsafe or incomplete conversion,
    and a rehearsed reversal that preserves original production state. **Done when:**
