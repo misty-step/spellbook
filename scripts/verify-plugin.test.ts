@@ -305,7 +305,8 @@ test("the method gate leaves upstream and isolated site suites to their own tool
 	json("vendor/pocock.lock.json", { repo: "mattpocock/skills", commit: "a".repeat(40), skills: { "skills/upstream": "skills/engineering/upstream" }, files: { [file]: sha(entry), [suite]: sha(upstreamSuite) } });
 	const result = runPlugin(root, ["--strict", "--lint-only"]);
 	expect(result.code).toBe(0);
-	expect(result.err).toContain("maintained consumer");
+	// Bun 1.4 prints only counts for passing tests, so the count shows that only the consumer suite ran.
+	expect(result.err).toContain("Ran 1 test across 1 file");
 	expect(result.err).not.toContain("Upstream suite must run");
 	expect(result.err).not.toContain("Site suite must run");
 });
