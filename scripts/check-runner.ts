@@ -32,6 +32,7 @@ const NON_EXEC_EXACT = new Set([
 	".landmark.yml",
 	".npmignore",
 	"AGENTS.md",
+	"ARCHITECTURE.md",
 	"LICENSE",
 	"docs/decisions/0000-template.md",
 	"site/.gitignore",
