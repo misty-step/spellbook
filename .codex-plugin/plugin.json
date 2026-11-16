@@ -1,6 +1,6 @@
 {
   "name": "mistystack",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "description": "Misty Step's harness-neutral engineering method.",
   "skills": "./skills/",
   "hooks": "./adapters/codex/hooks.json"
