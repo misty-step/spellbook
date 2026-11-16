@@ -33,16 +33,17 @@ metadata:
    does not authorize restarting the app/core, changing credentials, granting
    hook trust or changing other sessions. Use ordinary file/skill discovery
    when automatic injection is absent. Clean up only owned resources.
-6. **Message only a live agent.** A terminal whose agent exited can be a shell
-   that keeps its labels, and text sent there runs as commands. Read `hc get`
-   first. For `idle` or `working`, send with `hc send --if <that status>`.
-   `done` means the agent is still in the foreground with its turn finished;
-   Claude Code stays `done` at its prompt, and `hc interrupt` does not change
-   that. Send to it without `--if` only when `state` is `live` and
-   `foreground.argv[0]` is that agent's program, not a shell (`claude` for
-   `claude-code`, `agy` for `antigravity`). When an
-   agent exits, its status clears (hc shows it as silent) and a shell or
-   `finished` replaces it. For that, or `blocked` or `error`, send nothing: tell
-   the user, who can resume it in its space. Never use `--force`, and never
-   interrupt an agent in order to message it. An agent that expects messages
-   stays in its turn with `hc wait --children any`, where it shows `working`.
+6. **Message only a live agent.** A terminal launched with `--keep` becomes a
+   shell that keeps its labels when its agent exits, and text sent there runs as
+   commands. Read `hc get` first. For `idle` or `working`, send with
+   `hc send --if <that status>`. `done` means the agent is still in the
+   foreground with its turn finished; Claude Code stays `done` at its prompt,
+   and `hc interrupt` does not change that. `--if` cannot match `done`, so send
+   to it without `--if` only when `state` is `live`, `keep` is `false` and
+   `foreground.argv[0]` is that agent's program (`claude` for `claude-code`,
+   `agy` for `antigravity`). If it exits before the send arrives, its terminal is
+   `finished` and `hc send` refuses. For a kept `done` agent, a silent terminal
+   or shell, `finished`, `blocked` or `error`, send nothing: tell the user, who
+   can resume it in its space. Never use `--force`, and never interrupt an agent
+   in order to message it. An agent that expects messages stays in its turn
+   with `hc wait --children any`, where it shows `working`.
