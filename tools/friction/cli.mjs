@@ -26,7 +26,8 @@ try {
   const record=observation({...data,model:process.env.FRICTION_MODEL || data.model});
   if(record) {
    const module=process.env.FRICTION_STORAGE_MODULE;
-   const {putObservation}=await import(module ? pathToFileURL(resolve(module)).href : './outbox.mjs');
+   if(!module) throw Error('set FRICTION_STORAGE_MODULE to Supercortex tools/friction/storage.mjs');
+   const {putObservation}=await import(pathToFileURL(resolve(module)).href);
    await putObservation(record,directory); console.log(JSON.stringify({id:record.id}));
   }
  } else if(action==='hook' || action==='ask') {

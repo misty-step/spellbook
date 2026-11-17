@@ -79,8 +79,9 @@ Only if a brief is returned, reflect once and follow its `capture` instruction
 with a concrete positive answer; a clean answer records nothing. The returned
 `decision` wrapper is portable brief output, **not** a Prime hook protocol.
 Use a stable explicit run ID, `FRICTION_MODEL=claude-sonnet-5` when selected by
-runtime, and a private `FRICTION_OUTBOX`. Without `FRICTION_STORAGE_MODULE`,
-`capture` writes only local files; nothing is uploaded. Retrying the identical
+runtime, a private `FRICTION_OUTBOX`, and `FRICTION_STORAGE_MODULE` pointing to the reviewed
+Supercortex `tools/friction/storage.mjs`. That module persists locally; upload is
+a separate operation and is not performed by capture. Retrying the identical
 capture returns the same ID and does not replace or duplicate the saved record.
 The brief uses the same persistent private pre-ask guard as other harnesses;
 capture failure never clears it or licenses another reflection.

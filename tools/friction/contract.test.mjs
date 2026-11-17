@@ -10,7 +10,7 @@ test('positive only; normalized deterministic IDs; reject secrets and bounds',()
  for(const text of ['yes','a'.repeat(2001),'token=syntheticpasswordvalue']) assert.throws(()=>observation({...input,text}));
  assert.throws(()=>observation({...input,collection:'other'}));
 });
-import {mkdtemp,readFile,readdir,rm} from 'node:fs/promises';
+import {mkdtemp,readFile,readdir,rm,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {spawnSync,spawn} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
@@ -46,7 +46,17 @@ test('concurrent hook claims emit one prompt',async()=>{
 test('Prime completion brief: positive capture, clean silence, stable retry and guard',async()=>{
  const directory=await mkdtemp(tmpdir()+'/friction-prime-');
  const env={...process.env,FRICTION_OUTBOX:directory};
- delete env.FRICTION_STORAGE_MODULE; delete env.FRICTION_MODEL;
+ // No pre-existing storage fixture exists in this suite. Inject a test-only
+ // ID-keyed sink through the same external module boundary as production.
+ env.FRICTION_STORAGE_MODULE=directory+'/storage-stub.mjs';
+ await writeFile(env.FRICTION_STORAGE_MODULE,`
+  import {writeFile} from 'node:fs/promises';
+  export async function putObservation(record,directory) {
+   try {await writeFile(directory+'/'+record.id+'.json',JSON.stringify(record),{flag:'wx'});}
+   catch(e) {if(e.code!=='EEXIST') throw e;}
+  }
+ `);
+ delete env.FRICTION_MODEL;
  const run=(args,body)=>spawnSync(process.execPath,[cli,...args],{input:JSON.stringify(body),encoding:'utf8',env});
  try {
   const brief=run(['ask','prime'],{session_id:'prime-seeded'});
@@ -68,36 +78,15 @@ test('Prime completion brief: positive capture, clean silence, stable retry and 
  } finally {await rm(directory,{recursive:true,force:true});}
 });
 
-test('local capture rejects non-private outbox and does not clear prompt guard',async()=>{
- const directory=await mkdtemp(tmpdir()+'/friction-private-');
+test('missing external storage rejects capture without clearing the Prime prompt guard',async()=>{
+ const directory=await mkdtemp(tmpdir()+'/friction-no-storage-');
  const env={...process.env,FRICTION_OUTBOX:directory}; delete env.FRICTION_STORAGE_MODULE;
  const run=(action,body)=>spawnSync(process.execPath,[cli,action,'prime'],{input:JSON.stringify(body),encoding:'utf8',env});
  try {
   assert(run('ask',{session_id:'failure'}).stdout);
-  assert.equal(run('capture',{...input,harness:'prime',text:'yes'}).status,1);
+  const result=run('capture',{...input,harness:'prime'});
+  assert.equal(result.status,1); assert.match(result.stderr,/unavailable input\/storage/);
   assert.equal(run('ask',{session_id:'failure'}).stdout,'');
-  const {chmod}=await import('node:fs/promises'); await chmod(directory,0o755);
-  assert.equal(run('capture',{...input,harness:'prime'}).status,1);
- } finally {await rm(directory,{recursive:true,force:true});}
-});
-
-test('concurrent local Prime captures publish one complete private immutable record',async()=>{
- const directory=await mkdtemp(tmpdir()+'/friction-capture-race-');
- const env={...process.env,FRICTION_OUTBOX:directory}; delete env.FRICTION_STORAGE_MODULE;
- try {
-  const results=await Promise.all(Array.from({length:8},()=>new Promise((resolve,reject)=>{
-   const child=spawn(process.execPath,[cli,'capture'],{env}); let out='';
-   child.stdout.on('data',x=>out+=x); child.on('error',reject);
-   child.on('close',code=>resolve({code,out}));
-   child.stdin.end(JSON.stringify({...input,harness:'prime'}));
-  })));
-  assert(results.every(x=>x.code===0));
-  assert.equal(new Set(results.map(x=>JSON.parse(x.out).id)).size,1);
-  const files=await readdir(directory); assert.equal(files.length,1);
-  const path=directory+'/'+files[0], before=await readFile(path,'utf8');
-  assert.equal(JSON.parse(before).harness,'prime');
-  const {stat}=await import('node:fs/promises'); assert.equal((await stat(path)).mode & 0o777,0o600);
-  const retry=spawnSync(process.execPath,[cli,'capture'],{env,encoding:'utf8',input:JSON.stringify({...input,harness:'prime',timestamp:'2026-11-17T00:00:00Z'})});
-  assert.equal(retry.status,0); assert.equal(await readFile(path,'utf8'),before);
+  assert.deepEqual((await readdir(directory)).filter(x=>x.endsWith('.json')),[]);
  } finally {await rm(directory,{recursive:true,force:true});}
 });
