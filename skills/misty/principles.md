@@ -15,7 +15,7 @@ The taste Misty Step holds, with the moment each one applies. These are reasons,
 *A working draft is ready and not yet proven.* The first draft encodes your discovery path. Once you know the system and the solution, cut everything the outcome does not strictly need. In misty-step/hone#42 a draft of +846 and −73 lines was rewritten to +323 and −506.
 
 1. **Delete what the change replaces.** Migrate every caller and delete superseded modes, exports, styles and tests in the same slice.
-2. **Collapse parallel controls and state.** Use one native control or browser event lifecycle (`focus` and `blur`, `<dialog>`, `<select>`, URL state) instead of pairing two controls or maintaining a custom state machine.
+2. **Collapse parallel controls and state.** Use one native control or browser event lifecycle (`focus` and `blur`, `<dialog>`, `<select>`, URL state) instead of pairing two controls or duplicating state the platform already owns. State the platform does not own goes in one explicit machine ([model the domain](#structure-over-vigilance)).
 3. **Call existing boundaries directly.** Do not add pass-through wrappers, duplicate caches or test-only injection parameters when callers can use the existing boundary function.
 4. **Rewrite from first principles when the draft is bloated.** If a working draft adds hundreds of lines for a focused capability, discard it and write it again from scratch with what building it taught you, before running consumer proof.
 
@@ -23,11 +23,13 @@ Done when obsolete paths are deleted and no simpler direct implementation remain
 
 ## Structure over vigilance
 
-- **Model the domain.** *Stateful logic, heavy branching, or one assumption repeated across files.* Most applications hide state machines in scattered booleans. Find them and write them down as a structure: a state machine, a typed model, a table. Illegal states should be impossible to represent, and external data is parsed once at the boundary.
+- **Model the domain.** *Stateful logic, heavy branching, or one assumption repeated across files.* Most applications hide state machines in scattered booleans. Write them down as a structure: a state machine, a typed model, a table. An explicit state machine (states, events, transitions, a reducer or statechart) is the default for any stateful flow, not a refactor saved for when the booleans hurt; agents keep explicit logic straight where implied logic misleads them ([David Khourshid](https://x.com/DavidKPiano/status/2115452859713982540)). Illegal states should be impossible to represent, and external data is parsed once at the boundary.
+- **Verify the machines formally.** *A state machine whose order, concurrency or durability matters: a lifecycle, a protocol, a queue, a game or story system.* Specify it in TLA+ or another model checker and run the checker in the repository's verification, one formal-verification skill per major machine (pstack's `create-formal-verification-skill`). Tests sample paths; the checker covers every interleaving.
 - **Verifiable alone.** *Drawing a module boundary.* With agents writing most code, the property that matters most is that a module can be exercised and checked by itself, in the domain language its owner uses. Prefer that over small functions or low complexity scores.
 - **Separate before you serialize.** *Concurrent actors might write the same file, branch, key or object.* Remove the sharing first. Add a lock only for an invariant that truly spans them.
 - **Idempotent operations.** *Commands, lifecycle steps and loops that run amid crashes and retries.* Running one twice converges on the same end state.
-- **Encode the lesson.** *You are about to write the same instruction or fix the same mistake a second time.* Turn it into a lint, a type, a test or a script. If the fix can be structural, make only the structural fix; the instruction was the symptom.
+- **Encode the lesson.** *You found a bug, or you are about to write the same instruction or fix the same mistake a second time.* Every bug found becomes a lint rule, a type or a test that would have caught it, landed with the fix; a lint rule is the default because it guards every future file ([Lauren Tan](https://x.com/poteto/status/2117043478140276847)). If the fix can be structural, make only the structural fix; the instruction was the symptom.
+- **Put context in the path.** *Code with a constraint a reader cannot see from the code itself.* Name the constraint in the file path and let a lint rule enforce it there. Code that runs every frame or tick lives in a `.hot.ts` file, and a lint rule bans allocation in it (object literals, closures, `new`), so the hot loop makes no garbage. The path tells every agent the rule before it reads a line, and the lint keeps the rule true.
 - **Build the lever.** *Repetitive or wide work.* Write the codemod, generator or script that does or proves it. A reviewer can rerun a tool; they cannot rerun your afternoon.
 
 ## Evidence

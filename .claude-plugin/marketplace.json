@@ -17,6 +17,19 @@
       "license": "MIT"
     },
     {
+      "name": "pstack",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/cursor/plugins.git",
+        "path": "pstack",
+        "sha": "536a3352a050e47cb75f86be497ea304ef342301"
+      },
+      "description": "Lauren Tan's stage skills for the default flow: how, why, architect, arena, interrogate, poteto-mode, verification and formal-verification builders.",
+      "homepage": "https://github.com/cursor/plugins/tree/main/pstack",
+      "repository": "https://github.com/cursor/plugins",
+      "license": "MIT"
+    },
+    {
       "name": "impeccable",
       "source": {
         "source": "git-subdir",

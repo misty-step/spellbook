@@ -5,6 +5,10 @@ Records explain trade-offs; current method guidance lives in the
 
 ## Current
 
+- [0030](0030-five-stage-flow.md): Misty's loop is Lauren Tan's five stages
+  (understand, design, build, verify, ship); pstack returns as a SHA-pinned
+  companion pack, not vendored; principles add default state machines, formal
+  verification, bug-to-lint and context in the path. Refines 0026.
 - [0029](0029-agentic-verification-and-release-trains.md): standard `./scripts/check`
   contract (`fast <= 120s`, `verify <= 300s/shard`, `doctor`), fail-closed surface
   closures, check-authoring laws, coalesced `refs/heads/verified` trunk sweeps with
