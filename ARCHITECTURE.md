@@ -20,7 +20,7 @@ lists what was actually run.
 | Core | `rules/core.md` | Seven always-on lines. They route nontrivial work to `misty` (`rules/core.md:11`). |
 | Mode | `skills/misty/SKILL.md` | The method on one page, linking to each task skill (`skills/misty/SKILL.md:24`, `:108-134`). |
 | Harness notes | `skills/misty/harnesses/{any,claude,codex,pi,antigravity}.md` | The only place where per-harness mechanics are allowed. |
-| Roles and provisioning | `skills/ship-loop/roles.md` | Rigor tiers (`:8`), and since #716 the one provisioning card: model class and effort per agent role (`:23-66`). Concrete models are "host facts" kept outside Mistystack (`:26-29`). |
+| Roles and provisioning | `skills/ship-loop/roles.md` | Rigor tiers (`:8`); the Provisioning section points to the routing reference (`skills/misty/routing.md`), which holds models, tiers, harness facts and stall handoffs. |
 | Coordination | `skills/coordinator/SKILL.md`, `skills/coordinator/briefs.md` | One Herdr space per project with Ownership and Understanding tabs (`SKILL.md:23-35`), and copy-ready launch briefs (`briefs.md`). |
 | Recompile | `skills/recompile/SKILL.md`, `skills/recompile/grading.md` | Rebuild rounds and their grading protocol: gates, then classify and decide (`grading.md:9-56`). This is method only; no code in this repository runs it. |
 | Claude adapter | `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `adapters/claude/agents/*.md` | Skills, three rigor agents, and a SessionStart hook that injects the core. |
@@ -122,7 +122,7 @@ manifest version labels and the site. It does not gate plugin content.
    agents name the installed skill and pin a model
    (`adapters/codex/agents/rigor-*.toml:1-11`).
    Which model class and effort each agent gets is chosen from the
-   provisioning card (`skills/ship-loop/roles.md:23-66`). The harness note
+   routing reference (`skills/misty/routing.md`). The harness note
    says how to set them (`skills/misty/SKILL.md:76`).
 5. Explicit-only skills set `disable-model-invocation: true`. Codex does not
    honor that flag, so `recompile`, `setup-mistystack`, `coordinator` and
@@ -402,17 +402,15 @@ deviation. None is fixed on this branch.
     has no rollback or recovery step (inferred to be manual, `release-watch`).
 12. **Rigor models in the shipped agents.** #716 sharpened this question
     rather than settling it.
-    - `SPEC.md:60` and the provisioning card say critical work is "frontier,
-      never weaker than the dispatcher" (`skills/ship-loop/roles.md:46`).
-    - The Provisioning term says concrete models live in the host's card,
-      outside Mistystack (`SPEC.md:29`, `roles.md:26-29`).
-    - The Codex templates still ship a concrete model, `gpt-6.1-sol`, for all
-      three tiers, and standard and critical share `high` effort
-      (`adapters/codex/agents/rigor-*.toml:3-4`). The card says standard is
-      `medium` (`roles.md:45`).
+    - `SPEC.md:60` and the routing reference say critical work is "frontier,
+      never weaker than the dispatcher" (`skills/misty/routing.md`).
+    - The Codex templates still ship a concrete model, `gpt-6.1-sol` (a
+      workhorse), for all three tiers, and standard and critical share `high`
+      effort (`adapters/codex/agents/rigor-*.toml:3-4`). The reference says
+      standard is `medium`.
     - The Claude agents use `model: inherit`, so the light tier runs on the
-      session's model rather than the card's `fast` class (`roles.md:44`,
-      `adapters/claude/agents/rigor-light.md:4`).
+      session's model rather than a quick workhorse
+      (`adapters/claude/agents/rigor-light.md:4`).
 13. **Harness-neutral content.** Invariant 4 (`SPEC.md:48`) forbids naming
     host-specific tools in the shared tree. #715 adds more names: the
     coordinator now names Herdr spaces and tabs (`skills/coordinator/SKILL.md:23-35`)

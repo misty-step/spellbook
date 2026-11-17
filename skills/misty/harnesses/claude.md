@@ -75,7 +75,7 @@ chosen mapping works.
 
 ## Long turns
 
-[Provisioning](../../ship-loop/roles.md#provisioning) sets effort by role. During a long turn the
+The [routing reference](../routing.md) sets effort by role. During a long turn the
 model may go quiet between tool calls; that is expected for unattended work, and
 the closing report carries what the reader needs.
 
