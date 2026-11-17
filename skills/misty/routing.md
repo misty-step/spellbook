@@ -69,7 +69,7 @@ Treat every benchmark below as a vendor or third-party claim about its own task 
 
 ## Stalls and handoffs
 
-A seat is **stalled** when it hits a usage limit, crashes or errors, fails its lane readiness check, or shows no commits or progress events for 30 minutes. Slow but progressing is not stalled. (Phaedrus, 2026-11-17)
+A seat is **stalled** when it hits a usage limit, crashes or errors, fails its lane readiness check, or shows no commits or progress events for 30 minutes and an inspection of the running command confirms it is not progressing. Slow but progressing, including a long compile, is not stalled; see [watchdog](../watchdog/SKILL.md). (Phaedrus, 2026-11-17)
 
 - The agent that owns the work decides whether to switch; routers and sandboxes never do.
 - A handoff carries a distilled brief (decisions and why, dead ends, what is half done, the next step), full access to the stalled agent's raw session and trace, and the branch. The next seat reads the brief first and digs into the trace when the brief falls short.

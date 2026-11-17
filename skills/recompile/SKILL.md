@@ -40,7 +40,9 @@ calendar alone is never a reason to rewrite. Run a round when one of these fires
 2. **Start blank.** Before inspecting legacy implementation internals, describe
    the simplest system achievable with today's capabilities that satisfies
    `SPEC.md` (and `DESIGN.md` if kept). Name which new capability removes a
-   previous constraint. A rebuild seat sees only:
+   previous constraint. Every rebuild seat and grader runs on a model the
+   [routing reference](../misty/routing.md) strict rule allows. A rebuild seat
+   sees only:
    - `SPEC.md` at a pinned revision, and `DESIGN.md` only when the owner kept it;
    - a **runtime card**: the deploy target and the requirement to run on it
      through the production entry point, external interfaces, credential scope,
