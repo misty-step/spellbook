@@ -150,3 +150,54 @@ were changed. The repository's separate default-package inventory check uses
 fork-specific Pi flags; its preinstalled-fork inventory is not canonical Pi live
 proof. Contract tests use a fake Pi API and real shared CLI; real-session
 evidence is retained separately under `~/m1218/evidence/`.
+
+## Codex subagents
+
+Codex **0.169.0** documents `SubagentStop`; the existing `codex.json` already
+registers it alongside `Stop`. No new event or additional adapter is needed.
+The version-matched [upstream source](https://github.com/openai/codex/blob/d32063f96c2dff1dc96af839b3952abb6acfeda4/codex-rs/core/src/hook_runtime.rs#L383)
+dispatches `SubagentStop` for thread-spawned children and excludes internal /
+synthetic subagents. Its [input schema](https://github.com/openai/codex/blob/d32063f96c2dff1dc96af839b3952abb6acfeda4/codex-rs/hooks/schema/generated/subagent-stop.command.input.schema.json)
+includes `agent_id`, `session_id`, `stop_hook_active` and `model`.
+
+In the exercised runtime `session_id` is the parent ID; `agent_id` is the child
+session. The CLI maps Codex SubagentStop to **session=agent_id**, with
+`boundary=completion:<agent_id>` and `evidence=run:<agent_id>`. Missing child
+identity fails open rather than consuming the parent's guard. Other harness
+identity mappings are unchanged. Native model metadata now includes `model`.
+Parent Stop uses its own session/main guard; neither child completion nor its
+reflection can consume that guard. The private pre-ask guard survives repeated
+notifications, reloaded processes and failed capture. No transcript path or last
+message is inspected.
+
+Load the reviewed opt-in hooks as described above; no default plugin or operator
+configuration is changed. Real proof uses existing ChatGPT authentication,
+`gpt-6.1-sol`, inline native hooks, `codex --no-daemon exec`, and invocation-only
+hook-trust bypass. The `--no-daemon` flag is global (before `exec`). This covers
+bounded thread-spawned native children, not synthetic agents, crash/cancellation,
+provider errors or a final future turn. Delivery does not guarantee that a model
+classifies an obstacle as system friction or obeys capture/private-response prose.
+
+## Mistystack entry-point journeys
+
+The method entry points are `skills/*/SKILL.md`, exposed through native skill
+loading or universal installation; linked playbooks are procedures within them,
+not independent lifecycle events. Misty's loop now routes its bounded reporting
+step to [private friction](../../skills/misty/friction.md). It reuses the shared
+`ask <harness>` / `capture` completion brief, not a new hook, ledger or wrapper.
+If a native finish adapter is enabled, that adapter owns the ask instead.
+
+Covered by the instruction: **misty** and journeys that follow its loop through
+linked playbooks and return to reporting. Real-session qualification uses an
+isolated Codex 0.169.0 Agent Skills install and explicit Misty invocation, without
+finish hooks, so completion-brief delivery is exercised independently. Shared
+CLI tests cover positive, clean and retry/guard behavior; real evidence belongs
+to the MIS-1220 worker bundle.
+
+Not covered: direct invocation of other skills/commands that bypass Misty's loop,
+other harnesses' installed entry-point execution, nested skill calls as separate
+sessions, independently ending subagents without their own finish adapter,
+abandoned journeys, and open-ended chats' final future turns. This change does
+not automatically enable friction for every skill or install external storage.
+Runtime identity and required `FRICTION_STORAGE_MODULE` remain operator inputs;
+no default module path or storage implementation is added to Mistystack.

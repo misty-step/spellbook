@@ -157,3 +157,43 @@ test('Pi native agent_end: positive, clean, stable retry, persistent guard and f
   await rm(directory,{recursive:true,force:true});
  }
 });
+
+test('Codex native SubagentStop and Misty completion: isolated guards, attribution, clean and retry',async()=>{
+ const directory=await mkdtemp(tmpdir()+'/friction-codex-');
+ const env={...process.env,FRICTION_OUTBOX:directory,FRICTION_STORAGE_MODULE:directory+'/storage-stub.mjs'};
+ delete env.FRICTION_MODEL; delete env.FRICTION_DISABLED;
+ const run=(action,body)=>spawnSync(process.execPath,[cli,action,'codex'],{input:JSON.stringify(body),encoding:'utf8',env});
+ const template=result=>JSON.parse(JSON.parse(result.stdout).reason.split('Input: ')[1].split('. Do not put')[0]);
+ try {
+  await storageStub(env.FRICTION_STORAGE_MODULE);
+  const adapter=JSON.parse(await readFile(new URL('../../adapters/friction/codex.json',import.meta.url),'utf8'));
+  assert.deepEqual(adapter.hooks.SubagentStop,adapter.hooks.Stop);
+  const child={session_id:'parent-session',agent_id:'child-session',hook_event_name:'SubagentStop',model:'gpt-6.1-sol',transcript_path:'/must-not-read',agent_transcript_path:'/must-not-read',last_assistant_message:'must not copy'};
+  const brief=template(run('hook',child));
+  assert.equal(brief.session,'child-session'); assert.equal(brief.boundary,'completion:child-session');
+  assert.equal(brief.model,'gpt-6.1-sol'); assert.equal(brief.evidence,'run:child-session');
+  const answer={...brief,text:'The required workspace check command was missing.',impact:'Could not verify the workspace'};
+  const first=run('capture',answer),retry=run('capture',answer);
+  assert.equal(first.status,0); assert.deepEqual(JSON.parse(first.stdout),JSON.parse(retry.stdout));
+  assert.equal(run('hook',child).stdout,'');
+  assert.equal(run('hook',{session_id:'parent-session',hook_event_name:'SubagentStop'}).stdout,'');
+  const parent={session_id:'parent-session',hook_event_name:'Stop'};
+  assert(run('hook',parent).stdout); assert.equal(run('hook',parent).stdout,'');
+  assert.equal(run('hook',{...child,stop_hook_active:true,agent_id:'recursion'}).stdout,'');
+  const clean={...child,session_id:'clean-child',agent_id:'clean-child'};
+  assert(run('hook',clean).stdout); assert.equal(run('capture',{answer:false}).stdout,'');
+  // Entry journey calls the same ask boundary: no new layer or storage path.
+  const entry=template(run('ask',{session_id:'misty-seeded'}));
+  assert.equal(run('capture',{...answer,...entry,text:answer.text,impact:answer.impact}).status,0);
+  assert.equal(run('ask',{session_id:'misty-seeded'}).stdout,'');
+  assert(run('ask',{session_id:'misty-clean'}).stdout); assert.equal(run('capture',{answer:false}).status,0);
+  delete env.FRICTION_STORAGE_MODULE;
+  assert(run('hook',{...child,session_id:'failed',agent_id:'failed'}).stdout);
+  assert.equal(run('capture',{...answer,session:'failed'}).status,1);
+  assert.equal(run('hook',{...child,session_id:'failed',agent_id:'failed'}).stdout,'');
+  const records=await Promise.all((await readdir(directory)).filter(x=>x.endsWith('.json')).map(x=>readFile(directory+'/'+x,'utf8').then(JSON.parse)));
+  assert.equal(records.length,2);
+  assert.equal(records.filter(x=>x.session==='child-session').length,1);
+  assert.equal(records.filter(x=>x.session==='misty-seeded').length,1);
+ } finally {await rm(directory,{recursive:true,force:true});}
+});
