@@ -12,7 +12,7 @@ metadata:
 
 Pre-land affected proof → land directly → coalesced trunk sweep (`main → verified`) → pinned release train → deploy → verify live.
 The author proves the affected checks and running path before landing; CI and PR review bots never block PRs or merges. In repositories using machine pre-review for trusted direct push-to-main, the same pre-land checks and real-path proof precede push. Reconcile behavioral intent from
-[SPEC.md](../spec/SKILL.md) and link the repository's operational tracker from
+[SPEC.md](../define-product/SKILL.md) and link the repository's operational tracker from
 [Foundation article 2](../foundation/checklist.md#article-2) when an external
 or cross-repository issue exists.
 
@@ -32,7 +32,7 @@ and [watchdog](../watchdog/SKILL.md) for open-ended supervision.
 
 Implement the smallest complete change. Migrate every caller and delete obsolete
 paths. On UI and product-surface slices, reconcile both `SPEC.md`
-(implementation-free target state per [spec](../spec/SKILL.md)) and `DESIGN.md`
+(implementation-free target state per [define-product](../define-product/SKILL.md)) and `DESIGN.md`
 before proof. Before proving, [cut the draft](../misty/principles.md#cut-the-draft-before-proof):
 if it accumulated wrappers, parallel state or retained legacy code, rewrite it
 from first principles first. Open the PR body with a one-sentence `## Why` in the user's terms. Record

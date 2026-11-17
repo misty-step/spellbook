@@ -25,7 +25,7 @@ specification without ticket-backlog drift.
 ## Decision
 
 1. **One shared `spec` skill.** Author, consolidate and reconcile `SPEC.md`
-   through one maintained [spec](../../skills/spec/SKILL.md) skill rather than
+   through one maintained [define-product](../../skills/define-product/SKILL.md) skill rather than
    generating per-repository spec skills. Unlike per-app verification,
    spec-writing and drift reconciliation follow one universal method, with prose
    structure adapted freely to the program surface (narrative feel and journeys

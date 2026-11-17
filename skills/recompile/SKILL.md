@@ -11,7 +11,7 @@ metadata:
 
 # Recompile
 
-Rebuilding from [SPEC.md](../spec/SKILL.md) lets stronger models replace
+Rebuilding from [SPEC.md](../define-product/SKILL.md) lets stronger models replace
 accumulated scaffolding with a simpler design rather than patching old structure
 forever. A review may still conclude **no rebuild**.
 
@@ -27,7 +27,7 @@ calendar alone is never a reason to rewrite. Run a round when one of these fires
 - an incident whose root cause is inherited structure.
 
 1. **Recover target state and cutover choices.** Read the project's `SPEC.md`
-   ([spec](../spec/SKILL.md)), `docs/decisions/` and actual user evidence. Settle
+   ([define-product](../define-product/SKILL.md)), `docs/decisions/` and actual user evidence. Settle
    stale, missing or conflicting product intent in `SPEC.md` with the owner
    through [grilling](../grilling/SKILL.md) before designing, rather than treating
    legacy code as the authority. Anything worth keeping across a rebuild belongs

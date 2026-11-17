@@ -24,7 +24,7 @@ Verify the installed state:
 agy plugin list --json
 ```
 
-`mistystack` appears with `"enabled": true`, `"rules": ["core.md"]`, and all bundled skills including `misty` and `spec`.
+`mistystack` appears with `"enabled": true`, `"rules": ["core.md"]`, and all bundled skills including `misty` and `define-product`.
 
 ## Remote Agents (Antigravity Cloud) vs. Remote Control
 
@@ -46,5 +46,5 @@ For live web apps and browser QA, delegate directly to the built-in `browser` su
 
 ## Fresh-session proof
 
-1. Start a fresh Antigravity session in another repository and confirm the agent states its one-line goal and planned change before its first tool call (showing `rules/core.md` loaded) and can load the `spec` skill.
+1. Start a fresh Antigravity session in another repository and confirm the agent states its one-line goal and planned change before its first tool call (showing `rules/core.md` loaded) and can load the `define-product` skill.
 2. From a `mistystack` checkout with `agy` on `PATH`, run `./scripts/check plugin --strict` to verify isolated local installation in a disposable home directory.

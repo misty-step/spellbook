@@ -1,7 +1,7 @@
 [
   {"id":"shape-1","phase":"shaping","split":"tune","query":"I have a vague product idea. Ask me the hard questions before we commit to building it.","expected":["grilling","grill-me"]},
-  {"id":"shape-2","phase":"shaping","split":"tune","query":"We agreed on the product behavior. Write or update SPEC.md as our clean, implementation-free target state.","expected":["spec"]},
-  {"id":"shape-4","phase":"shaping","split":"holdout","query":"SPEC.md changed. Diff the specification against the running application and reconcile the drift to homeostasis.","expected":["spec"]},
+  {"id":"shape-2","phase":"shaping","split":"tune","query":"We agreed on the product behavior. Write or update SPEC.md as our clean, implementation-free target state.","expected":["define-product"]},
+  {"id":"shape-4","phase":"shaping","split":"holdout","query":"SPEC.md changed. Diff the specification against the running application and reconcile the drift to homeostasis.","expected":["define-product"]},
   {"id":"shape-5","phase":"shaping","split":"holdout","query":"Challenge this proposal using our actual repository docs, not assumptions.","expected":["grill-with-docs"]},
   {"id":"design-1","phase":"design","split":"tune","query":"Make this UI feel less generic. Improve its typography, spacing, and visual hierarchy.","expected":["impeccable","design"]},
   {"id":"design-2","phase":"design","split":"tune","query":"This CSS animation drops frames and stutters on phones. Find the performance problem.","expected":["animation-performance"]},

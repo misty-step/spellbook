@@ -38,8 +38,9 @@
 /library/skills/setup-mistystack/agents/ /library/skills/setup-mistystack/ 301
 /domain/ /spec/ 301
 /stories/ /spec/ 301
-/library/skills/to-spec/ /library/skills/spec/ 301
-/library/skills/to-tickets/ /library/skills/spec/ 301
+/library/skills/to-spec/ /library/skills/define-product/ 301
+/library/skills/to-tickets/ /library/skills/define-product/ 301
+/library/skills/spec/ /library/skills/define-product/ 301
 /library/playbooks/authoring-a-skill/ /library/misty/ 301
 /library/playbooks/autonomous-run/ /library/misty/ 301
 /library/playbooks/bug-fix/ /library/misty/ 301

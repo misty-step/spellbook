@@ -43,7 +43,7 @@ Do not use Mobbin.
    outside check that will prove the result. Review-only work produces findings;
    polish preserves identity; redesign replaces visual structure without silently
    changing product facts. When a redesign or UI change alters routes, views, user
-   flows or visual identity, reconcile [SPEC.md](../spec/SKILL.md) and
+   flows or visual identity, reconcile [SPEC.md](../define-product/SKILL.md) and
    `DESIGN.md` in the same slice. Done: the target surface, affected states and
    any spec or design updates are named.
 2. **Build or inspect.** Reuse tokens and components, and keep `DESIGN.md` in
