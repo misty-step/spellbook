@@ -1,0 +1,11 @@
+{
+  "misty-friction": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "node \"$FRICTION_CLI\" hook antigravity",
+        "timeout": 10
+      }
+    ]
+  }
+}
