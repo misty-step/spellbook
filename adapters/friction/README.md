@@ -90,3 +90,63 @@ This fallback depends on the agent following the task instruction. It does not
 cover abandoned/crashed sessions, automatic lifecycle delivery, future final
 turns of open-ended chats, or independently finishing native subagents. Neither
 capture nor ask reads transcripts or last messages.
+
+## Pi: native extension
+
+Reviewed **@mariozechner/pi-coding-agent 0.73.1**, 2026-11-17, from its
+installed README, `docs/extensions.md`, `examples/extensions/send-user-message.ts`
+and session-manager type declaration. The documented **agent_end** event fires
+once per user prompt, after the agent finishes its tool turns. The extension
+uses `sendMessage` with `triggerTurn: true`, `deliverAs: "followUp"` and
+`display: false` to deliver the private completion brief. It ignores the event
+payload entirely; it reads only session ID, working directory and runtime model
+metadata. It never reads messages, transcripts or session entries.
+See the [upstream extension API](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/extensions.md).
+
+Load explicitly without changing the default Mistystack package or operator
+settings:
+
+```sh
+pi --extension /ABSOLUTE/mistystack/adapters/friction/pi/index.ts
+```
+
+Set a private `FRICTION_OUTBOX` and the required `FRICTION_STORAGE_MODULE` to
+reviewed Supercortex storage before running. No storage implementation or default
+storage-module path is supplied here. The generic CLI already supports
+`hook pi`; its decision wrapper is consumed by this extension, not returned
+as a Pi hook protocol.
+
+The shared CLI claims its private persistent guard **before** the continuation.
+Only the first bounded completion in a session can ask; the reflection's own
+agent_end, subsequent prompts, reloaded extensions and capture failures cannot
+ask again. Clean answers write nothing. This is not a final-future-turn hook.
+Shutdown, cancellation, crashes, provider failure and independent subagents are
+not qualified. Hidden delivery is a Pi UI flag, not a promise that a model will
+keep its answer out of the user response.
+
+Native delivery was exercised in **Pi 0.73.1 RPC mode** with the existing
+OpenAI Codex OAuth subscription and custom model ID `gpt-6.1-sol` (accepted by
+Pi despite being absent from its bundled model catalog). The client kept the
+process alive through the task's agent_end and the reflection's agent_end.
+Seeded validation hit a missing required system command and captured one
+`harness=pi` observation; clean shell arithmetic captured none. Replaying the
+seeded capture returned the same ID without modifying the stored file; replaying
+its hook produced no new brief. These runs used externally pinned Supercortex
+storage and local-only outboxes, with no upload.
+
+**Do not rely on `pi --print` for this asynchronous adapter in the reviewed
+version.** A retained print-mode attempt claimed the guard but exited before
+delivering reflection; the successful qualification used persistent RPC transport.
+Interactive delivery is documented by the same API but was not separately
+exercised. A prior RPC missing-input task also yielded no observation: delivery
+does not guarantee that a model judges a particular obstacle to be system
+friction. All failed/superseded attempts remain attributed in the worker-local
+MIS-1218 evidence, not counted as successful seeded proof.
+
+Earlier readiness attempts used unsupported Codex model IDs or Anthropic's
+funding-gated extra usage; they were superseded by successful subscription-only
+`gpt-6.1-sol` readiness. No credentials, model definitions or billing settings
+were changed. The repository's separate default-package inventory check uses
+fork-specific Pi flags; its preinstalled-fork inventory is not canonical Pi live
+proof. Contract tests use a fake Pi API and real shared CLI; real-session
+evidence is retained separately under `~/m1218/evidence/`.
