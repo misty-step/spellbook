@@ -24,14 +24,14 @@ Primitives: [compose small programs, deep modules and deeper, not bigger](../mis
 
 2. **One home per fact.** Every fact has one authoritative home that everything else references; no code keeps copies in sync. `SPEC.md` is the single authority for product intent, domain vocabulary (`## Terms`), invariants and observable behavior; every new domain concept is defined there first so files, symbols, branches and commits use one word. On UI projects, `DESIGN.md` owns visual craft and tokens. Architecture, stack exceptions and postmortems stay in repo decision records beside the code they explain; agent instructions add only local constraints and pointers. Operational trackers (Linear for Misty Step; Habitat for R90 work; Powder remains a read-only historical archive) hold external incidents, cross-repo dependencies or commissioned operational items where needed, never a second spec or decomposed feature backlog.
 
-Primitives: [spec](../spec/SKILL.md), [subtract first and encode the lesson](../misty/principles.md).
+Primitives: [define-product](../define-product/SKILL.md), [subtract first and encode the lesson](../misty/principles.md).
 
 <a id="article-3"></a>
 <a id="3"></a>
 
 3. **Specified.** Each program's living `SPEC.md` states the desired present-tense target state completely enough to rebuild the program if all code vanished: purpose, domain terms and invariants, product experience, interaction feel and hierarchy (or explicit CLI/API contracts), user capabilities and business or trust rules — omitting architecture, tech stack, storage schemas, internal modules, file paths, model names and build status. `SPEC.md` matching the live running product is homeostasis: work reconciles drift directly rather than copying requirements into a ticket backlog, and genuine intent conflicts go to the owner. Architecture and stack rationale stay in linked repo decision records.
 
-Primitives: [spec](../spec/SKILL.md) and [model the domain](../misty/principles.md).
+Primitives: [define-product](../define-product/SKILL.md) and [model the domain](../misty/principles.md).
 
 <a id="article-4"></a>
 <a id="4"></a>
