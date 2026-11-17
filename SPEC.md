@@ -116,3 +116,15 @@ Private fleet runtime setup, credentials, host automation and operator schedulin
 ## Decision records
 
 Stack exceptions, deployment commissions and historical choices live in [decision records](docs/decisions/index.md), including static publishing ([ADR 0018](docs/decisions/0018-static-publishing-stack.md)), live verification and release gating ([ADR 0023](docs/decisions/0023-live-verification-and-release-gate.md)), semantic skill discovery ([ADR 0025](docs/decisions/0025-skill-finder-worker.md)), the one-page method ([ADR 0026](docs/decisions/0026-one-page-method.md)), dropping OMP ([ADR 0027](docs/decisions/0027-drop-omp.md)), specification-driven homeostasis ([ADR 0028](docs/decisions/0028-spec-drives-the-application.md)) and agentic verification, surface closures and release trains ([ADR 0029](docs/decisions/0029-agentic-verification-and-release-trains.md)).
+
+## Portable friction capture
+
+At one guarded bounded-work completion per session (and independent native subagent
+completion where available), privately ask whether the system annoyed or hindered
+the agent. Only a concrete positive answer becomes a size-bounded, secret-screened
+observation with stable identity, project/session/harness/model, UTC time, evidence
+pointer, impact and business/personal domain. Negative answers write no observation.
+Retries do not duplicate an observation. Capture failure never restarts reflection.
+Universal completion briefs use the same contract; native hooks are conveniences,
+with unsupported lifecycle boundaries explicitly reported. Storage and service
+collection authorization belong to the context service, not the portable method.
