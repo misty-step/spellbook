@@ -49,7 +49,7 @@ supply the method to every adapter.
    reasoning levels and existing assignments without exposing credentials. A
    catalog entry or shipped template is not proof of provider entitlement. Keep
    usable existing choices; carry settled budget choices forward. Choose model
-   class and effort from [provisioning](../ship-loop/roles.md#provisioning).
+   and effort from the [routing reference](../misty/routing.md).
    Then ask for missing budget or provider choices together. The matching note's dispatch and rigor
    section says what is assignable in that harness, including harnesses that run
    rigor inline.

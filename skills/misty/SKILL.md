@@ -73,7 +73,7 @@ A subagent starts with none of your context, returns a summary instead of the ev
 
 Keep code-coupled work (one feature, one migration) with one owner. Do not delegate a lookup you could finish in a few tool calls. Do not ask an agent to review work in the abstract when you could run it instead: spend those tokens on the real-path check, or on a formal check where order, concurrency or durability matter.
 
-A strong model plans, briefs and integrates; a fast, cheap one can carry out a slice that is fully specified. The [rigor tier](../ship-loop/roles.md#rigor) of the changed path selects the role, [provisioning](../ship-loop/roles.md#provisioning) picks the model class and effort for each agent, and your harness note says how to set them.
+A strong model plans, briefs and integrates; a fast, cheap one can carry out a slice that is fully specified. The [rigor tier](../ship-loop/roles.md#rigor) of the changed path selects the role, the [routing reference](routing.md) picks the model, harness and effort for each agent and says what to do when one stalls, and your harness note says how to set them.
 
 Give each writer its own worktree and branch, and each shared resource one writer. Start new work in a fresh subagent with the whole scope restated: resumed agents lose instructions. You own what a subagent produces, so read its diff and its evidence, not its summary.
 
