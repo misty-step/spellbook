@@ -22,7 +22,7 @@ The method runs on any harness that reads Agent Skills and an always-on instruct
 4. **Cut the draft.** A first draft records how you found the solution, not the solution. Before proving it, [review it for complexity](principles.md#cut-the-draft-before-proof): delete what the change replaces, collapse parallel controls and state, call existing boundaries directly, and rewrite it from scratch if it is bloated.
 5. **Prove.** Run the check from step 2 on the built, running product. A unit suite, a mock or a subagent's summary does not replace it.
 6. **Ship.** [Ship-loop](../ship-loop/SKILL.md) owns delivery: the author proves and merges, the release has one gate, and [release-watch](../release-watch/SKILL.md) proves it live.
-7. **Report.** See [Reporting](#reporting).
+7. **Report.** At bounded completion, follow [private friction feedback](friction.md), then [Reporting](#reporting).
 
 Some tasks have a shape worth naming:
 

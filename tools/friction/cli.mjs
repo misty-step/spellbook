@@ -32,11 +32,14 @@ try {
   }
  } else if(action==='hook' || action==='ask') {
   if(process.env.FRICTION_DISABLED==='1' || data.stop_hook_active || data.hook_event_name==='SessionEnd' || (harness==='antigravity' && data.fullyIdle!==true)) process.exit(0);
-  const session=data.session_id || data.sessionId || data.conversationId;
+  // Codex SubagentStop carries the parent session_id; agent_id owns the
+  // independently finishing child's session. Never inspect transcript paths.
+  const codexChild=harness==='codex' && data.hook_event_name==='SubagentStop';
+  const session=codexChild ? data.agent_id : data.session_id || data.sessionId || data.conversationId;
   if(typeof session!=='string' || !session || session.length>300) throw Error('missing session id');
   const agent=data.agent_id || data.agentId || 'main';
   if(!await once([harness,session,agent])) process.exit(0);
-  const template={answer:true,harness,session,boundary:'completion:'+agent,project:process.env.FRICTION_PROJECT||data.cwd||data.workspacePaths?.[0]||'unknown',model:process.env.FRICTION_MODEL||data.modelName||'unknown',collection:process.env.FRICTION_COLLECTION||'business',evidence:'run:'+session,impact:'<concrete consequence>',text:'<concrete positive answer>'};
+  const template={answer:true,harness,session,boundary:'completion:'+agent,project:process.env.FRICTION_PROJECT||data.cwd||data.workspacePaths?.[0]||'unknown',model:process.env.FRICTION_MODEL||data.model||data.modelName||'unknown',collection:process.env.FRICTION_COLLECTION||'business',evidence:'run:'+session,impact:'<concrete consequence>',text:'<concrete positive answer>'};
   const reason=`Privately reflect once: ${question} If no, write nothing. If yes, write one JSON line (replace placeholders) to: node ${JSON.stringify(resolve(process.argv[1]))} capture. Input: ${JSON.stringify(template)}. Do not put the reflection in the user response. Capture is best effort: finish even if it fails; do not retry reflection or invoke another agent. Never include secrets or transcript bodies.`;
   console.log(JSON.stringify({decision:harness==='antigravity'?'continue':'block',reason}));
  } else throw Error('use capture | hook HARNESS | ask HARNESS (JSON stdin)');
