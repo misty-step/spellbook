@@ -8,7 +8,7 @@ Every claim carries a date and a tag:
 - **observed**: something seen on our own runs, not counted.
 - **opinion**: a preference, with whose it is.
 
-Owner: Karn. Hopper feeds run data. Reviewed weekly; last review 2026-11-17 (first draft). Source decision: [MIS-1249](https://linear.app/misty-step/issue/MIS-1249), accepted 2026-11-17.
+Owner: Karn. Hopper feeds run data. Reviewed weekly; last review 2026-11-17 (second draft, grounded in sources from 2026-10-17 to 2026-11-17). Source decision: [MIS-1249](https://linear.app/misty-step/issue/MIS-1249), accepted 2026-11-17.
 
 ## The strict rule
 
@@ -17,22 +17,37 @@ Recompiles run only on GPT-6 Astra, Fable 5.2 or Gemini 4 Carbon, and their grad
 ## Model tiers
 
 - **Frontier:** GPT-6 Astra, Fable 5.2, Gemini 4 Carbon. Use them for coordination, orchestration, strategy, planning, system design, architecture, release review, second opinions and other high-leverage, mission-critical work. (opinion, Phaedrus, 2026-11-17)
-- **Workhorse:** GPT-6.1 Sol, Opus 5.5, Gemini 4 Argon, Gemini 4 Hydrogen. Use them for most implementation. Hydrogen is quick on simple tasks. (opinion, Phaedrus, 2026-11-17)
+- **Workhorse:** GPT-6.1 Sol, Opus 5.5, Gemini 4 Argon, Gemini 4 Hydrogen. Use them for most implementation. (opinion, Phaedrus, 2026-11-17)
 - Sonnet 5.5 and GPT-6.1 Terra are left out of routing. (opinion, Phaedrus, 2026-11-17)
-- Frontier capacity is for frontier work, so a workhorse slice that stalls moves to another workhorse before it moves up a tier, unless the slice turned out harder than briefed. (opinion, inferred from the tier split, 2026-11-17)
+- **New today, not yet routed:** OpenAI released GPT-6.2 Astra and GPT-6.2 Sol on 2026-11-17. OpenAI says 6.2 Astra beats 6 Astra at under a third of the cost per task with 20% lower token prices ($8/$40), and 6.2 Sol comes within 0.5 points of 6.2 Astra on FrontierCode 2.0 at about a fifth of the cost, at 6.1 Sol's prices. (measured, vendor, 2026-11-17) The tiers keep the 6 and 6.1 models until Phaedrus decides; the recompile rule names GPT-6 Astra.
+- A stalled workhorse slice moves to another workhorse before it moves up to Frontier, unless the slice turned out harder than briefed. Frontier capacity is for frontier work. (Phaedrus, 2026-11-17)
+
+What the vendors say about each workhorse (all vendor claims, not reproduced):
+
+- **GPT-6.1 Sol** is the default workhorse for code. OpenAI says it matches Astra on DeepSWE 1.1 at about a fifth of the cost; it costs $2/$10 per million tokens against Astra's $10/$50. (measured, vendor, 2026-11) Sol 6.1 at medium had the cheapest SlopCodeBench run with the same strict count as Astra at medium. (measured, external, 2026-10-27)
+- **Gemini 4 Hydrogen** (released 2026-11-12) is the fast Gemini worker. Google rates it above Argon on the Artificial Analysis index (51 against 50 at its default high thinking), at $1.50/$7.50 per million tokens, and pitches it as the worker under a Carbon coordinator. (measured, vendor, 2026-11-12) Prefer Hydrogen over Argon for Gemini implementation slices; Google also says Argon "remains the ideal choice for the majority of software engineering", and Carbon now costs the same as Argon ($2/$10), so a Carbon frontier seat costs no more per token than an Argon workhorse seat. (measured, vendor, 2026-11-10)
+- **Opus 5.5** costs $4/$20 per million tokens, half of Fable 5.2's $8/$40. Anthropic says Fable 5.2 at high effort matches Opus 5.5's best FrontierCode 2.0 score at about half the cost per task. (measured, vendor, 2026-11-09) If that holds on our runs, Fable 5.2 at medium or high may be the cheaper Claude seat for hard slices; Hopper's run data decides. (opinion, Karn, 2026-11-17)
 
 ## Seats by task kind
 
-| Work | Tier | Effort | Why |
+| Work | Tier and seat | Effort | Why |
 | --- | --- | --- | --- |
-| Chief of staff, project owner, planning, architecture | Frontier | high when unattended, medium when interactive | Mistakes here multiply through every slice below. |
+| Chief of staff, project owner, planning, architecture, bugs with unknown cause | Frontier | high | Mistakes here multiply through every slice below, and this is where vendors and users still find high pays. |
 | Critical-tier build (auth, money, data integrity, migrations, deploys, shared infrastructure) | Frontier, never weaker than the dispatcher | high | The cost of a miss is larger than the tokens. |
 | Release review, second opinion, recompile grading | Frontier, other family than the author | high | Same-family review repeats the author's blind spots. |
-| Standard implementation with a clear brief | Workhorse | medium | A clear brief carries the judgment. |
-| Fully specified small slice, lookup, readback | Workhorse, Hydrogen where it fits | low | Speed matters more than depth. |
-| Visual design | Claude Code first, Antigravity second, Codex and Prime Agent tied third | medium | Phaedrus's taste ranking. (opinion, Phaedrus, 2026-11-17) |
+| Standard implementation with a clear brief | Workhorse, Sol first | medium | A clear brief carries the judgment; Sol is near-Astra at a fifth of the price. |
+| Fully specified small slice, lookup, readback | Workhorse, Hydrogen or Sol | low | Speed matters more than depth. |
+| Coordinator with parallel workers | Frontier coordinator, workhorse workers (for Gemini, Carbon over Hydrogen) | coordinator high, workers medium | Google measured near-Carbon success with 24% less quota using this split in Antigravity's Orchestrator. (measured, vendor, 2026-11-12) |
+| Visual design | Claude Code first, Antigravity second, Codex and Prime Agent tied third | medium | Phaedrus's taste ranking. (opinion, Phaedrus, 2026-11-17) One hands-on review rated Antigravity's UI and UX best, with Claude Code close on visual design. (opinion, external, 2026-11-16) |
 
-Effort defaults (opinion, carried over from the earlier provisioning card, 2026-11-17): interactive work starts at medium, long unattended work at high, fully specified slices at low. Set effort in the harness's native configuration; prompt wording does not change how much a model thinks.
+## Effort
+
+- **Start at medium; raise it only for a reason.** Across 63 paired comparisons on 40 model and effort settings, lower effort was never significantly worse than higher effort on the same model, and was significantly better in six. (measured, OptiFlume, 2026-11-03) Higher effort also loses tasks that lower effort solved, and spends more on tasks every level solves. (measured, arXiv 2610.34491, 2026-10-25)
+- **Long unattended runs default to medium, not high.** The old card said high; the evidence says high rarely pays for itself, and time limits punish it. Use high for the frontier rows above. (opinion, Karn, from the sources below, 2026-11-17)
+- **Never use max as a default.** Max was the worst or tied-worst level for 5 of 7 models, mostly from running out of time, and cost 1.6 to 13.9 times the best-value level. (measured, OptiFlume, 2026-11-03) Anthropic warns max "may show diminishing returns and is prone to overthinking." (opinion, vendor, 2026-11)
+- **xhigh only after a measured gain on our own tasks.** On SlopCodeBench, Astra and Sol did gain from xhigh while Opus 5.5 did not (28 strict passes at medium against 25 at xhigh), though that gap is within noise (p = 0.25). (measured, external, 2026-10)
+- **Per-model starting points from the vendors:** OpenAI suggests Astra at low and Sol at the client's default; effort levels don't map between model generations, so re-test a familiar task. (opinion, vendor, 2026-11) Fable 5.2's API default is high, but Claude Code starts it at medium; Opus 5.5 defaults to medium. (observed, vendor docs, 2026-11-09)
+- Set effort in the harness's native configuration (Claude Code keeps it per model in `modelSettings`); prompt wording does not change how much a model thinks. (observed, 2026-11)
 
 ## Harnesses
 
@@ -43,13 +58,12 @@ Effort defaults (opinion, carried over from the earlier provisioning card, 2026-
 
 ## Benchmarks
 
-**SlopCodeBench, October 2026** ([write-up](https://x.com/dexhorthy/status/2115115507183685850), [benchmark](https://scbench.ai), read 2026-11-17). Each model extends one Python codebase through three to eight checkpoints of changing requirements; strict pass means every new and regression test passes.
+Treat every benchmark below as a vendor or third-party claim about its own task mix. None was reproduced here.
 
-- Astra at xhigh had the most strict passes, 16.3%, two checkpoints ahead of Sol 6.1 at medium. Frontier models ranged 12.2% to 16.3% strict and 65.8% to 74.0% core. (measured, external)
-- Higher effort cost 2.11 to 4.22 times as much as medium and did not reliably buy strict passes. Opus 5.5 scored 28 strict at medium and 25 at xhigh. Astra and Sol did improve at xhigh. (measured, external)
-- Sol 6.1 at medium was the cheapest run, $178.51, with the same strict count as Astra at medium; Fable cost about 8.68 times as much with three fewer strict passes. (measured, external)
-- What it predicts: how well a model keeps a codebase working as requirements change, and what extra effort buys on that. What it does not: our task mix, harness differences, design quality, or run-to-run variance (one campaign per setting).
-- So: default workhorse coding to medium effort; reach for xhigh only on Astra or Sol, and only where a slice's result justifies the cost. (opinion, Karn, 2026-11-17)
+- **SlopCodeBench, October 2026.** Each model extends one Python codebase through three to eight checkpoints of changing requirements; strict pass means every new and regression test passes. Astra at xhigh led at 16.3% strict; frontier models ranged 12.2% to 16.3% strict and 65.8% to 74.0% core. One campaign per setting, so run-to-run variance is unknown. It predicts how well a model keeps a codebase working as requirements change; it does not predict our task mix, harness differences or design quality. (measured, external, 2026-10-27)
+- **Anthropic's Fable 5.2 table.** Fable 5.2 leads 10 of 11 rows, including FrontierCode 2.0 (49.1% at xhigh against Opus 5.5 45.5%, Astra 42.8%, Carbon 41.1% at medium) and FrontierSWE v2 (69.9% against Astra 65.5%); Carbon leads AutomationBench (53.9%). Gaps are single digits and effort settings differ by column. (measured, vendor, 2026-11-09)
+- **OpenAI's GPT-6.1 Sol post.** Sol matches Astra on DeepSWE 1.1 at about a fifth of the cost and comes within 2.1 points of Astra on OSWorld 2.0. (measured, vendor, 2026-11)
+- **OptiFlume effort study.** 820 Terminal-Bench 2.0 runs, 20 tasks, mostly through Claude Code; Codex was not measured. It predicts the shape of the effort curve; it does not rank models finely (intervals of about ±20 points). (measured, external, 2026-11-03)
 
 ## Stalls and handoffs
 
@@ -66,3 +80,21 @@ A seat is **stalled** when it hits a usage limit, crashes or errors, fails its l
 ## Run data
 
 Hopper appends dated, measured results from our own runs here: task kind, seat, outcome, cost and duration. None yet.
+
+## Sources
+
+All read 2026-11-17.
+
+- [SlopCodeBench October 2026 write-up](https://x.com/dexhorthy/status/2115115507183685850) and [the benchmark](https://scbench.ai), 2026-10.
+- [Medium beat xhigh for Opus 5.5 on SlopCodeBench: the noise floor](https://yongboyu.hashnode.dev/medium-beat-xhigh-for-opus-5-5-on-slopcodebench-cost-per-pass-the-noise-floor-and-an-effort-a-b-for-your-repo), undated, after 2026-10-27.
+- [Is xhigh reasoning effort worth it for a coding agent?](https://stackness.dev/blog/is-xhigh-reasoning-effort-worth-it-coding-agent-slopcodebench-numbers), 2026-10-27.
+- [What Effort Level Should I Choose? On the Economics of Reasoning Effort in LLM Agents](https://arxiv.org/pdf/2610.34491), 2026-10-25.
+- [Coding agent benchmark: 820 runs on models and effort](https://optiflume.ai/learn/model-benchmark-study), OptiFlume Research, 2026-11-03.
+- [Introducing Claude Fable 5.2 and Claude Mythos 5.2](https://www.anthropic.com/claude-fable-and-mythos-5-2), Anthropic, 2026-11-09, and [Fable 5.2 model overview](https://platform.claude.com/docs/en/models/fable-5-2/overview).
+- [Claude Fable 5.2 vs Opus 5.5, GPT-6 Astra, Gemini 4 Carbon](https://ahmetbalaman.com/en/blog/claude-fable-5-2-vs-opus-5-5-vs-gpt-6-astra-vs-gemini-4-carbon-en/), 2026-11-12 (compiles Anthropic's table).
+- [Introducing GPT-6.1 Sol](https://openai.com/index/introducing-gpt-6-1-sol/), OpenAI, 2026-11.
+- [Introducing Gemini 4 Hydrogen](https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-4-hydrogen/), Google DeepMind, 2026-11-12.
+- [I made Claude Code, Codex, and Antigravity work together on one project](https://www.xda-developers.com/made-claude-code-codex-antigravity-work-together-on-one-project-instead-of-competing/), XDA, 2026-11-02.
+- [I challenged VS Code, Claude Code, and Google Antigravity to build an app in an hour](https://www.xda-developers.com/challenged-vs-code-claude-code-google-antigravity-build-app-hour/), XDA, 2026-11-16.
+- [Introducing GPT-6.2 Astra and Sol](https://openai.com/index/introducing-gpt-6-2-astra-sol/), OpenAI, 2026-11-17.
+- [Gemini 4 Carbon is now available](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-4-carbon-now-available/), Google, 2026-11-10.
