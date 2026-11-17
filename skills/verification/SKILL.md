@@ -48,7 +48,11 @@ injected fault, then passing on the candidate.
 - CLI/library/internal change: exercise the real consumer or composition boundary.
 
 For a defect, trace its mechanism and fix the failure class at the highest layer
-that can hold it: structure, automated check, guidance, then human review. Use
+that can hold it: structure, automated check, guidance, then human review.
+Triage each bug you find outside the request: score how often it would happen
+and how bad it would be, 1 to 10 each. Below a product of 5 (the repository's
+verification skill may tune it), file an issue and leave the code alone; never
+design for rare or future cases nobody asked about. Use
 [test-audit](../test-audit/SKILL.md) to retain one primary proof per consumer
 contract inside zero-sum `./scripts/check` budgets (`<= 120s` `fast`, `<= 300s`
 per `verify` surface or shard).
