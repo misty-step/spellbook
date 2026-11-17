@@ -49,13 +49,7 @@ test('Prime completion brief: positive capture, clean silence, stable retry and 
  // No pre-existing storage fixture exists in this suite. Inject a test-only
  // ID-keyed sink through the same external module boundary as production.
  env.FRICTION_STORAGE_MODULE=directory+'/storage-stub.mjs';
- await writeFile(env.FRICTION_STORAGE_MODULE,`
-  import {writeFile} from 'node:fs/promises';
-  export async function putObservation(record,directory) {
-   try {await writeFile(directory+'/'+record.id+'.json',JSON.stringify(record),{flag:'wx'});}
-   catch(e) {if(e.code!=='EEXIST') throw e;}
-  }
- `);
+ await storageStub(env.FRICTION_STORAGE_MODULE);
  delete env.FRICTION_MODEL;
  const run=(args,body)=>spawnSync(process.execPath,[cli,...args],{input:JSON.stringify(body),encoding:'utf8',env});
  try {
@@ -89,4 +83,77 @@ test('missing external storage rejects capture without clearing the Prime prompt
   assert.equal(run('ask',{session_id:'failure'}).stdout,'');
   assert.deepEqual((await readdir(directory)).filter(x=>x.endsWith('.json')),[]);
  } finally {await rm(directory,{recursive:true,force:true});}
+});
+
+async function storageStub(path) {
+ await writeFile(path,`
+  import {writeFile} from 'node:fs/promises';
+  export async function putObservation(record,directory) {
+   try {await writeFile(directory+'/'+record.id+'.json',JSON.stringify(record),{flag:'wx'});}
+   catch(e) {if(e.code!=='EEXIST') throw e;}
+  }
+ `);
+}
+
+import piFriction from '../../adapters/friction/pi/index.ts';
+
+test('Pi native agent_end: positive, clean, stable retry, persistent guard and failure',async(t)=>{
+ const directory=await mkdtemp(tmpdir()+'/friction-pi-');
+ const original={...process.env};
+ process.env.FRICTION_OUTBOX=directory;
+ process.env.FRICTION_STORAGE_MODULE=directory+'/storage-stub.mjs';
+ delete process.env.FRICTION_MODEL; delete process.env.FRICTION_DISABLED;
+ const run=(action,body)=>spawnSync(process.execPath,[cli,action,'pi'],{
+  input:JSON.stringify(body),encoding:'utf8',env:process.env});
+ try {
+  await storageStub(process.env.FRICTION_STORAGE_MODULE);
+  const handlers={},sent=[];
+  piFriction({on:(name,handler)=>handlers[name]=handler,
+   sendMessage:(message,options)=>sent.push({message,options})});
+  assert.deepEqual(Object.keys(handlers),['agent_end']);
+  const ctx=session=>({cwd:'scratch',model:{provider:'test',id:'model'},
+   sessionManager:{getSessionId:()=>session}});
+  // Any attempt to inspect event messages/transcripts fails this test.
+  const event=new Proxy({}, {get:()=>{throw Error('must not read messages');}});
+  await handlers.agent_end(event,ctx('pi-seeded'));
+  assert.equal(sent.length,1);
+  assert.equal(sent[0].message.display,false);
+  assert.deepEqual(sent[0].options,{triggerTurn:true,deliverAs:'followUp'});
+  const template=JSON.parse(sent[0].message.content.split('Input: ')[1].split('. Do not put')[0]);
+  assert.equal(template.harness,'pi');
+  assert.equal(template.session,'pi-seeded');
+  assert.equal(template.model,'test/model');
+  const answer={...template,impact:'Blocked the requested check',
+   text:'The referenced configuration file was missing.'};
+  const first=run('capture',answer),retry=run('capture',answer);
+  assert.equal(first.status,0); assert.equal(retry.status,0);
+  assert.deepEqual(JSON.parse(first.stdout),JSON.parse(retry.stdout));
+  await handlers.agent_end(event,ctx('pi-seeded'));
+  // Reconstruct the extension: no in-memory flag can satisfy the guard.
+  piFriction({on:(name,handler)=>handlers[name]=handler,
+   sendMessage:message=>sent.push({message})});
+  await handlers.agent_end(event,ctx('pi-seeded'));
+  assert.equal(sent.length,1);
+  await handlers.agent_end(event,ctx('pi-clean'));
+  assert.equal(sent.length,2);
+  assert.equal(run('capture',{answer:false,harness:'pi'}).status,0);
+  delete process.env.FRICTION_STORAGE_MODULE;
+  await handlers.agent_end(event,ctx('pi-failure'));
+  assert.equal(run('capture',{...answer,session:'pi-failure'}).status,1);
+  await handlers.agent_end(event,ctx('pi-failure'));
+  assert.equal(sent.length,3);
+  process.env.FRICTION_DISABLED='1';
+  await handlers.agent_end(event,ctx('pi-disabled'));
+  assert.equal(sent.length,3);
+  const records=(await readdir(directory)).filter(x=>x.endsWith('.json'));
+  assert.equal(records.length,1);
+  const saved=JSON.parse(await readFile(directory+'/'+records[0],'utf8'));
+  assert.equal(saved.harness,'pi'); assert.equal(saved.id,JSON.parse(first.stdout).id);
+  assert.equal((await readdir(directory+'/guards')).length,3);
+  t.diagnostic(JSON.stringify({kind:'contract-only',seeded:{count:1,id:saved.id},clean:{count:0,ids:[]},retry:{total:1,additional:0,id:saved.id}}));
+ } finally {
+  for(const key of Object.keys(process.env)) if(!(key in original)) delete process.env[key];
+  Object.assign(process.env,original);
+  await rm(directory,{recursive:true,force:true});
+ }
 });

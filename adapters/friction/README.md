@@ -90,3 +90,42 @@ This fallback depends on the agent following the task instruction. It does not
 cover abandoned/crashed sessions, automatic lifecycle delivery, future final
 turns of open-ended chats, or independently finishing native subagents. Neither
 capture nor ask reads transcripts or last messages.
+
+## Pi: native extension (real-session qualification blocked)
+
+Reviewed **@mariozechner/pi-coding-agent 0.73.1**, 2026-11-17, from its
+installed README, `docs/extensions.md`, `examples/extensions/send-user-message.ts`
+and session-manager type declaration. The documented **agent_end** event fires
+once per user prompt, after the agent finishes its tool turns. The extension
+uses `sendMessage` with `triggerTurn: true`, `deliverAs: "followUp"` and
+`display: false` to deliver the private completion brief. It ignores the event
+payload entirely; it reads only session ID, working directory and runtime model
+metadata. It never reads messages, transcripts or session entries.
+See the [upstream extension API](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/extensions.md).
+
+Load explicitly without changing the default Mistystack package or operator
+settings:
+
+```sh
+pi --extension /ABSOLUTE/mistystack/adapters/friction/pi/index.ts
+```
+
+Set a private `FRICTION_OUTBOX` and the required `FRICTION_STORAGE_MODULE` to
+reviewed Supercortex storage before running. No storage implementation or default
+storage-module path is supplied here. The generic CLI already supports
+`hook pi`; its decision wrapper is consumed by this extension, not returned
+as a Pi hook protocol.
+
+The shared CLI claims its private persistent guard **before** the continuation.
+Only the first bounded completion in a session can ask; the reflection's own
+agent_end, subsequent prompts, reloaded extensions and capture failures cannot
+ask again. Clean answers write nothing. This is not a final-future-turn hook.
+Shutdown, cancellation, crashes, provider failure and independent subagents are
+not qualified. Hidden delivery is a Pi UI flag, not a promise that a model will
+keep its answer out of the user response.
+
+Native delivery is documented and contract-tested with a fake Pi API and real
+shared CLI; **no successful real model session has been demonstrated here**.
+Readiness attempts using existing OAuth failed: Codex rejected the tested model
+IDs for the account and Anthropic required funded extra usage. No credentials or
+billing were changed. Do not treat the contract tests as live lifecycle proof.
