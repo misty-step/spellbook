@@ -9,8 +9,10 @@ Native hook integration is opt-in, not installed into the operator's profile by 
 {"answer":true,"harness":"other","session":"run-1","boundary":"completion:main","project":"project-name","model":"unknown","collection":"business","evidence":"run:run-1","impact":"Blocked verification","text":"The configured check executable was missing from the worker."}
 ```
 
-Set `FRICTION_STORAGE_MODULE` to the absolute path of Supercortex
-`tools/friction/storage.mjs`. `FRICTION_OUTBOX` selects a private directory (default
+Without `FRICTION_STORAGE_MODULE`, capture writes an immutable schema-1 JSON file
+to the private local outbox, named by record ID; retries preserve the first file.
+No upload is performed. Optionally set `FRICTION_STORAGE_MODULE` to the absolute
+path of Supercortex `tools/friction/storage.mjs` to delegate persistence. `FRICTION_OUTBOX` selects a private directory (default
 `~/.local/state/misty/friction`). The storage implementation owns atomic persistence.
 No network is used by capture. `FRICTION_MODEL` overrides submitted model identity. Model is `unknown` unless supplied from runtime;
 never infer provider identity from a model's self-report.

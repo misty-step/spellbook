@@ -54,3 +54,38 @@ The [Antigravity fixture](antigravity-stop.fixture.json) follows the documented
 Stop example and proves only payload compatibility, not an authenticated run.
 Local execution evidence and coverage status belong to the MIS-1194 worker
 summary, not this version-independent adapter contract.
+
+## Prime Agent: completion-brief fallback
+
+Reviewed **Prime Agent 0.10.3**, 2026-11-17: `prime-agent --help`,
+`prime-agent help package`, `/opt/prime-agent/share/prime-agent/README.md`, and
+local `~/.prime/agent/settings.json` (settings keys only; no auth file).
+These surfaces document skills, prompt templates and autonomous quality gates,
+but no native turn/session-finish callback capable of eliciting reflection.
+This is evidence of no documented supported hook in this version, not proof that
+no internal extension could exist. A quality gate is not a finish hook. No
+`prime.json` or `hook prime` native integration is supplied.
+
+Load the [completion brief](../../tools/friction/README.md#completion-brief-any-harness-including-grok)
+as an explicit instruction in the bounded Prime task (or append-system-prompt),
+not as an automatically discovered hook. At completion, run:
+
+```sh
+printf '%s\n' '{"session_id":"your-unique-run-id"}' |
+  node /ABSOLUTE/mistystack/tools/friction/cli.mjs ask prime
+```
+
+Only if a brief is returned, reflect once and follow its `capture` instruction
+with a concrete positive answer; a clean answer records nothing. The returned
+`decision` wrapper is portable brief output, **not** a Prime hook protocol.
+Use a stable explicit run ID, `FRICTION_MODEL=claude-sonnet-5` when selected by
+runtime, and a private `FRICTION_OUTBOX`. Without `FRICTION_STORAGE_MODULE`,
+`capture` writes only local files; nothing is uploaded. Retrying the identical
+capture returns the same ID and does not replace or duplicate the saved record.
+The brief uses the same persistent private pre-ask guard as other harnesses;
+capture failure never clears it or licenses another reflection.
+
+This fallback depends on the agent following the task instruction. It does not
+cover abandoned/crashed sessions, automatic lifecycle delivery, future final
+turns of open-ended chats, or independently finishing native subagents. Neither
+capture nor ask reads transcripts or last messages.
