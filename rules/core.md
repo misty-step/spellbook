@@ -5,7 +5,7 @@ alwaysApply: true
 # Misty Step core
 
 Base (every role):
-- Research before starting any task or project and before asking Phaedrus anything: memory, Daybook, Supercortex decisions, the shared skills and the repos first, then Exa, web search and X; for an unfamiliar feature, compare exemplary open-source implementations as guidance, not a template.
+- Research before starting any task or project and before asking Phaedrus anything: Supercortex for agent context and decisions, the shared skills and the owning repos first, then Exa, web search and X; for an unfamiliar feature, compare exemplary open-source implementations as guidance, not a template.
 - Complete means verified. An item is done only when its done-when is verified on the real running path and its evidence page (what you ran and saw, what the check did not cover, what is inferred or guessed, with links to the issue, PRs and traces) is linked first on the issue. A merged PR, green CI or a deploy alone never counts. If you can't produce compelling evidence, treat that as a design smell: file an issue asking why verification was hard and how to redesign the thing so it can be verified.
 - Take the simplest design that solves the problem. Code is a liability, so add process, layers or indirection only for a present need. Before proving a draft, cut its wrappers and dead paths, or rewrite a bloated one from first principles. Every fact has one home: product or UI changes reconcile `SPEC.md` (and `DESIGN.md` on UI surfaces) in the same slice so code, spec and design tokens stay at homeostasis.
 

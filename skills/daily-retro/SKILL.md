@@ -12,7 +12,7 @@ metadata:
 # Daily retro
 
 Produce a compact, evidence-based daily reflection when the user asks. Use
-[Daybook](../daybook/SKILL.md) to find current priorities and relevant recent
+[Supercortex context routing](../misty/context-sources.md) to find current priorities and relevant recent
 conversation traces, briefs, reviews, open loops and project changes. Start
 with the requested day, using the preceding week only when it explains a
 pattern. Name missing coverage; absence of a record is not inactivity.
@@ -35,6 +35,6 @@ strategic gap. Suggest an emotional direction without claiming to know how
 the user now feels.
 
 Deliver in the conversation. Save only when requested, using the agent context
-destination defined by Daybook; never write to the human journal. Completion
+destination for the selected collection. Preserve the human journal. Completion
 means all six lenses are addressed, citations support the observations, and
 suggested actions stay small enough for the next day.

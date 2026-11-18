@@ -3,10 +3,10 @@
 Mistystack is Misty Step's harness-neutral engineering method for humans and coding agents, paired with a public handbook and skill-finder site. One canonical content tree in open Agent Skills format serves every supported harness through universal instructions and thin native adapters, while a small always-on core stands alone for small work and routes nontrivial work to one self-contained mode page and on-demand task skills.
 
 Maintained executable agent guidance, skills and harness primitives belong to Mistystack.
-Daybook holds contextual material: human and agent journals, documents, artifacts and
-scratchpads. Portable procedures discover vault locations from local context; public
-packages contain no private vault content. Local vault AGENTS.md files are bootstrap
-pointers, not a second behavioral source.
+Supercortex is the primary context system for agents. Its authorized collections hold
+curated context and point to authoritative projects and source archives. Daybook is
+a legacy source for personal context. Portable procedures discover authorized
+destinations from local context. Public packages contain no private source material.
 
 Private fleet runtime setup, credentials, host automation and operator scheduling belong outside Mistystack in `misty-step/workstation`, never copied into the public method.
 

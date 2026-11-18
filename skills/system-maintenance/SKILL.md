@@ -14,8 +14,8 @@ Keep the workstation usable without destroying its development substrate or
 evidence. Input is a reported pressure symptom or a requested maintenance
 scope. Discover the active host and read its native maintenance contract;
 private host configuration and schedules belong to the workstation owner.
-Use [Daybook](../daybook/SKILL.md) only when existing private maintenance
-history is relevant.
+Use [Supercortex context routing](../misty/context-sources.md) to locate relevant maintenance
+history and the owning project.
 
 1. **Measure.** Read free space and scoped directory or service usage. Identify
    the growing class and its owner before proposing cleanup; distinguish

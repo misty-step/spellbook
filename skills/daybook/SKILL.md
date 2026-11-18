@@ -1,6 +1,6 @@
 ---
 name: daybook
-description: "Use before retrieving or recording personal context, decisions, journals, documents, artifacts or scratchpads in a Daybook vault."
+description: "When the selected source is the legacy personal Daybook vault, or its authorized synchronizer requests remediation."
 metadata:
   owner: phaedrus
   prevents: "2026-11-14: active agent guidance lived in a context vault, coupling instruction discovery to private data."
@@ -10,9 +10,9 @@ metadata:
 
 # Daybook
 
-Daybook holds context: the owner's journal, agents' journals, documents,
-artifacts and scratchpads. Mistystack owns maintained agent instructions,
-skills and harness primitives. A dated decision or run receipt in the vault
+Use [Supercortex context routing](../misty/context-sources.md) for current agent context and handoffs.
+Daybook retains personal records and historical evidence. This procedure applies
+only to the selected legacy vault. A dated decision or run receipt in the vault
 is evidence, not an executable instruction source.
 
 ## Locate and read
