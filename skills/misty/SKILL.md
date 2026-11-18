@@ -109,7 +109,7 @@ The same rules cover pull requests, commit messages, documents and comments in t
 
 | When | Read |
 | --- | --- |
-| Personal context, journals, documents, artifacts or scratchpads | [daybook](../daybook/SKILL.md), including its workflow and optional lens routes |
+| Context lookup, decisions, captures, syntheses or agent handoffs | [Supercortex context routing](context-sources.md), including the private personal-source route |
 | Herdr identity, spaces or agent coordination | [herdr](../herdr/SKILL.md) |
 | Acting as the user's Chief of Staff, a project owner or an understanding lane, when invoked or assigned | [coordinator](../coordinator/SKILL.md) |
 | Writing a work artifact for a reader without the conversation | [artifact-standard](../artifact-standard/SKILL.md) |

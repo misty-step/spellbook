@@ -1,6 +1,6 @@
 ---
 name: synthesize
-description: "When compiling a selected Daybook topic into durable knowledge, resolving contradictory context, or interviewing the user to fill evidence-backed gaps."
+description: "When compiling a selected Supercortex or private personal topic into durable knowledge, resolving contradictory context, or interviewing the user to fill evidence-backed gaps."
 metadata:
   owner: Misty Step
   prevents: "2026-11-14 ownership correction: synthesis instructions mixed private life examples, a fixed backlog and obsolete note-format requirements into the vault."
@@ -11,8 +11,8 @@ metadata:
 # Synthesize
 
 Compile existing observations into useful entity notes and maps. Use
-[Daybook](../daybook/SKILL.md) for vault discovery, current note conventions,
-source protection and the private context destination. Input is a selected
+[Supercortex context routing](../misty/context-sources.md) to identify the collection, its note
+conventions, source protections and authorized destination. Input is a selected
 topic, person, source batch or interview subject; if none is given, use current
 priorities to propose a bounded topic before opening sensitive archives.
 
@@ -39,4 +39,4 @@ priorities to propose a bounded topic before opening sensitive archives.
 Return the changed note paths, source coverage, resolved and unresolved gaps,
 and retrieval result. If the request was only an audit or interview, return
 findings or questions without treating it as authorization for broad edits.
-Publication follows the selected task and Daybook's current write contract.
+Publication follows the selected task and the collection's current write contract.

@@ -11,7 +11,7 @@ metadata:
 # Bespoke resume
 
 Turn verified career material and one posting into a sendable application
-package. Use [Daybook](../daybook/SKILL.md) to locate the user's master CV,
+package. Use [Supercortex context routing](../misty/context-sources.md) to locate the user's master CV,
 search preferences and existing application records. Personal facts remain in
 that private context; the master CV wins over legacy resumes when they disagree.
 

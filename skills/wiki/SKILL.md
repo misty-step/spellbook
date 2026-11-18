@@ -1,6 +1,6 @@
 ---
 name: wiki
-description: "When writing or organizing Daybook notes, ingesting sources, maintaining maps or checking OKF note conformance."
+description: "When writing or organizing notes in a selected OKF vault, ingesting its sources, maintaining its maps or checking OKF conformance."
 metadata:
   owner: phaedrus
   prevents: "2026-11-14: active agent guidance lived in a context vault, coupling instruction discovery to private data."
@@ -10,8 +10,9 @@ metadata:
 
 # Wiki notes
 
-First locate the selected vault through [daybook](../daybook/SKILL.md).
-All content paths below are relative to that vault.
+Use [Supercortex context routing](../misty/context-sources.md) to select the collection. For an agent wiki,
+follow the wiki conventions in its Supercortex repository. The procedure below
+applies to OKF vaults such as the legacy personal Daybook. Its paths are vault-relative.
 
 The vault is a **Karpathy-style LLM wiki** and a **Google Open Knowledge Format
 (OKF v0.2) bundle**. Knowledge is *compiled once and kept current*, not

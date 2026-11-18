@@ -10,6 +10,9 @@ metadata:
 
 # Daybook maintenance
 
+This procedure serves the legacy personal vault. For agent context, use
+[Supercortex context routing](../misty/context-sources.md).
+
 Locate the vault through [daybook](../daybook/SKILL.md) and read its local context,
 `meta/NOW.md` and the runner's prompt. This skill applies inside the runner-owned
 clone; it does not authorize starting a maintenance job in another workspace.

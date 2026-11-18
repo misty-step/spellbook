@@ -10,6 +10,9 @@ metadata:
 
 # Verify Daybook
 
+This procedure serves the legacy personal vault. For agent context, use
+[Supercortex context routing](../misty/context-sources.md).
+
 Locate the selected vault through [daybook](../daybook/SKILL.md). Set `DAYBOOK_VAULT` to its absolute checkout path. This installed skill owns
 the `scripts/` helpers; set `DAYBOOK_VERIFY` to this installed skill directory.
 The vault's `docs/verification/` holds contextual product expectations and

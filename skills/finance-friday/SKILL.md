@@ -11,7 +11,7 @@ metadata:
 # Finance Friday
 
 Review the user's balance sheet using the established ledger of record. Use
-[Daybook](../daybook/SKILL.md) to locate the private finance context and its
+[Supercortex context routing](../misty/context-sources.md) to locate the private finance context and its
 ledger reference, then read that ledger's current contract before collecting
 or recording data. Keep account identifiers, valuation conventions and
 reporting currencies in that context, not in this skill.
