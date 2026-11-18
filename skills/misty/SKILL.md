@@ -67,7 +67,7 @@ A subagent starts with none of your context, returns a summary instead of the ev
 
 - **Independent slices** with disjoint files and their own checks, where parallel work saves real time.
 - **Bulk reading or searching** where you need the conclusion and not the detail.
-- **A second opinion** on a decision that is expensive to get wrong. That means the same prompt on a different model family; a repeat on the same family is not a second opinion.
+- **A second opinion** on a decision that is expensive to get wrong. That means the same prompt on a different model family; a repeat on the same family is not a second opinion. For open exploration, run a [bakeoff](../bakeoff/SKILL.md) instead.
 - **Supervision** of open-ended runs, through [watchdog](../watchdog/SKILL.md).
 - **A coordinator role** the user invoked or a launch brief assigned: [coordinator](../coordinator/SKILL.md) says which work that role delegates.
 
@@ -118,6 +118,7 @@ The same rules cover pull requests, commit messages, documents and comments in t
 | An unfamiliar API, dependency or claim to check against sources | [research](../research/SKILL.md) |
 | Proving a change, writing or auditing tests | [verification](../verification/SKILL.md), [test-audit](../test-audit/SKILL.md) |
 | An interface or interaction | [design](../design/SKILL.md) |
+| An exploration with no settled answer, judged blind across several models | [bakeoff](../bakeoff/SKILL.md) |
 | A security review | [security-audit](../security-audit/SKILL.md) |
 | Opening a pull request, merging, releasing | [ship-loop](../ship-loop/SKILL.md), [merge-risk](../merge-risk/SKILL.md) |
 | Git conflicts | [resolve-merge-conflicts](../resolve-merge-conflicts/SKILL.md), run from its installed skill directory |
