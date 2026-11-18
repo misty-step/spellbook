@@ -79,6 +79,12 @@ A seat is **stalled** when it hits a usage limit, crashes or errors, fails its l
 - Never switch seats in a run that judges a single model (a benchmark or a qualification run).
 - Launches and evidence name the harness, model and effort that actually ran, and which model wrote which commits.
 
+## Bake-off results
+
+Blind picks from [bakeoff](../bakeoff/SKILL.md) runs. Each one is a single data point about one kind of work. The owner's verdicts and his own words are recorded in Supercortex at [`taste/bakeoffs.md`](https://github.com/misty-step/supercortex/blob/main/taste/bakeoffs.md).
+
+- **Evidence pages, MIS-1283, 2026-11-18.** Three lanes each wrote five pages from one brief: GPT-6.2 Astra (high effort) in Codex, Fable 5.2 in Claude Code, and Gemini 4 Carbon in Antigravity. Phaedrus judged the 15 shuffled pages blind. He liked 5 pages: GPT-6.2 Astra made 4 of them (1, 10, 13 and 15) and Fable 5.2 made 1 (11). He disliked 7: Astra made 1 (2), Fable 3 (3, 5 and 14) and Carbon 3 (4, 7 and 12). Carbon had no likes. (observed, [MIS-1283](https://linear.app/misty-step/issue/MIS-1283), 2026-11-18) This is one bake-off on one kind of design work. It points to GPT-6.2 Astra in Codex for report and evidence-page design, but it doesn't yet override the visual design row above, which comes from Phaedrus's harness ranking. (opinion, Karn, 2026-11-18)
+
 ## Run data
 
 Hopper appends dated, measured results from our own runs here: task kind, seat, outcome, cost and duration. None yet.
