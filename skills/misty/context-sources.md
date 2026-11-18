@@ -11,8 +11,10 @@ Use that home's capture and publication procedure. Keep source identity, date
 and citations with quotations and derived records. Raw captures use the
 collection's archive. Its curated repository holds the records its contract accepts.
 
-For explicitly personal work, resolve the authorized personal collection.
-When the source still resides in the legacy Daybook vault, follow
-[its access and write procedure](../daybook/SKILL.md). Read only the material
-needed for the task. Keep personal information in its authorized destination.
-If a collection or source is unavailable, report which one is missing.
+Route by the owner's intended use and authorization for the source. Material
+designated for agent use belongs in the named Supercortex destination, including
+personal reflections the owner wants agents to act on. A source's topic alone
+does not determine its collection. For a legacy source in Daybook, follow
+[its access and write procedure](../daybook/SKILL.md). Use the selected records
+under that vault's access rules and preserve any migration holds. If a source
+or authorized destination is unavailable, report which one is missing.
