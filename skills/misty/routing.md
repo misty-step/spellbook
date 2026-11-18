@@ -57,6 +57,39 @@ What the vendors say about each workhorse (all vendor claims, not reproduced):
 - Prime Agent is a strong harness for any family. Open-weight models have fallen behind the frontier over the past month. (opinion, Phaedrus, 2026-11-17) Hopper is comparing OpenAI models in Prime Agent with the same task in Codex; the result lands under Run data.
 - Claude Code on the shared account hit its usage limit during the morning of 2026-11-17, and runs fell over to Codex on GPT-6 Astra. (observed, 2026-11-17) Quota is live state: check it at launch, never from this page.
 
+### How to launch each model
+
+These are the requested native routes, not a claim that a model is currently
+launchable. Boat's catalog is not evidence. The daily Daybook
+[`model-launch-check`](https://github.com/moomooskycow/daybook/blob/master/scripts/box/model-launch-check.md)
+records each actual launch, version, output, duration and failure in the box's
+`~/.local/state/model-launch-check/latest-proof.md` (the latest proof below).
+MIS-1284's initial live proof is **blocked by Boat authentication**; all rows
+remain unverified until that check succeeds. No fallback is allowed in this check.
+
+| Tier | Model | Harness | Model ID | Effort | Latest proof |
+| --- | --- | --- | --- | --- | --- |
+| Frontier | GPT-6.2 Astra | `codex` | `gpt-6.2-astra` | high | [box proof](#launch-proof) |
+| Frontier | Fable 5.2 | `claude` | `claude-fable-5-2` | high | [box proof](#launch-proof) |
+| Frontier | Gemini 4 Carbon | `agy` | `gemini-4-carbon-high` | high | [box proof](#launch-proof) |
+| Workhorse | GPT-6.2 Sol | `codex` | `gpt-6.2-sol` | medium | [box proof](#launch-proof) |
+| Workhorse | Opus 5.5 | `claude` | `opus-5-5` | medium | [box proof](#launch-proof) |
+| Workhorse | Gemini 4 Argon | `agy` | `gemini-4-argon-high` | high | [box proof](#launch-proof) |
+| Workhorse | Gemini 4 Hydrogen | `agy` | `gemini-4-hydrogen` | medium | [box proof](#launch-proof) |
+
+<a id="launch-proof"></a>
+The latest proof is the dated box file above, not this routing table. Read its
+per-model result: `launched`, `quota` (missing evidence), or `broken`. A missing
+or stale file proves nothing. Publish no weekly routing review until running
+`model-launch-check --on-change --routing /path/to/skills/misty/routing.md` and
+inspecting the proof. Karn reviews changes to this table.
+
+Native command forms (the checker passes each row's exact ID):
+
+- Codex: `codex exec --skip-git-repo-check --model MODEL -c 'model_reasoning_effort="EFFORT"' 'Reply with exactly MODEL_LAUNCH_OK. Do not use tools or access files.'`
+- Claude Code: `claude -p --model MODEL --effort EFFORT --tools '' 'Reply with exactly MODEL_LAUNCH_OK. Do not use tools or access files.'`
+- Antigravity: `agy --model MODEL --prompt 'Reply with exactly MODEL_LAUNCH_OK. Do not use tools or access files.'`; the Carbon/Argon effort is encoded in the model ID. Hydrogen uses its native default (the medium routing preference is not an extra CLI flag).
+
 ## Benchmarks
 
 Treat every benchmark below as a vendor or third-party claim about its own task mix. None was reproduced here.
