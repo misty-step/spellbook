@@ -4,8 +4,9 @@ Mistystack is Misty Step's harness-neutral engineering method for humans and cod
 
 Maintained executable agent guidance, skills and harness primitives belong to Mistystack.
 Supercortex is the primary context system for agents. Its authorized collections hold
-curated context and point to authoritative projects and source archives. Daybook is
-a legacy source for personal context. Portable procedures discover authorized
+curated context and point to authoritative projects and source archives. The owner's
+designation routes agent-intended material, including personal reflections, to its
+authorized Supercortex destination. Daybook retains legacy personal records. Portable procedures discover authorized
 destinations from local context. Public packages contain no private source material.
 
 Private fleet runtime setup, credentials, host automation and operator scheduling belong outside Mistystack in `misty-step/workstation`, never copied into the public method.
