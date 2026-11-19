@@ -44,9 +44,9 @@ per slice and [watchdog](skills/watchdog/SKILL.md) for open-ended agent supervis
 Prove the changed running consumer through
 [verify-mistystack](.agents/skills/verify-mistystack/SKILL.md), including isolated
 native loading when that path changes. Report skipped/unproved paths separately.
-Merge after your proof passes without CI or review. The dispatched release gate
+Merge after your Boat proof passes; CI and review never gate. The release gate
 runs `./scripts/check`, fast site proof and one critical-correctness/security
-assessment before publishing/deploying. No CI runs on PRs or pushes.
+assessment on Boat before publishing. CI is one light scheduled battery (D-188).
 
 `./scripts/bootstrap` installs repository secret-scanning hooks. Landmark owns
 CHANGELOG.md and release publication; follow

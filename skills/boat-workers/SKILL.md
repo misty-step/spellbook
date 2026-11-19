@@ -115,8 +115,8 @@ existing command before retrying: it may still be running.
 The default `--no-env` worker runs commands without owner secrets. Mutable author
 slice workers prove PR slices and pre-land `./scripts/check` runs, never
 release-trusted proof receipts: release receipts come only from clean-checkout
-`--no-env` non-author runners (verifier, coalesced `refs/heads/verified` sweep,
-or release CI) keyed by surface closure and shared-core git-blob Merkle hashes.
+`--no-env` non-author Boat runners (verifier or coalesced `refs/heads/verified`
+sweep) keyed by surface closure and shared-core git-blob Merkle hashes.
 Parallel surface shards (`--shard`) and trunk culprit bisection run in separate
 non-author Boat workers concurrently so one failure never serializes others. An integrated
 agent requires an already authorized, least-privilege credential route and its
