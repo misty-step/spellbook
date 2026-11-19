@@ -8,20 +8,22 @@ Every claim carries a date and a tag:
 - **observed**: something seen on our own runs, not counted.
 - **opinion**: a preference, with whose it is.
 
-Owner: Karn. Hopper feeds run data. Karn reviews it weekly: each review checks for new model releases, benchmarks and heavy-user sentiment, adds or updates dated entries, and folds in Hopper's run data; last review 2026-11-17 (grounded in sources from 2026-10-17 to 2026-11-17, plus the GPT-6.2 release). Source decision: [MIS-1249](https://linear.app/misty-step/issue/MIS-1249), accepted 2026-11-17.
+Owner: Karn. Hopper feeds run data. Karn reviews it weekly: each review checks for new model releases, benchmarks and heavy-user sentiment, adds or updates dated entries, and folds in Hopper's run data; last review 2026-11-19 (grounded in sources from 2026-10-17 to 2026-11-18, including GPT-6.2 and Gemini 4 Neon). Source decision: [MIS-1249](https://linear.app/misty-step/issue/MIS-1249), accepted 2026-11-17.
 
 ## The strict rule
 
-Recompiles run only on GPT-6.2 Astra, Fable 5.2 or Gemini 4 Carbon, and their grader comes from a different model family than the author. (Phaedrus, 2026-11-14; GPT-6.2 Astra replaced GPT-6 Astra, 2026-11-17.)
+Recompiles run only on GPT-6.2 Astra, Fable 5.2, Gemini 4 Carbon or Gemini 4 Neon, and their grader comes from a different model family than the author. (Phaedrus, 2026-11-14; GPT-6.2 Astra replaced GPT-6 Astra, 2026-11-17; Gemini 4 Neon added, 2026-11-19.)
 
 ## Model tiers
 
-- **Frontier:** GPT-6.2 Astra, Fable 5.2, Gemini 4 Carbon. Use them for coordination, orchestration, strategy, planning, system design, architecture, release review, second opinions and other high-leverage, mission-critical work. (opinion, Phaedrus, 2026-11-17)
-- **Workhorse:** GPT-6.2 Sol (the primary OpenAI workhorse), Opus 5.5, Gemini 4 Argon, Gemini 4 Hydrogen. Use them for most implementation. (opinion, Phaedrus, 2026-11-17; GPT-6.2 models replaced GPT-6 Astra and GPT-6.1 Sol the same day)
+- **Frontier:** GPT-6.2 Astra, Fable 5.2, Gemini 4 Neon (preferred Gemini seat across the board), Gemini 4 Carbon. Use them for coordination, orchestration, strategy, planning, system design, architecture, release review, second opinions and other high-leverage, mission-critical work. (opinion, Phaedrus, 2026-11-17; Gemini 4 Neon added as preferred Gemini seat, 2026-11-19)
+- **Workhorse:** GPT-6.2 Sol (the primary OpenAI workhorse), Gemini 4 Neon (the preferred Gemini workhorse), Opus 5.5, Gemini 4 Hydrogen (fast Gemini fallback; Argon superseded by Neon). Use them for most implementation. (opinion, Phaedrus, 2026-11-17; GPT-6.2 models replaced GPT-6 Astra and GPT-6.1 Sol the same day; Gemini 4 Neon preferred across Gemini seats, 2026-11-19)
 - Sonnet 5.5 and GPT-6.1 Terra are left out of routing. (opinion, Phaedrus, 2026-11-17)
 - A stalled workhorse slice moves to another workhorse before it moves up to Frontier, unless the slice turned out harder than briefed. Frontier capacity is for frontier work. (Phaedrus, 2026-11-17)
 
 What the vendors say about each workhorse (all vendor claims, not reproduced):
+
+- **Gemini 4 Neon** (released 2026-11-18) is Google's mid-tier reasoning and agentic coding model ($3/$15 per million tokens, $0.15 cached input, 1M context, `low`/`medium`/`high`/`xhigh` thinking). Google positions it near Carbon intelligence at ~32% lower cost per task at default `high` thinking, with 65.2% on Terminal-Bench 4.1 and higher baseline secure-coding scores than Carbon. (measured, vendor, 2026-11-18) Strongly prefer Neon over Argon and Carbon across Gemini seats unless a specific run justifies Carbon. (opinion, Phaedrus, 2026-11-19)
 
 - **GPT-6.2 Sol** (released 2026-11-17) is the default workhorse for code, at 6.1 Sol's price of $2/$10 per million tokens against 6.2 Astra's $8/$40. OpenAI says it comes within 0.5 points of 6.2 Astra on FrontierCode 2.0 at about a fifth of the cost (both at max). (measured, vendor, 2026-11-17) Artificial Analysis puts it level with GPT-6 Astra on its Intelligence Index (57) at about 15% of the cost per task, but 3 points below 6.1 Sol on its Coding Agent Index (Codex at max effort), driven by answers that omit key facts. (measured, external, 2026-11-17) Day-one users split: several report Sol slow and prone to overengineering, and one found a third of Sol's C++ tasks needed cleanup by Astra. (opinion, external, 2026-11-17) Watch our own Sol runs; a stalled Sol slice goes to Opus 5.5 before Frontier.
 - **GPT-6.2 Astra** costs 20% less per token than GPT-6 Astra and, OpenAI says, under a third as much per task on Agents' Last Exam while scoring higher. (measured, vendor, 2026-11-17) Artificial Analysis ranks it second on its Intelligence Index behind Fable 5.2, but flat with GPT-6 Astra on coding agents. (measured, external, 2026-11-17) Its system card reports it hid a known coding obstacle in 22.28% of trials against 11.09% for GPT-6 Astra; Codex's own instructions reduce that, so run it in Codex and hold it to the evidence rule. (measured, vendor system card via press, 2026-11-17)

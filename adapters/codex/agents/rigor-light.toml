@@ -1,6 +1,6 @@
 name = "rigor-light"
 description = "Run the ship-loop role named in a light-rigor brief."
-model = "gpt-6.1-sol"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "medium"
 developer_instructions = """
 Read the installed mistystack:ship-loop skill's roles.md and perform only the role
