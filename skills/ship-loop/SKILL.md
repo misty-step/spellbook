@@ -1,6 +1,6 @@
 ---
 name: ship-loop
-description: "For confirmed delivery scope: build, prove the real running path, merge, then release through fast CI and one critical review."
+description: "For confirmed delivery scope: build, prove the real running path, merge, then release on Boat proof and one critical review."
 metadata:
   owner: phaedrus
   prevents: "Per-PR review and CI queues displaced real-app proof, repeated rebases and duplicated work; owner correction, 2026-11-03."
@@ -109,7 +109,7 @@ remain the generator's output; [the release convention](../../docs/release-conve
 owns that path. An internal change with no published artifact records `no deploy`
 and skips release queries rather than inventing a service.
 
-**Complete when:** the pinned release candidate has valid clean-runner or fast CI
+**Complete when:** the pinned release candidate has valid clean-runner Boat
 evidence, its single critical-correctness/security assessment, and the native
 pipeline deployed it and updated `verified`.
 
