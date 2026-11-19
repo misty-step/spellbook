@@ -4,7 +4,7 @@ The shaping skills are Matt Pocock's, vendored unchanged under [the Pocock lock]
 
 - **Spec and domain:** `SPEC.md` is the single target-state authority for product intent, stories, domain terms (`## Terms`) and invariants, owned by [define-product](../define-product/SKILL.md). Where the skills say `GLOSSARY.md` or `CONTEXT.md`, use the repository's `SPEC.md`. Where they say `docs/adr/`, use `docs/decisions/` and its `0000-template.md`.
 - **Outputs and reconciliation:** after the owner confirms shared understanding in a grilling session, write product intent, stories and domain terms directly to `SPEC.md` (ahead of or alongside code) and architecture or stack decisions to a decision record. Do not publish feature specs to a tracker or split `SPEC.md` into a ticket backlog; reconcile `SPEC.md` against the running product directly through [define-product](../define-product/SKILL.md) and [ship-loop](../ship-loop/SKILL.md) until `SPEC.md` equals the running product.
-- **Operational tracker:** when an external incident, cross-repository dependency or R90 obligation needs a tracker record ([Foundation article 2](../foundation/checklist.md#article-2)), Linear (workspace Misty Step, team MIS) and Habitat retain their native workflow states (`Todo` when ready).
+- **Operational tracker:** Misty Step work starts from a committed `PRODUCT.md` or `DESIGN.md` change, a production alert or an Executive charter, and its state lives in the run record ([Foundation article 2](../foundation/checklist.md#article-2)); Linear is frozen. An R90 obligation keeps its Habitat record and native workflow states (`Todo` when ready).
 
 Planning how to execute a settled outcome is ordinary work under [the loop](SKILL.md#the-loop); it does not decide product intent.
 
