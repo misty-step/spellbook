@@ -9,9 +9,20 @@ Modern frontier coding models already know how to refactor code, write tests, an
 `mistystack` cuts the method down to what a strong model genuinely needs:
 
 - **Five standing rules** in `rules/core.md` — always on, under twenty lines, defining evidence, strategic design, real-path verification, autonomy boundaries, and cold-reader reporting.
-- **Seven concise skills** in `skills/` — each 3 to 8 sentences (or 12 terse bullets for `foundations`), stating *what* matters and *why*, never bloated *how* recipes.
+- **Seven concise skills** in `skills/` — each 3 to 9 sentences (or 12 terse bullets for `foundations`), stating *what* matters and *why*, never bloated *how* recipes.
 - **Deterministic scripts over prose** — when a check or workflow repeats, encode it in executable code (`misty-check.mjs`, `extract_conflict_context.py`, `.githooks/trufflehog-gate.py`) rather than asking an LLM to remember twenty steps.
 - **Zero auto-mounted companion packs** — every repository and operator stays in control of what loads into context.
+
+## Four surfaces, not ticket backlogs
+
+Ticket boards and kanban backlogs rot at agent speeds. Every ticket is a frozen snapshot of an earlier guess; once coding agents can reshape a module in minutes, maintaining issue statuses, duplicate cards, and stale subtasks costs more attention than doing the work.
+
+Instead of materializing work into a backlog, the human operator and coding agents run on four surfaces where **work is the computed diff between Intent and Verified Reality**:
+
+- **Intent (`PRODUCT.md` / `DESIGN.md`)** — The present-tense target state: observable user stories, business rules, non-goals, and visual system invariants. When the user changes direction, Intent changes directly.
+- **Verified Reality / Evidence Ledger** — What the running product actually does today, backed by real checks, traces, screenshots, recordings, and live build identity. Gaps between Intent and Verified Reality define the next slice without creating tickets.
+- **Ephemeral Compute** — Loops, triggers, and bounded factory runs that close a specific diff between Intent and Verified Reality and then tear down cleanly, leaving verified commits and evidence rather than long-lived orchestration clutter.
+- **Sparks / Ideas** — One flat, low-ceremony capture log for rough thoughts and future possibilities. A spark stays inert until the user promotes it into Intent — never silently turned into backlog debt.
 
 ## Lineage
 
