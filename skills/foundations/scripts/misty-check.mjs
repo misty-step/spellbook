@@ -7,6 +7,7 @@
  *   node skills/foundations/scripts/misty-check.mjs [path] [--json] [--strict]
  */
 
+import { spawnSync } from 'node:child_process';
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -36,17 +37,23 @@ const CODE_EXTENSIONS = new Set([
   '.ts', '.mts', '.cts', '.tsx',
   '.py', '.rs', '.go', '.rb', '.java', '.kt', '.cs', '.php', '.sh',
   '.astro', '.svelte', '.vue',
-  '.json', '.jsonc', '.toml', '.yaml', '.yml',
+  '.json', '.jsonc', '.toml', '.yaml', '.yml', '.conf',
 ]);
 
 const CODE_BASENAMES = new Set(['Dockerfile', 'Caddyfile', 'Makefile', 'nginx.conf']);
+const HASH_COMMENT_EXTENSIONS = new Set(['.py', '.sh', '.rb', '.yaml', '.yml', '.toml', '.conf', '']);
 const MAX_SCAN_DEPTH = 6;
 const MAX_FILE_BYTES = 256 * 1024;
 const MAX_FILES_SCANNED = 2000;
 const HEALTHZ_RE = /\/healthz(?![a-z0-9_-])/i;
 const SHELL_FENCE_LANGS = new Set(['', 'sh', 'shell', 'bash', 'zsh', 'console', 'cmd', 'powershell', 'pwsh']);
 const RUN_COMMAND_RE = /^\s*(?:\$\s*)?(?:[A-Z_][A-Z0-9_]*=\S+\s+)*(?:npm|pnpm|yarn|bun|node|deno|python3?|pytest|uv|cargo|go|make|just|docker|podman|npx|tsx|\.\.?\/[\w./-]+)(?:\s|$)/m;
-const SECRET_SCANNER_RE = /\b(trufflehog|gitleaks|detect-secrets|git-secrets|secretlint)\b/i;
+const SCANNER_NAMES = '(?:trufflehog|gitleaks|detect-secrets|git-secrets|secretlint)';
+const SHELL_SCANNER_CMD_RE = new RegExp(
+  `(?:^|[;&|]\\s*|\\$\\(\\s*)(?:exec\\s+|python3?\\s+(?:[^\\s;|&]+\\/)?trufflehog-gate\\.py\\b|(?:[A-Z_][A-Z0-9_]*=\\S+\\s+)*(?:[^\\s;|&"']+\\/)?${SCANNER_NAMES}\\b)`,
+  'i',
+);
+const PRINT_CMD_RE = /^\s*(?:echo|printf)\b/i;
 
 function isWithinRoot(rootReal, filePath) {
   try {
@@ -180,13 +187,15 @@ function detectPackageScripts(rootReal, relPath, prefix = '') {
   }
 }
 
-function hasRecipeTarget(text) {
+function hasRecipeTarget(text, requireTab) {
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i += 1) {
     if (!/^(?:test|lint|check|verify)\s*:/.test(lines[i])) continue;
     for (let j = i + 1; j < lines.length; j += 1) {
       const next = lines[j];
-      if (!/^[ \t]/.test(next)) break;
+      if (next.trim() === '' || /^\s*#/.test(next)) continue;
+      const validIndent = requireTab ? next.startsWith('\t') : /^[ \t]/.test(next);
+      if (!validIndent) break;
       const body = stripHashComments(next).trim();
       if (body.length > 0) return true;
     }
@@ -203,9 +212,9 @@ function checkVerifyScripts(rootReal) {
     const script = readSafeFile(rootReal, rel);
     if (script && !script.empty && stripHashComments(script.text).trim().length > 0) found.push(rel);
   }
-  for (const rel of ['Makefile', 'justfile']) {
+  for (const [rel, requireTab] of [['Makefile', true], ['justfile', false]]) {
     const file = readSafeFile(rootReal, rel);
-    if (file && !file.empty && hasRecipeTarget(file.text)) {
+    if (file && !file.empty && hasRecipeTarget(file.text, requireTab)) {
       found.push(rel);
     }
   }
@@ -230,30 +239,71 @@ function checkVerifyScripts(rootReal) {
   };
 }
 
+function globMatchesDotEnv(rawPattern) {
+  // Preserve leading spaces (Git treats leading spaces as literal filename characters);
+  // strip unescaped trailing spaces only.
+  const pattern = rawPattern.replace(/(?<!\\)[ \t]+$/, '');
+  if (!pattern || pattern.endsWith('/')) return false;
+  let core = pattern;
+  if (core.startsWith('/')) core = core.slice(1);
+  else if (core.startsWith('**/')) core = core.slice(3);
+  if (core.includes('/')) return false;
+  let regex = '^';
+  for (let i = 0; i < core.length; i += 1) {
+    const ch = core[i];
+    if (ch === '\\' && i + 1 < core.length) {
+      regex += core[++i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    } else if (ch === '*') {
+      regex += '[^/]*';
+    } else if (ch === '?') {
+      regex += '[^/]';
+    } else if (ch === '[') {
+      const end = core.indexOf(']', i + 1);
+      if (end !== -1) {
+        regex += core.slice(i, end + 1);
+        i = end;
+      } else {
+        regex += '\\[';
+      }
+    } else {
+      regex += ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+  }
+  regex += '$';
+  try {
+    return new RegExp(regex).test('.env');
+  } catch {
+    return false;
+  }
+}
+
 function checkGitignoreHygiene(rootReal) {
   const gitignore = readSafeFile(rootReal, '.gitignore');
   if (!gitignore || gitignore.empty) {
     return { id: 'gitignore-hygiene', label: '.gitignore hygiene', status: 'gap', detail: 'Missing .gitignore at repository root' };
   }
-  const activeLines = gitignore.text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0 && !line.startsWith('#'));
 
-  // Case-sensitive Git semantics for bare ".env" protection: last matching rule wins.
-  // Note: ".env.*" only matches ".env.local" etc., NOT bare ".env".
-  const matchesBareDotEnv = (pattern) => /^(?:\/|\*\*\/)?\.env(?:\*)?$/.test(pattern);
+  // Prefer Git's own canonical ignore evaluator when inside a Git repository.
+  if (existsSync(path.join(rootReal, '.git'))) {
+    const probe = spawnSync('git', ['-C', rootReal, 'check-ignore', '--no-index', '-q', '.env'], {
+      stdio: 'ignore',
+    });
+    if (probe.status === 0) {
+      return { id: 'gitignore-hygiene', label: '.gitignore hygiene', status: 'pass', detail: '.gitignore excludes .env files (verified via git check-ignore)' };
+    }
+    if (probe.status === 1) {
+      return { id: 'gitignore-hygiene', label: '.gitignore hygiene', status: 'gap', detail: '.gitignore does not ignore .env (verified via git check-ignore)' };
+    }
+  }
+
   let ignoresDotEnv = false;
-  for (const line of activeLines) {
-    if (line.startsWith('!')) {
-      if (matchesBareDotEnv(line.slice(1).trim())) {
-        ignoresDotEnv = false;
-      }
+  for (const rawLine of gitignore.text.split(/\r?\n/)) {
+    if (rawLine.length === 0 || rawLine.startsWith('#')) continue;
+    if (rawLine.startsWith('!')) {
+      if (globMatchesDotEnv(rawLine.slice(1))) ignoresDotEnv = false;
       continue;
     }
-    if (matchesBareDotEnv(line)) {
-      ignoresDotEnv = true;
-    }
+    if (globMatchesDotEnv(rawLine)) ignoresDotEnv = true;
   }
 
   if (ignoresDotEnv) {
@@ -267,27 +317,81 @@ function checkGitignoreHygiene(rootReal) {
   };
 }
 
+function hasShellScannerInvocation(text) {
+  const active = stripHashComments(text);
+  for (const line of active.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || PRINT_CMD_RE.test(trimmed)) continue;
+    if (SHELL_SCANNER_CMD_RE.test(trimmed)) return true;
+  }
+  return false;
+}
+
+function hasPythonScannerInvocation(text) {
+  const active = stripHashComments(text);
+  const callsSubprocess = /\b(?:subprocess\.(?:run|Popen|check_output|check_call|call)|os\.system|os\.exec\w*)\b/.test(active);
+  const invokesScanner = new RegExp(`["'](?:[^"']*\\/)?${SCANNER_NAMES}["']`, 'i').test(active);
+  return callsSubprocess && invokesScanner;
+}
+
+function hasPreCommitScannerHook(text) {
+  const active = stripHashComments(text);
+  return new RegExp(`^\\s*-?\\s*(?:id|repo)\\s*:.*${SCANNER_NAMES}`, 'im').test(active);
+}
+
+function hasWorkflowScannerStep(text) {
+  const lines = stripHashComments(text).split(/\r?\n/);
+  const usesScannerRe = new RegExp(`^\\s*-?\\s*uses\\s*:\\s*\\S*${SCANNER_NAMES}`, 'i');
+  let inRunBlock = false;
+  let runIndent = 0;
+
+  for (const line of lines) {
+    if (usesScannerRe.test(line)) return true;
+    const indent = line.match(/^(\s*)/)[1].length;
+    if (inRunBlock) {
+      if (line.trim() === '') continue;
+      if (indent > runIndent) {
+        if (hasShellScannerInvocation(line)) return true;
+        continue;
+      }
+      inRunBlock = false;
+    }
+    const inlineRun = /^\s*-?\s*run\s*:\s*(.*)$/.exec(line);
+    if (inlineRun) {
+      const value = inlineRun[1].trim();
+      if (/^[|>][+-]?\d*$/.test(value)) {
+        inRunBlock = true;
+        runIndent = indent;
+      } else if (value && hasShellScannerInvocation(value)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 function checkSecretGate(rootReal) {
   const signals = [];
-  for (const rel of [
-    '.githooks/trufflehog-gate.py',
-    '.githooks/pre-commit',
-    '.githooks/pre-push',
-    '.pre-commit-config.yaml',
-  ]) {
+  const gateScript = readSafeFile(rootReal, '.githooks/trufflehog-gate.py');
+  if (gateScript && !gateScript.empty && hasPythonScannerInvocation(gateScript.text)) {
+    signals.push('.githooks/trufflehog-gate.py');
+  }
+  for (const rel of ['.githooks/pre-commit', '.githooks/pre-push']) {
     const file = readSafeFile(rootReal, rel);
-    if (!file || file.empty) continue;
-    const active = stripHashComments(file.text);
-    if (SECRET_SCANNER_RE.test(active)) {
+    if (file && !file.empty && hasShellScannerInvocation(file.text)) {
       signals.push(rel);
     }
+  }
+  const preCommit = readSafeFile(rootReal, '.pre-commit-config.yaml');
+  if (preCommit && !preCommit.empty && hasPreCommitScannerHook(preCommit.text)) {
+    signals.push('.pre-commit-config.yaml');
   }
   const workflowsDir = path.join(rootReal, '.github', 'workflows');
   if (existsSync(workflowsDir) && isWithinRoot(rootReal, workflowsDir) && statSync(workflowsDir).isDirectory()) {
     for (const entry of readdirSync(workflowsDir).sort()) {
       if (!/\.ya?ml$/i.test(entry)) continue;
       const wf = readSafeFile(rootReal, path.join('.github', 'workflows', entry));
-      if (wf && SECRET_SCANNER_RE.test(stripHashComments(wf.text))) {
+      if (wf && hasWorkflowScannerStep(wf.text)) {
         signals.push(`.github/workflows/${entry}`);
       }
     }
@@ -309,7 +413,7 @@ function checkSecretGate(rootReal) {
 }
 
 function stripComments(text, ext) {
-  if (['.py', '.sh', '.rb', '.yaml', '.yml', '.toml'].includes(ext) || ext === '') {
+  if (HASH_COMMENT_EXTENSIONS.has(ext)) {
     return stripHashComments(text);
   }
   return text

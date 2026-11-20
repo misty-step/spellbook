@@ -31,7 +31,7 @@ test('passes all 8 checks on a repo satisfying every baseline foundation', () =>
     'DESIGN.md': '# Design\n\nTypography and color tokens.\n',
     'AGENTS.md': '# Repo\n\nConcise agent guide.\n',
     'README.md': '# Demo\n\nRun locally:\n\n```sh\nnpm run dev\n```\n',
-    'package.json': JSON.stringify({ name: 'demo', scripts: { test: 'node --test', lint: 'eslint .' } }),
+    'Makefile': 'test:\n\n\tnode --test\n',
     '.gitignore': 'node_modules/\n.env\n.env.*\n!.env.example\n',
     '.githooks/pre-commit': '#!/bin/sh\nexec trufflehog filesystem .\n',
     'src/server.mjs': 'export function route(p) { return p === "/healthz" ? 200 : 404; }\n',
@@ -45,17 +45,19 @@ test('passes all 8 checks on a repo satisfying every baseline foundation', () =>
   assert.match(formatScorecard(report), /Score: 8\/8 passed · 0 gaps/);
 });
 
-test('rejects false positives: escaping symlinks, negated/cased .env, comment hooks, standalone configs, empty targets, and commented fences/healthz', () => {
+test('rejects adversarial false positives across all checks', () => {
   const outside = makeFixture({ 'secret-product.md': '# Outside\n' });
   const repo = makeFixture({
     'SPEC.md': '# Legacy Spec\n',
     'README.md': '# Demo\n\n```sh\n# npm run dev\n```\n\n```json\n{"run": true}\n```\n',
-    'Makefile': 'test:\n\t# placeholder only\n',
+    'Makefile': 'test:\n    node --test\n',
     'go.mod': 'module example.com/demo\n',
-    '.gitignore': '.env\n!.env\n.env.*\n',
+    '.gitignore': '.env\n!.en?\n',
     '.gitleaks.toml': 'title = "example"\n',
-    '.githooks/pre-commit': '#!/bin/sh\n# TODO: add trufflehog\nexit 0\n',
+    '.githooks/pre-commit': '#!/bin/sh\necho "TODO: add trufflehog"\nexit 0\n',
+    '.github/workflows/ci.yml': 'name: gitleaks placeholder\non: [workflow_dispatch]\njobs:\n  noop:\n    runs-on: ubuntu-latest\n    steps:\n      - name: check gitleaks\n        run: echo ok\n',
     'src/server.py': 'status = 200  # TODO: add /healthz\n',
+    'nginx.conf': 'server {\n  # TODO: add /healthz\n}\n',
   });
   symlinkSync(path.join(outside, 'secret-product.md'), path.join(repo, 'PRODUCT.md'));
 
@@ -72,9 +74,11 @@ test('rejects false positives: escaping symlinks, negated/cased .env, comment ho
   assert.equal(byId['secret-gate'].status, 'gap');
   assert.equal(byId['healthz'].status, 'gap');
 
-  const upperEnvRepo = makeFixture({ '.gitignore': '.ENV\n' });
-  const upperById = Object.fromEntries(auditRepo(upperEnvRepo).checks.map((c) => [c.id, c]));
-  assert.equal(upperById['gitignore-hygiene'].status, 'gap');
+  for (const content of ['.ENV\n', ' .env\n', '.env\n!.env\n.env.*\n']) {
+    const dir = makeFixture({ '.gitignore': content });
+    const entry = auditRepo(dir).checks.find((c) => c.id === 'gitignore-hygiene');
+    assert.equal(entry.status, 'gap', `expected gap for .gitignore: ${JSON.stringify(content)}`);
+  }
 });
 
 test('CLI supports --json, --strict exit codes, symlinked invocation, and rejects unknown flags or missing paths', () => {
@@ -88,7 +92,6 @@ test('CLI supports --json, --strict exit codes, symlinked invocation, and reject
   assert.equal(parsed.summary.passed, 1);
   assert.equal(parsed.summary.gaps, 7);
 
-  // Symlinked executable invocation must run CLI and print scorecard.
   const binDir = makeFixture({});
   const linkPath = path.join(binDir, 'misty-check');
   symlinkSync(SCRIPT, linkPath);
