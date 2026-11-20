@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
@@ -32,8 +32,8 @@ test('passes all 8 checks on a repo satisfying every baseline foundation', () =>
     'AGENTS.md': '# Repo\n\nConcise agent guide.\n',
     'README.md': '# Demo\n\nRun locally:\n\n```sh\nnpm run dev\n```\n',
     'package.json': JSON.stringify({ name: 'demo', scripts: { test: 'node --test', lint: 'eslint .' } }),
-    '.gitignore': 'node_modules/\n.env\n.env.local\n',
-    '.githooks/trufflehog-gate.py': '#!/usr/bin/env python3\n',
+    '.gitignore': 'node_modules/\n.env\n.env.*\n!.env.example\n',
+    '.githooks/trufflehog-gate.py': '#!/usr/bin/env python3\n# trufflehog scanner\n',
     'src/server.mjs': 'export function route(p) { return p === "/healthz" ? 200 : 404; }\n',
   });
 
@@ -45,12 +45,17 @@ test('passes all 8 checks on a repo satisfying every baseline foundation', () =>
   assert.match(formatScorecard(report), /Score: 8\/8 passed · 0 gaps/);
 });
 
-test('reports gaps clearly on an empty directory and notes legacy SPEC.md migration', () => {
+test('rejects false positives: escaping symlinks, negated .env, no-op hooks, bare manifests, JSON fences, and comment-only /healthz', () => {
+  const outside = makeFixture({ 'secret-product.md': '# Outside\n' });
   const repo = makeFixture({
-    'SPEC.md': '# Legacy Spec\n\nOld contract.\n',
-    '.gitignore': 'node_modules/\n',
-    'docs/notes.md': 'We should add a /healthz endpoint someday.\n',
+    'SPEC.md': '# Legacy Spec\n',
+    'README.md': '# Demo\n\n```json\n{"run": true}\n```\n',
+    'go.mod': 'module example.com/demo\n',
+    '.gitignore': '.env\n!.env\n',
+    '.githooks/pre-commit': '#!/bin/sh\nexit 0\n',
+    'src/server.mjs': '// TODO: implement /healthz endpoint\n/* /healthz */\nexport const ok = true;\n',
   });
+  symlinkSync(path.join(outside, 'secret-product.md'), path.join(repo, 'PRODUCT.md'));
 
   const report = auditRepo(repo);
   const byId = Object.fromEntries(report.checks.map((c) => [c.id, c]));
@@ -59,11 +64,14 @@ test('reports gaps clearly on an empty directory and notes legacy SPEC.md migrat
   assert.equal(report.summary.gaps, 8);
   assert.equal(byId['product-doc'].status, 'gap');
   assert.match(byId['product-doc'].detail, /legacy SPEC\.md found/);
+  assert.equal(byId['local-run'].status, 'gap');
+  assert.equal(byId['verify-scripts'].status, 'gap');
   assert.equal(byId['gitignore-hygiene'].status, 'gap');
+  assert.equal(byId['secret-gate'].status, 'gap');
   assert.equal(byId['healthz'].status, 'gap');
 });
 
-test('CLI supports --json, --strict exit codes, and rejects unknown flags or missing paths', () => {
+test('CLI supports --json, --strict exit codes, symlinked invocation, and rejects unknown flags or missing paths', () => {
   const repo = makeFixture({
     'AGENTS.md': '# Guide\n',
   });
@@ -73,6 +81,13 @@ test('CLI supports --json, --strict exit codes, and rejects unknown flags or mis
   assert.equal(parsed.target, repo);
   assert.equal(parsed.summary.passed, 1);
   assert.equal(parsed.summary.gaps, 7);
+
+  // Symlinked executable invocation must run CLI and print scorecard.
+  const binDir = makeFixture({});
+  const linkPath = path.join(binDir, 'misty-check');
+  symlinkSync(SCRIPT, linkPath);
+  const linkedOut = execFileSync(process.execPath, [linkPath, repo, '--json'], { encoding: 'utf8' });
+  assert.equal(JSON.parse(linkedOut).summary.passed, 1);
 
   let strictExit = 0;
   try {

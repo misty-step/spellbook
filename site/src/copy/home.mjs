@@ -68,7 +68,7 @@ export const home = {
   },
   philosophy: {
     title: 'Philosophy & Lineage.',
-    body: 'Why seven small skills beat forty playbooks — drawing from John Ousterhout, Lauren Tan, Kent C. Dodds, and Zach Lloyd. Kept in docs/philosophy.md for human readers and never auto-loaded into agent prompts.',
+    body: 'Why seven small skills beat forty playbooks — deep modules, evidence before confidence, deterministic scripts, and fast vertical slices. Kept in docs/philosophy.md for human readers and never auto-loaded into agent prompts.',
     primary: { label: 'Read Philosophy & Lineage', href: '/philosophy/' },
     secondary: { label: 'Browse on GitHub', href: 'https://github.com/misty-step/mistystack' },
   },

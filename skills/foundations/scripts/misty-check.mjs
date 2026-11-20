@@ -7,7 +7,7 @@
  *   node skills/foundations/scripts/misty-check.mjs [path] [--json] [--strict]
  */
 
-import { existsSync, lstatSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -44,10 +44,25 @@ const MAX_SCAN_DEPTH = 6;
 const MAX_FILE_BYTES = 256 * 1024;
 const MAX_FILES_SCANNED = 2000;
 const HEALTHZ_RE = /\/healthz(?![a-z0-9_-])/i;
+const SHELL_FENCE_LANGS = new Set(['', 'sh', 'shell', 'bash', 'zsh', 'console', 'cmd', 'powershell', 'pwsh']);
+const RUN_COMMAND_RE = /(^|\s)(?:npm|pnpm|yarn|bun|node|deno|python3?|pytest|uv|cargo|go|make|just|docker|podman|npx|tsx|\.\.?\/[\w./-]+)\b/m;
+const SECRET_SCANNER_RE = /\b(trufflehog|gitleaks|detect-secrets|git-secrets|secretlint)\b/i;
 
-function readNonEmptyFile(filePath) {
+function isWithinRoot(rootReal, filePath) {
+  try {
+    const resolved = realpathSync(filePath);
+    const rel = path.relative(rootReal, resolved);
+    return rel === '' || (!path.isAbsolute(rel) && rel !== '..' && !rel.startsWith(`..${path.sep}`));
+  } catch {
+    return false;
+  }
+}
+
+function readSafeFile(rootReal, relPath) {
+  const filePath = path.join(rootReal, relPath);
   try {
     if (!existsSync(filePath)) return null;
+    if (!isWithinRoot(rootReal, filePath)) return null;
     const stat = statSync(filePath);
     if (!stat.isFile()) return null;
     const text = readFileSync(filePath, 'utf8');
@@ -59,12 +74,12 @@ function readNonEmptyFile(filePath) {
   }
 }
 
-function checkProductDoc(root) {
-  const product = readNonEmptyFile(path.join(root, 'PRODUCT.md'));
+function checkProductDoc(rootReal) {
+  const product = readSafeFile(rootReal, 'PRODUCT.md');
   if (product && !product.empty) {
     return { id: 'product-doc', label: 'PRODUCT.md', status: 'pass', detail: `Found PRODUCT.md (${product.lines} lines)` };
   }
-  const legacySpec = readNonEmptyFile(path.join(root, 'SPEC.md'));
+  const legacySpec = readSafeFile(rootReal, 'SPEC.md');
   if (legacySpec && !legacySpec.empty) {
     return {
       id: 'product-doc',
@@ -76,18 +91,18 @@ function checkProductDoc(root) {
   return { id: 'product-doc', label: 'PRODUCT.md', status: 'gap', detail: 'Missing PRODUCT.md at repository root' };
 }
 
-function checkDesignDoc(root) {
-  const design = readNonEmptyFile(path.join(root, 'DESIGN.md'));
+function checkDesignDoc(rootReal) {
+  const design = readSafeFile(rootReal, 'DESIGN.md');
   if (design && !design.empty) {
     return { id: 'design-doc', label: 'DESIGN.md', status: 'pass', detail: `Found DESIGN.md (${design.lines} lines)` };
   }
   return { id: 'design-doc', label: 'DESIGN.md', status: 'gap', detail: 'Missing DESIGN.md at repository root' };
 }
 
-function checkAgentGuide(root) {
+function checkAgentGuide(rootReal) {
   const found = [];
   for (const name of ['AGENTS.md', 'CLAUDE.md']) {
-    const file = readNonEmptyFile(path.join(root, name));
+    const file = readSafeFile(rootReal, name);
     if (file && !file.empty) found.push(`${name} (${file.lines} lines)`);
   }
   if (found.length > 0) {
@@ -96,45 +111,60 @@ function checkAgentGuide(root) {
   return { id: 'agent-guide', label: 'Agent guide', status: 'gap', detail: 'Missing AGENTS.md or CLAUDE.md at repository root' };
 }
 
-function checkReadmeRun(root) {
-  const readme = readNonEmptyFile(path.join(root, 'README.md'));
+function checkReadmeRun(rootReal) {
+  const readme = readSafeFile(rootReal, 'README.md');
   if (!readme || readme.empty) {
     return { id: 'local-run', label: 'Local run docs', status: 'gap', detail: 'Missing README.md at repository root' };
   }
-  const hasCodeBlock = /```[\s\S]*?```/.test(readme.text);
-  const hasRunCue = /\b(run|start|dev|build|test|check|install|verify)\b/i.test(readme.text);
-  if (hasCodeBlock && hasRunCue) {
-    return { id: 'local-run', label: 'Local run docs', status: 'pass', detail: `README.md documents runnable commands (${readme.lines} lines)` };
+  const fences = readme.text.matchAll(/```([^\n`]*)\r?\n([\s\S]*?)```/g);
+  for (const [, rawLang, body] of fences) {
+    const lang = rawLang.trim().toLowerCase().split(/\s+/)[0] ?? '';
+    if (!SHELL_FENCE_LANGS.has(lang)) continue;
+    if (RUN_COMMAND_RE.test(body)) {
+      return { id: 'local-run', label: 'Local run docs', status: 'pass', detail: `README.md documents runnable commands (${readme.lines} lines)` };
+    }
   }
   return {
     id: 'local-run',
     label: 'Local run docs',
     status: 'gap',
-    detail: 'README.md found, but lacks a fenced local run or verify command block',
+    detail: 'README.md found, but lacks a runnable shell command block',
   };
 }
 
-function detectPackageScripts(filePath, prefix = '') {
-  const file = readNonEmptyFile(filePath);
+function detectPackageScripts(rootReal, relPath, prefix = '') {
+  const file = readSafeFile(rootReal, relPath);
   if (!file || file.empty) return [];
   try {
     const pkg = JSON.parse(file.text);
-    const scripts = pkg?.scripts && typeof pkg.scripts === 'object' ? Object.keys(pkg.scripts) : [];
-    const interesting = scripts.filter((name) => /^(test|lint|check|typecheck|verify|build)(:|$)/i.test(name));
-    return interesting.map((name) => `${prefix}npm:${name}`);
+    const scripts = pkg?.scripts && typeof pkg.scripts === 'object' ? Object.entries(pkg.scripts) : [];
+    const interesting = scripts
+      .filter(([name, cmd]) => typeof cmd === 'string' && cmd.trim().length > 0 && /^(test|lint|check|typecheck|verify)(:|$)/i.test(name))
+      .map(([name]) => `${prefix}npm:${name}`);
+    return interesting;
   } catch {
     return [];
   }
 }
 
-function checkVerifyScripts(root) {
+function checkVerifyScripts(rootReal) {
   const found = [
-    ...detectPackageScripts(path.join(root, 'package.json')),
-    ...detectPackageScripts(path.join(root, 'site', 'package.json'), 'site/'),
+    ...detectPackageScripts(rootReal, 'package.json'),
+    ...detectPackageScripts(rootReal, 'site/package.json', 'site/'),
   ];
-  for (const rel of ['scripts/check', 'scripts/verify', 'Makefile', 'justfile', 'Cargo.toml', 'pyproject.toml', 'go.mod']) {
-    const full = path.join(root, rel);
-    if (existsSync(full) && statSync(full).isFile()) found.push(rel);
+  for (const rel of ['scripts/check', 'scripts/verify']) {
+    const script = readSafeFile(rootReal, rel);
+    if (script && !script.empty) found.push(rel);
+  }
+  for (const rel of ['Makefile', 'justfile']) {
+    const file = readSafeFile(rootReal, rel);
+    if (file && !file.empty && /^(?:test|lint|check|verify)\s*:/im.test(file.text)) {
+      found.push(rel);
+    }
+  }
+  const pyproject = readSafeFile(rootReal, 'pyproject.toml');
+  if (pyproject && !pyproject.empty && /\[tool\.(?:pytest|ruff|mypy|flake8)\b/i.test(pyproject.text)) {
+    found.push('pyproject.toml');
   }
   if (found.length > 0) {
     const unique = [...new Set(found)];
@@ -149,12 +179,12 @@ function checkVerifyScripts(root) {
     id: 'verify-scripts',
     label: 'Test/lint gate',
     status: 'gap',
-    detail: 'No test, lint, check, or build entrypoint detected',
+    detail: 'No test, lint, check, or typecheck gate detected',
   };
 }
 
-function checkGitignoreHygiene(root) {
-  const gitignore = readNonEmptyFile(path.join(root, '.gitignore'));
+function checkGitignoreHygiene(rootReal) {
+  const gitignore = readSafeFile(rootReal, '.gitignore');
   if (!gitignore || gitignore.empty) {
     return { id: 'gitignore-hygiene', label: '.gitignore hygiene', status: 'gap', detail: 'Missing .gitignore at repository root' };
   }
@@ -162,35 +192,55 @@ function checkGitignoreHygiene(root) {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line.length > 0 && !line.startsWith('#'));
-  const ignoresEnv = activeLines.some((line) => /(^|\/)\.env(\.|\*|$)/i.test(line));
-  if (ignoresEnv) {
+
+  let ignoresDotEnv = false;
+  for (const line of activeLines) {
+    if (line.startsWith('!')) {
+      const pattern = line.slice(1).trim();
+      // Re-including example/template files is fine; re-including real .env negates protection.
+      if (/^(?:\/|\*\*\/)?\.env(?:\*|\.\*)?$/i.test(pattern)) {
+        ignoresDotEnv = false;
+      }
+      continue;
+    }
+    if (/^(?:\/|\*\*\/)?\.env(?:\*|\.\*|(?:\.local)?)?$/i.test(line)) {
+      ignoresDotEnv = true;
+    }
+  }
+
+  if (ignoresDotEnv) {
     return { id: 'gitignore-hygiene', label: '.gitignore hygiene', status: 'pass', detail: '.gitignore excludes .env files' };
   }
   return {
     id: 'gitignore-hygiene',
     label: '.gitignore hygiene',
     status: 'gap',
-    detail: '.gitignore found, but does not ignore .env files',
+    detail: '.gitignore does not effectively ignore .env files',
   };
 }
 
-function checkSecretGate(root) {
+function checkSecretGate(rootReal) {
   const signals = [];
-  for (const rel of [
-    '.githooks/trufflehog-gate.py',
-    '.githooks/pre-commit',
-    '.githooks/pre-push',
-    '.gitleaks.toml',
-    '.pre-commit-config.yaml',
-  ]) {
-    if (existsSync(path.join(root, rel))) signals.push(rel);
+  const gateScript = readSafeFile(rootReal, '.githooks/trufflehog-gate.py');
+  if (gateScript && !gateScript.empty && SECRET_SCANNER_RE.test(gateScript.text)) {
+    signals.push('.githooks/trufflehog-gate.py');
   }
-  const workflowsDir = path.join(root, '.github', 'workflows');
-  if (existsSync(workflowsDir) && statSync(workflowsDir).isDirectory()) {
-    for (const entry of readdirSync(workflowsDir)) {
+  const gitleaksToml = readSafeFile(rootReal, '.gitleaks.toml');
+  if (gitleaksToml && !gitleaksToml.empty) {
+    signals.push('.gitleaks.toml');
+  }
+  for (const rel of ['.githooks/pre-commit', '.githooks/pre-push', '.pre-commit-config.yaml']) {
+    const file = readSafeFile(rootReal, rel);
+    if (file && !file.empty && SECRET_SCANNER_RE.test(file.text)) {
+      signals.push(rel);
+    }
+  }
+  const workflowsDir = path.join(rootReal, '.github', 'workflows');
+  if (existsSync(workflowsDir) && isWithinRoot(rootReal, workflowsDir) && statSync(workflowsDir).isDirectory()) {
+    for (const entry of readdirSync(workflowsDir).sort()) {
       if (!/\.ya?ml$/i.test(entry)) continue;
-      const wf = readNonEmptyFile(path.join(workflowsDir, entry));
-      if (wf && /\b(trufflehog|gitleaks)\b/i.test(wf.text)) {
+      const wf = readSafeFile(rootReal, path.join('.github', 'workflows', entry));
+      if (wf && SECRET_SCANNER_RE.test(wf.text)) {
         signals.push(`.github/workflows/${entry}`);
       }
     }
@@ -207,11 +257,21 @@ function checkSecretGate(root) {
     id: 'secret-gate',
     label: 'Secret gate',
     status: 'gap',
-    detail: 'No TruffleHog, Gitleaks, or pre-commit secret-scanning gate detected',
+    detail: 'No TruffleHog, Gitleaks, or secret-scanning hook/CI gate detected',
   };
 }
 
-function checkHealthzEndpoint(root) {
+function stripComments(text, ext) {
+  if (['.py', '.sh', '.rb', '.yaml', '.yml', '.toml'].includes(ext) || ext === '') {
+    return text.replace(/^\s*#.*$/gm, '');
+  }
+  // Remove /* ... */ and line-level or trailing // ... comments without mangling https:// URLs.
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:\\])\/\/[^\r\n]*/g, '$1');
+}
+
+function checkHealthzEndpoint(rootReal) {
   let scanned = 0;
   let truncated = false;
   const matches = [];
@@ -239,7 +299,7 @@ function checkHealthzEndpoint(root) {
         continue;
       }
       if (!entry.isFile()) continue;
-      const rel = path.relative(root, full).replaceAll(path.sep, '/');
+      const rel = path.relative(rootReal, full).replaceAll(path.sep, '/');
       if (/(^|\/)misty-check(\.test)?\.mjs$/.test(rel)) continue;
       const ext = path.extname(entry.name).toLowerCase();
       if (!CODE_EXTENSIONS.has(ext) && !CODE_BASENAMES.has(entry.name)) continue;
@@ -249,14 +309,15 @@ function checkHealthzEndpoint(root) {
         if (stat.size === 0 || stat.size > MAX_FILE_BYTES) continue;
         const text = readFileSync(full, 'utf8');
         if (text.includes('\0')) continue;
-        if (HEALTHZ_RE.test(text)) matches.push(rel);
+        const codeOnly = stripComments(text, ext);
+        if (HEALTHZ_RE.test(codeOnly)) matches.push(rel);
       } catch {
         // Ignore unreadable files.
       }
     }
   }
 
-  walk(root, 0);
+  walk(rootReal, 0);
   if (matches.length > 0) {
     return {
       id: 'healthz',
@@ -279,16 +340,17 @@ export function auditRepo(targetPath = '.') {
   if (!existsSync(target) || !statSync(target).isDirectory()) {
     throw new Error(`Target path is not an existing directory: ${target}`);
   }
+  const rootReal = realpathSync(target);
   const startedAt = performance.now();
   const checks = [
-    checkProductDoc(target),
-    checkDesignDoc(target),
-    checkAgentGuide(target),
-    checkReadmeRun(target),
-    checkVerifyScripts(target),
-    checkGitignoreHygiene(target),
-    checkSecretGate(target),
-    checkHealthzEndpoint(target),
+    checkProductDoc(rootReal),
+    checkDesignDoc(rootReal),
+    checkAgentGuide(rootReal),
+    checkReadmeRun(rootReal),
+    checkVerifyScripts(rootReal),
+    checkGitignoreHygiene(rootReal),
+    checkSecretGate(rootReal),
+    checkHealthzEndpoint(rootReal),
   ];
   const elapsedMs = Math.round(performance.now() - startedAt);
   const passed = checks.filter((c) => c.status === 'pass').length;
@@ -352,8 +414,16 @@ const USAGE = [
   '  -h,--help Show this help text',
 ].join('\n');
 
-const isMain = process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
-if (isMain) {
+function isDirectInvocation() {
+  if (!process.argv[1]) return false;
+  try {
+    return pathToFileURL(realpathSync(process.argv[1])).href === import.meta.url;
+  } catch {
+    return pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url;
+  }
+}
+
+if (isDirectInvocation()) {
   try {
     const opts = parseArgs(process.argv.slice(2));
     if (opts.help) {
