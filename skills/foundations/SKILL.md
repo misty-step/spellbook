@@ -14,7 +14,7 @@ Run `node skills/foundations/scripts/misty-check.mjs [path]` for a fast baseline
 - **One-command local run:** Boot the app and local dependencies with a single documented command.
 - **Deterministic fast gate:** Reproducible lint, typecheck, and test checks that fail closed without external flakiness.
 - **Secret and env hygiene:** `.gitignore` excludes `.env*` and credentials; pre-commit/pre-push secret scanning gates commits; `.env.example` documents required variables.
-- **Health endpoint (`/healthz`):** Live runtime exposes `/healthz` returning service health and deployed commit or version identity.
+- **Truthful health endpoint (`/healthz`):** Live runtime exposes `/healthz` checking real service readiness and returning deployed commit or version identity — never a hardcoded stub.
 - **Loud errors, production monitoring, and automated incident triage:** Fail loudly with structured diagnostics, wire real production monitoring from day one, and route production anomalies into automated incident triage with release and environment context for the human operator.
 - **Periodic implicit-state-machine formal verification:** Periodically surface and formally verify implicit state machines (lifecycle transitions, retries, locks, and idempotency invariants) so hidden races and impossible states are caught before production.
 - **Real-path verification:** Prove user-facing changes against the real running artifact; prefer recorded video walkthroughs or screenshots of live browser flows for UI changes.
