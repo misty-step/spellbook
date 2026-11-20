@@ -33,7 +33,7 @@ test('passes all 8 checks on a repo satisfying every baseline foundation', () =>
     'README.md': '# Demo\n\nRun locally:\n\n```sh\nnpm run dev\n```\n',
     'package.json': JSON.stringify({ name: 'demo', scripts: { test: 'node --test', lint: 'eslint .' } }),
     '.gitignore': 'node_modules/\n.env\n.env.*\n!.env.example\n',
-    '.githooks/trufflehog-gate.py': '#!/usr/bin/env python3\n# trufflehog scanner\n',
+    '.githooks/pre-commit': '#!/bin/sh\nexec trufflehog filesystem .\n',
     'src/server.mjs': 'export function route(p) { return p === "/healthz" ? 200 : 404; }\n',
   });
 
@@ -45,15 +45,17 @@ test('passes all 8 checks on a repo satisfying every baseline foundation', () =>
   assert.match(formatScorecard(report), /Score: 8\/8 passed · 0 gaps/);
 });
 
-test('rejects false positives: escaping symlinks, negated .env, no-op hooks, bare manifests, JSON fences, and comment-only /healthz', () => {
+test('rejects false positives: escaping symlinks, negated/cased .env, comment hooks, standalone configs, empty targets, and commented fences/healthz', () => {
   const outside = makeFixture({ 'secret-product.md': '# Outside\n' });
   const repo = makeFixture({
     'SPEC.md': '# Legacy Spec\n',
-    'README.md': '# Demo\n\n```json\n{"run": true}\n```\n',
+    'README.md': '# Demo\n\n```sh\n# npm run dev\n```\n\n```json\n{"run": true}\n```\n',
+    'Makefile': 'test:\n\t# placeholder only\n',
     'go.mod': 'module example.com/demo\n',
-    '.gitignore': '.env\n!.env\n',
-    '.githooks/pre-commit': '#!/bin/sh\nexit 0\n',
-    'src/server.mjs': '// TODO: implement /healthz endpoint\n/* /healthz */\nexport const ok = true;\n',
+    '.gitignore': '.env\n!.env\n.env.*\n',
+    '.gitleaks.toml': 'title = "example"\n',
+    '.githooks/pre-commit': '#!/bin/sh\n# TODO: add trufflehog\nexit 0\n',
+    'src/server.py': 'status = 200  # TODO: add /healthz\n',
   });
   symlinkSync(path.join(outside, 'secret-product.md'), path.join(repo, 'PRODUCT.md'));
 
@@ -69,6 +71,10 @@ test('rejects false positives: escaping symlinks, negated .env, no-op hooks, bar
   assert.equal(byId['gitignore-hygiene'].status, 'gap');
   assert.equal(byId['secret-gate'].status, 'gap');
   assert.equal(byId['healthz'].status, 'gap');
+
+  const upperEnvRepo = makeFixture({ '.gitignore': '.ENV\n' });
+  const upperById = Object.fromEntries(auditRepo(upperEnvRepo).checks.map((c) => [c.id, c]));
+  assert.equal(upperById['gitignore-hygiene'].status, 'gap');
 });
 
 test('CLI supports --json, --strict exit codes, symlinked invocation, and rejects unknown flags or missing paths', () => {

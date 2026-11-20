@@ -45,7 +45,7 @@ const MAX_FILE_BYTES = 256 * 1024;
 const MAX_FILES_SCANNED = 2000;
 const HEALTHZ_RE = /\/healthz(?![a-z0-9_-])/i;
 const SHELL_FENCE_LANGS = new Set(['', 'sh', 'shell', 'bash', 'zsh', 'console', 'cmd', 'powershell', 'pwsh']);
-const RUN_COMMAND_RE = /(^|\s)(?:npm|pnpm|yarn|bun|node|deno|python3?|pytest|uv|cargo|go|make|just|docker|podman|npx|tsx|\.\.?\/[\w./-]+)\b/m;
+const RUN_COMMAND_RE = /^\s*(?:\$\s*)?(?:[A-Z_][A-Z0-9_]*=\S+\s+)*(?:npm|pnpm|yarn|bun|node|deno|python3?|pytest|uv|cargo|go|make|just|docker|podman|npx|tsx|\.\.?\/[\w./-]+)(?:\s|$)/m;
 const SECRET_SCANNER_RE = /\b(trufflehog|gitleaks|detect-secrets|git-secrets|secretlint)\b/i;
 
 function isWithinRoot(rootReal, filePath) {
@@ -72,6 +72,39 @@ function readSafeFile(rootReal, relPath) {
   } catch {
     return null;
   }
+}
+
+function stripHashComments(text) {
+  return text
+    .split(/\r?\n/)
+    .map((line) => {
+      let quote = null;
+      let escaped = false;
+      for (let i = 0; i < line.length; i += 1) {
+        const ch = line[i];
+        if (escaped) {
+          escaped = false;
+          continue;
+        }
+        if (ch === '\\' && quote !== "'") {
+          escaped = true;
+          continue;
+        }
+        if (quote) {
+          if (ch === quote) quote = null;
+          continue;
+        }
+        if (ch === '"' || ch === "'") {
+          quote = ch;
+          continue;
+        }
+        if (ch === '#') {
+          return line.slice(0, i);
+        }
+      }
+      return line;
+    })
+    .join('\n');
 }
 
 function checkProductDoc(rootReal) {
@@ -120,7 +153,8 @@ function checkReadmeRun(rootReal) {
   for (const [, rawLang, body] of fences) {
     const lang = rawLang.trim().toLowerCase().split(/\s+/)[0] ?? '';
     if (!SHELL_FENCE_LANGS.has(lang)) continue;
-    if (RUN_COMMAND_RE.test(body)) {
+    const uncommented = stripHashComments(body);
+    if (RUN_COMMAND_RE.test(uncommented)) {
       return { id: 'local-run', label: 'Local run docs', status: 'pass', detail: `README.md documents runnable commands (${readme.lines} lines)` };
     }
   }
@@ -138,13 +172,26 @@ function detectPackageScripts(rootReal, relPath, prefix = '') {
   try {
     const pkg = JSON.parse(file.text);
     const scripts = pkg?.scripts && typeof pkg.scripts === 'object' ? Object.entries(pkg.scripts) : [];
-    const interesting = scripts
+    return scripts
       .filter(([name, cmd]) => typeof cmd === 'string' && cmd.trim().length > 0 && /^(test|lint|check|typecheck|verify)(:|$)/i.test(name))
       .map(([name]) => `${prefix}npm:${name}`);
-    return interesting;
   } catch {
     return [];
   }
+}
+
+function hasRecipeTarget(text) {
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    if (!/^(?:test|lint|check|verify)\s*:/.test(lines[i])) continue;
+    for (let j = i + 1; j < lines.length; j += 1) {
+      const next = lines[j];
+      if (!/^[ \t]/.test(next)) break;
+      const body = stripHashComments(next).trim();
+      if (body.length > 0) return true;
+    }
+  }
+  return false;
 }
 
 function checkVerifyScripts(rootReal) {
@@ -154,16 +201,16 @@ function checkVerifyScripts(rootReal) {
   ];
   for (const rel of ['scripts/check', 'scripts/verify']) {
     const script = readSafeFile(rootReal, rel);
-    if (script && !script.empty) found.push(rel);
+    if (script && !script.empty && stripHashComments(script.text).trim().length > 0) found.push(rel);
   }
   for (const rel of ['Makefile', 'justfile']) {
     const file = readSafeFile(rootReal, rel);
-    if (file && !file.empty && /^(?:test|lint|check|verify)\s*:/im.test(file.text)) {
+    if (file && !file.empty && hasRecipeTarget(file.text)) {
       found.push(rel);
     }
   }
   const pyproject = readSafeFile(rootReal, 'pyproject.toml');
-  if (pyproject && !pyproject.empty && /\[tool\.(?:pytest|ruff|mypy|flake8)\b/i.test(pyproject.text)) {
+  if (pyproject && !pyproject.empty && /\[tool\.(?:pytest|ruff|mypy|flake8)\b/i.test(stripHashComments(pyproject.text))) {
     found.push('pyproject.toml');
   }
   if (found.length > 0) {
@@ -193,17 +240,18 @@ function checkGitignoreHygiene(rootReal) {
     .map((line) => line.trim())
     .filter((line) => line.length > 0 && !line.startsWith('#'));
 
+  // Case-sensitive Git semantics for bare ".env" protection: last matching rule wins.
+  // Note: ".env.*" only matches ".env.local" etc., NOT bare ".env".
+  const matchesBareDotEnv = (pattern) => /^(?:\/|\*\*\/)?\.env(?:\*)?$/.test(pattern);
   let ignoresDotEnv = false;
   for (const line of activeLines) {
     if (line.startsWith('!')) {
-      const pattern = line.slice(1).trim();
-      // Re-including example/template files is fine; re-including real .env negates protection.
-      if (/^(?:\/|\*\*\/)?\.env(?:\*|\.\*)?$/i.test(pattern)) {
+      if (matchesBareDotEnv(line.slice(1).trim())) {
         ignoresDotEnv = false;
       }
       continue;
     }
-    if (/^(?:\/|\*\*\/)?\.env(?:\*|\.\*|(?:\.local)?)?$/i.test(line)) {
+    if (matchesBareDotEnv(line)) {
       ignoresDotEnv = true;
     }
   }
@@ -221,17 +269,16 @@ function checkGitignoreHygiene(rootReal) {
 
 function checkSecretGate(rootReal) {
   const signals = [];
-  const gateScript = readSafeFile(rootReal, '.githooks/trufflehog-gate.py');
-  if (gateScript && !gateScript.empty && SECRET_SCANNER_RE.test(gateScript.text)) {
-    signals.push('.githooks/trufflehog-gate.py');
-  }
-  const gitleaksToml = readSafeFile(rootReal, '.gitleaks.toml');
-  if (gitleaksToml && !gitleaksToml.empty) {
-    signals.push('.gitleaks.toml');
-  }
-  for (const rel of ['.githooks/pre-commit', '.githooks/pre-push', '.pre-commit-config.yaml']) {
+  for (const rel of [
+    '.githooks/trufflehog-gate.py',
+    '.githooks/pre-commit',
+    '.githooks/pre-push',
+    '.pre-commit-config.yaml',
+  ]) {
     const file = readSafeFile(rootReal, rel);
-    if (file && !file.empty && SECRET_SCANNER_RE.test(file.text)) {
+    if (!file || file.empty) continue;
+    const active = stripHashComments(file.text);
+    if (SECRET_SCANNER_RE.test(active)) {
       signals.push(rel);
     }
   }
@@ -240,7 +287,7 @@ function checkSecretGate(rootReal) {
     for (const entry of readdirSync(workflowsDir).sort()) {
       if (!/\.ya?ml$/i.test(entry)) continue;
       const wf = readSafeFile(rootReal, path.join('.github', 'workflows', entry));
-      if (wf && SECRET_SCANNER_RE.test(wf.text)) {
+      if (wf && SECRET_SCANNER_RE.test(stripHashComments(wf.text))) {
         signals.push(`.github/workflows/${entry}`);
       }
     }
@@ -257,15 +304,14 @@ function checkSecretGate(rootReal) {
     id: 'secret-gate',
     label: 'Secret gate',
     status: 'gap',
-    detail: 'No TruffleHog, Gitleaks, or secret-scanning hook/CI gate detected',
+    detail: 'No active TruffleHog, Gitleaks, or secret-scanning hook/CI gate detected',
   };
 }
 
 function stripComments(text, ext) {
   if (['.py', '.sh', '.rb', '.yaml', '.yml', '.toml'].includes(ext) || ext === '') {
-    return text.replace(/^\s*#.*$/gm, '');
+    return stripHashComments(text);
   }
-  // Remove /* ... */ and line-level or trailing // ... comments without mangling https:// URLs.
   return text
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/(^|[^:\\])\/\/[^\r\n]*/g, '$1');
