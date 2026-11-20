@@ -290,15 +290,21 @@ function checkGitignoreHygiene(rootReal) {
   }
 
   // Prefer Git's own canonical ignore evaluator when inside a Git repository,
-  // verifying that the repository's own .gitignore (not .git/info/exclude or global excludes) matches.
+  // verifying that .env is actually ignored (not re-included by a `!` rule) by root .gitignore.
   if (existsSync(path.join(rootReal, '.git'))) {
     const probe = spawnSync('git', ['-C', rootReal, 'check-ignore', '--no-index', '-v', '.env'], {
       encoding: 'utf8',
     });
     if (probe.status === 0) {
-      const source = (probe.stdout ?? '').split(':', 1)[0].trim();
-      if (source === '.gitignore') {
+      const line = (probe.stdout ?? '').split(/\r?\n/, 1)[0] ?? '';
+      const match = /^([^:]+):\d+:([^\t]*)\t/.exec(line);
+      const source = match?.[1]?.trim() ?? '';
+      const pattern = match?.[2] ?? '';
+      if (source === '.gitignore' && !pattern.startsWith('!')) {
         return { id: 'gitignore-hygiene', label: '.gitignore hygiene', status: 'pass', detail: '.gitignore excludes .env files (verified via git check-ignore)' };
+      }
+      if (pattern.startsWith('!')) {
+        return { id: 'gitignore-hygiene', label: '.gitignore hygiene', status: 'gap', detail: `.env is re-included by negation rule "${pattern}" in ${source || '.gitignore'}` };
       }
       return { id: 'gitignore-hygiene', label: '.gitignore hygiene', status: 'gap', detail: `.env is ignored only by ${source || 'external excludes'}, not .gitignore` };
     }
@@ -339,7 +345,8 @@ function hasShellScannerInvocation(text) {
 }
 
 function hasPythonScannerInvocation(text) {
-  const active = stripHashComments(text);
+  const withoutTripleQuotes = text.replace(/"""[\s\S]*?"""|'''[\s\S]*?'''/g, '');
+  const active = stripHashComments(withoutTripleQuotes);
   return PYTHON_SCANNER_CALL_RE.test(active);
 }
 

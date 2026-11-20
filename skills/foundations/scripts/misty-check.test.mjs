@@ -87,11 +87,27 @@ test('rejects adversarial false positives across all checks', () => {
   });
   assert.equal(auditRepo(quotedWf).checks.find((c) => c.id === 'secret-gate').status, 'pass');
 
-  // .git/info/exclude alone does not satisfy .gitignore hygiene.
+  // .git/info/exclude alone does not satisfy .gitignore hygiene, and Git-backed negation rules fail cleanly.
   const gitRepo = makeFixture({ '.gitignore': 'node_modules/\n' });
   execFileSync('git', ['init', '-q'], { cwd: gitRepo });
   writeFileSync(path.join(gitRepo, '.git', 'info', 'exclude'), '.env\n');
   assert.equal(auditRepo(gitRepo).checks.find((c) => c.id === 'gitignore-hygiene').status, 'gap');
+
+  for (const content of ['.env\n!.env\n', '.env\n!.en[!x]\n']) {
+    const negatedGitRepo = makeFixture({ '.gitignore': content });
+    execFileSync('git', ['init', '-q'], { cwd: negatedGitRepo });
+    assert.equal(
+      auditRepo(negatedGitRepo).checks.find((c) => c.id === 'gitignore-hygiene').status,
+      'gap',
+      `expected Git-backed gap for .gitignore: ${JSON.stringify(content)}`,
+    );
+  }
+
+  // Docstring-only Python gate does not pass secret-gate.
+  const docstringGate = makeFixture({
+    '.githooks/trufflehog-gate.py': '"""Example: subprocess.run(["trufflehog", "filesystem", "."])"""\n',
+  });
+  assert.equal(auditRepo(docstringGate).checks.find((c) => c.id === 'secret-gate').status, 'gap');
 });
 
 test('CLI supports --json, --strict exit codes, symlinked invocation, and rejects unknown flags or missing paths', () => {
