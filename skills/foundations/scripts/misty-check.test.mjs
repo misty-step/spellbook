@@ -103,17 +103,30 @@ test('rejects adversarial false positives across all checks', () => {
     );
   }
 
-  // Docstring-only Python gate (including escaped triple quotes) does not pass secret-gate,
-  // while a real scanner call between comments containing triple quotes DOES pass.
+  // Docstring-only and single-line string Python gates do not pass secret-gate (with or without python3),
+  // while real calls (including args= keyword and calls between triple-quote comments) DO pass,
+  // and python3 -I -S never imports attacker-controlled modules from the audited directory.
   const docstringGate = makeFixture({
-    '.githooks/trufflehog-gate.py': '"""Example \\""" subprocess.run(["trufflehog", "filesystem", "."])"""\n',
+    '.githooks/trufflehog-gate.py': '"""Example \\""" subprocess.run(["trufflehog", "filesystem", "."])"""\nMSG = \'subprocess.run(["trufflehog", "filesystem", "."])\'\n',
+    'ast.py': 'raise RuntimeError("must never import repo-local ast.py")\n',
   });
   assert.equal(auditRepo(docstringGate).checks.find((c) => c.id === 'secret-gate').status, 'gap');
-
-  const commentedQuotesGate = makeFixture({
-    '.githooks/trufflehog-gate.py': 'import subprocess\n# start """\nsubprocess.run(["trufflehog", "filesystem", "."])\n# end """\n',
+  const fallbackOut = execFileSync(process.execPath, [SCRIPT, docstringGate, '--json'], {
+    cwd: docstringGate,
+    env: { PATH: path.dirname(process.execPath) },
+    encoding: 'utf8',
   });
-  assert.equal(auditRepo(commentedQuotesGate).checks.find((c) => c.id === 'secret-gate').status, 'pass');
+  assert.equal(JSON.parse(fallbackOut).checks.find((c) => c.id === 'secret-gate').status, 'gap');
+
+  const kwargGate = makeFixture({
+    '.githooks/trufflehog-gate.py': 'import subprocess\n# start """\nsubprocess.run(args=["trufflehog", "filesystem", "."])\n# end """\n',
+  });
+  assert.equal(auditRepo(kwargGate).checks.find((c) => c.id === 'secret-gate').status, 'pass');
+  const kwargFallbackOut = execFileSync(process.execPath, [SCRIPT, kwargGate, '--json'], {
+    env: { PATH: path.dirname(process.execPath) },
+    encoding: 'utf8',
+  });
+  assert.equal(JSON.parse(kwargFallbackOut).checks.find((c) => c.id === 'secret-gate').status, 'pass');
 });
 
 test('CLI supports --json, --strict exit codes, symlinked invocation, and rejects unknown flags or missing paths', () => {

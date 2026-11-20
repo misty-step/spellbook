@@ -9,6 +9,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -51,10 +52,6 @@ const RUN_COMMAND_RE = /^\s*(?:\$\s*)?(?:[A-Z_][A-Z0-9_]*=\S+\s+)*(?:npm|pnpm|ya
 const SCANNER_NAMES = '(?:trufflehog|gitleaks|detect-secrets|git-secrets|secretlint)';
 const SHELL_SCANNER_CMD_RE = new RegExp(
   `(?:^|[;&|]\\s*|\\$\\(\\s*)(?:exec\\s+)?(?:[A-Z_][A-Z0-9_]*=\\S+\\s+)*(?:python3?\\s+(?:[^\\s;|&]+\\/)?trufflehog-gate\\.py\\b|(?:[^\\s;|&"']+\\/)?${SCANNER_NAMES}\\b)`,
-  'i',
-);
-const PYTHON_SCANNER_CALL_RE = new RegExp(
-  `(?:subprocess\\.(?:run|Popen|check_output|check_call|call)\\s*\\(\\s*(?:\\[\\s*)?["'](?:[^"'\\s]*\\/)?${SCANNER_NAMES}(?:["']|\\s)|os\\.(?:system|exec\\w*)\\s*\\(\\s*["'](?:[^"'\\s]*\\/)?${SCANNER_NAMES}\\b)`,
   'i',
 );
 const PRINT_CMD_RE = /^\s*(?:echo|printf)\b/i;
@@ -345,7 +342,7 @@ function hasShellScannerInvocation(text) {
 }
 
 const PYTHON_AST_SCANNER_PROBE = `
-import ast, os, re, sys
+import ast, re, sys
 SCANNER = re.compile(r'^(?:.*/)?(trufflehog|gitleaks|detect-secrets|git-secrets|secretlint)(?:\\s|$)', re.I)
 SUBPROC = {'run', 'Popen', 'check_output', 'check_call', 'call'}
 try:
@@ -353,20 +350,21 @@ try:
 except SyntaxError:
     sys.exit(1)
 for node in ast.walk(tree):
-    if not isinstance(node, ast.Call) or not node.args:
+    if not isinstance(node, ast.Call):
         continue
     fn = node.func
-    is_exec = (
-        isinstance(fn, ast.Attribute)
-        and isinstance(fn.value, ast.Name)
-        and (
-            (fn.value.id == 'subprocess' and fn.attr in SUBPROC)
-            or (fn.value.id == 'os' and (fn.attr == 'system' or fn.attr.startswith('exec')))
-        )
-    )
-    if not is_exec:
+    is_subproc = isinstance(fn, ast.Attribute) and isinstance(fn.value, ast.Name) and fn.value.id == 'subprocess' and fn.attr in SUBPROC
+    is_os = isinstance(fn, ast.Attribute) and isinstance(fn.value, ast.Name) and fn.value.id == 'os' and (fn.attr == 'system' or fn.attr.startswith('exec'))
+    if not (is_subproc or is_os):
         continue
-    arg = node.args[0]
+    arg = node.args[0] if node.args else None
+    if arg is None and is_subproc:
+        for kw in node.keywords:
+            if kw.arg == 'args':
+                arg = kw.value
+                break
+    if arg is None:
+        continue
     first = None
     if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
         first = arg.value.strip()
@@ -379,12 +377,19 @@ for node in ast.walk(tree):
 sys.exit(1)
 `;
 
-function stripPythonCommentsAndTripleStrings(text) {
-  let out = '';
+const PYTHON_SCANNER_BIN_RE = new RegExp(`^(?:.*/)?${SCANNER_NAMES}(?:\\s|$)`, 'i');
+const PYTHON_SUBPROC_FUNCS = new Set(['run', 'Popen', 'check_output', 'check_call', 'call']);
+
+function tokenizePython(text) {
+  const tokens = [];
   let i = 0;
   const n = text.length;
   while (i < n) {
     const ch = text[i];
+    if (/\s/.test(ch)) {
+      i += 1;
+      continue;
+    }
     if (ch === '#') {
       while (i < n && text[i] !== '\n') i += 1;
       continue;
@@ -392,8 +397,10 @@ function stripPythonCommentsAndTripleStrings(text) {
     if ((ch === '"' || ch === "'") && text[i + 1] === ch && text[i + 2] === ch) {
       const q = ch;
       i += 3;
+      let val = '';
       while (i < n) {
-        if (text[i] === '\\') {
+        if (text[i] === '\\' && i + 1 < n) {
+          val += text[i + 1];
           i += 2;
           continue;
         }
@@ -401,43 +408,79 @@ function stripPythonCommentsAndTripleStrings(text) {
           i += 3;
           break;
         }
-        i += 1;
+        val += text[i++];
       }
-      out += '""';
+      tokens.push({ type: 'string', value: val });
       continue;
     }
     if (ch === '"' || ch === "'") {
       const q = ch;
-      out += ch;
       i += 1;
-      while (i < n) {
-        out += text[i];
+      let val = '';
+      while (i < n && text[i] !== '\n') {
         if (text[i] === '\\' && i + 1 < n) {
-          i += 1;
-          out += text[i];
-        } else if (text[i] === q) {
+          val += text[i + 1];
+          i += 2;
+          continue;
+        }
+        if (text[i] === q) {
           i += 1;
           break;
         }
-        i += 1;
+        val += text[i++];
       }
+      tokens.push({ type: 'string', value: val });
       continue;
     }
-    out += ch;
+    if (/[A-Za-z_]/.test(ch)) {
+      let start = i;
+      while (i < n && /[A-Za-z0-9_]/.test(text[i])) i += 1;
+      tokens.push({ type: 'ident', value: text.slice(start, i) });
+      continue;
+    }
+    tokens.push({ type: 'punct', value: ch });
     i += 1;
   }
-  return out;
+  return tokens;
+}
+
+function hasPythonScannerInTokens(text) {
+  const tokens = tokenizePython(text);
+  for (let i = 0; i + 4 < tokens.length; i += 1) {
+    const t0 = tokens[i];
+    const t1 = tokens[i + 1];
+    const t2 = tokens[i + 2];
+    const t3 = tokens[i + 3];
+    if (t0.type !== 'ident' || t1.type !== 'punct' || t1.value !== '.' || t2.type !== 'ident' || t3.type !== 'punct' || t3.value !== '(') {
+      continue;
+    }
+    const isSubproc = t0.value === 'subprocess' && PYTHON_SUBPROC_FUNCS.has(t2.value);
+    const isOs = t0.value === 'os' && (t2.value === 'system' || t2.value.startsWith('exec'));
+    if (!isSubproc && !isOs) continue;
+    let idx = i + 4;
+    if (isSubproc && tokens[idx]?.type === 'ident' && tokens[idx].value === 'args' && tokens[idx + 1]?.type === 'punct' && tokens[idx + 1].value === '=') {
+      idx += 2;
+    }
+    if (tokens[idx]?.type === 'punct' && (tokens[idx].value === '[' || tokens[idx].value === '(')) {
+      idx += 1;
+    }
+    if (tokens[idx]?.type === 'string' && PYTHON_SCANNER_BIN_RE.test(tokens[idx].value.trim())) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function hasPythonScannerInvocation(text) {
-  const probe = spawnSync('python3', ['-c', PYTHON_AST_SCANNER_PROBE], {
+  const probe = spawnSync('python3', ['-I', '-S', '-c', PYTHON_AST_SCANNER_PROBE], {
     input: text,
+    cwd: tmpdir(),
     encoding: 'utf8',
   });
   if (probe.error == null && (probe.status === 0 || probe.status === 1)) {
     return probe.status === 0;
   }
-  return PYTHON_SCANNER_CALL_RE.test(stripPythonCommentsAndTripleStrings(text));
+  return hasPythonScannerInTokens(text);
 }
 
 function unquoteYamlScalar(value) {
