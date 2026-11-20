@@ -54,7 +54,8 @@ test('rejects adversarial false positives across all checks', () => {
     'go.mod': 'module example.com/demo\n',
     '.gitignore': '.env\n!.en?\n',
     '.gitleaks.toml': 'title = "example"\n',
-    '.githooks/pre-commit': '#!/bin/sh\necho "TODO: add trufflehog"\nexit 0\n',
+    '.githooks/pre-commit': '#!/bin/sh\necho "TODO: add trufflehog"\nexec true\n',
+    '.githooks/trufflehog-gate.py': 'import subprocess\nUNUSED = "trufflehog"\nsubprocess.run(["true"])\n',
     '.github/workflows/ci.yml': 'name: gitleaks placeholder\non: [workflow_dispatch]\njobs:\n  noop:\n    runs-on: ubuntu-latest\n    steps:\n      - name: check gitleaks\n        run: echo ok\n',
     'src/server.py': 'status = 200  # TODO: add /healthz\n',
     'nginx.conf': 'server {\n  # TODO: add /healthz\n}\n',
@@ -74,11 +75,23 @@ test('rejects adversarial false positives across all checks', () => {
   assert.equal(byId['secret-gate'].status, 'gap');
   assert.equal(byId['healthz'].status, 'gap');
 
-  for (const content of ['.ENV\n', ' .env\n', '.env\n!.env\n.env.*\n']) {
+  for (const content of ['.ENV\n', ' .env\n', '.env\n!.env\n.env.*\n', '.env\n!.en[!x]\n']) {
     const dir = makeFixture({ '.gitignore': content });
     const entry = auditRepo(dir).checks.find((c) => c.id === 'gitignore-hygiene');
     assert.equal(entry.status, 'gap', `expected gap for .gitignore: ${JSON.stringify(content)}`);
   }
+
+  // Quoted workflow run command passes secret-gate.
+  const quotedWf = makeFixture({
+    '.github/workflows/scan.yml': 'name: scan\non: [workflow_dispatch]\njobs:\n  scan:\n    runs-on: ubuntu-latest\n    steps:\n      - run: "gitleaks detect"\n',
+  });
+  assert.equal(auditRepo(quotedWf).checks.find((c) => c.id === 'secret-gate').status, 'pass');
+
+  // .git/info/exclude alone does not satisfy .gitignore hygiene.
+  const gitRepo = makeFixture({ '.gitignore': 'node_modules/\n' });
+  execFileSync('git', ['init', '-q'], { cwd: gitRepo });
+  writeFileSync(path.join(gitRepo, '.git', 'info', 'exclude'), '.env\n');
+  assert.equal(auditRepo(gitRepo).checks.find((c) => c.id === 'gitignore-hygiene').status, 'gap');
 });
 
 test('CLI supports --json, --strict exit codes, symlinked invocation, and rejects unknown flags or missing paths', () => {

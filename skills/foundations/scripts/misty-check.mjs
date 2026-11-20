@@ -50,7 +50,11 @@ const SHELL_FENCE_LANGS = new Set(['', 'sh', 'shell', 'bash', 'zsh', 'console', 
 const RUN_COMMAND_RE = /^\s*(?:\$\s*)?(?:[A-Z_][A-Z0-9_]*=\S+\s+)*(?:npm|pnpm|yarn|bun|node|deno|python3?|pytest|uv|cargo|go|make|just|docker|podman|npx|tsx|\.\.?\/[\w./-]+)(?:\s|$)/m;
 const SCANNER_NAMES = '(?:trufflehog|gitleaks|detect-secrets|git-secrets|secretlint)';
 const SHELL_SCANNER_CMD_RE = new RegExp(
-  `(?:^|[;&|]\\s*|\\$\\(\\s*)(?:exec\\s+|python3?\\s+(?:[^\\s;|&]+\\/)?trufflehog-gate\\.py\\b|(?:[A-Z_][A-Z0-9_]*=\\S+\\s+)*(?:[^\\s;|&"']+\\/)?${SCANNER_NAMES}\\b)`,
+  `(?:^|[;&|]\\s*|\\$\\(\\s*)(?:exec\\s+)?(?:[A-Z_][A-Z0-9_]*=\\S+\\s+)*(?:python3?\\s+(?:[^\\s;|&]+\\/)?trufflehog-gate\\.py\\b|(?:[^\\s;|&"']+\\/)?${SCANNER_NAMES}\\b)`,
+  'i',
+);
+const PYTHON_SCANNER_CALL_RE = new RegExp(
+  `(?:subprocess\\.(?:run|Popen|check_output|check_call|call)\\s*\\(\\s*(?:\\[\\s*)?["'](?:[^"'\\s]*\\/)?${SCANNER_NAMES}(?:["']|\\s)|os\\.(?:system|exec\\w*)\\s*\\(\\s*["'](?:[^"'\\s]*\\/)?${SCANNER_NAMES}\\b)`,
   'i',
 );
 const PRINT_CMD_RE = /^\s*(?:echo|printf)\b/i;
@@ -260,7 +264,9 @@ function globMatchesDotEnv(rawPattern) {
     } else if (ch === '[') {
       const end = core.indexOf(']', i + 1);
       if (end !== -1) {
-        regex += core.slice(i, end + 1);
+        let body = core.slice(i + 1, end);
+        if (body.startsWith('!')) body = `^${body.slice(1)}`;
+        regex += `[${body}]`;
         i = end;
       } else {
         regex += '\\[';
@@ -283,13 +289,18 @@ function checkGitignoreHygiene(rootReal) {
     return { id: 'gitignore-hygiene', label: '.gitignore hygiene', status: 'gap', detail: 'Missing .gitignore at repository root' };
   }
 
-  // Prefer Git's own canonical ignore evaluator when inside a Git repository.
+  // Prefer Git's own canonical ignore evaluator when inside a Git repository,
+  // verifying that the repository's own .gitignore (not .git/info/exclude or global excludes) matches.
   if (existsSync(path.join(rootReal, '.git'))) {
-    const probe = spawnSync('git', ['-C', rootReal, 'check-ignore', '--no-index', '-q', '.env'], {
-      stdio: 'ignore',
+    const probe = spawnSync('git', ['-C', rootReal, 'check-ignore', '--no-index', '-v', '.env'], {
+      encoding: 'utf8',
     });
     if (probe.status === 0) {
-      return { id: 'gitignore-hygiene', label: '.gitignore hygiene', status: 'pass', detail: '.gitignore excludes .env files (verified via git check-ignore)' };
+      const source = (probe.stdout ?? '').split(':', 1)[0].trim();
+      if (source === '.gitignore') {
+        return { id: 'gitignore-hygiene', label: '.gitignore hygiene', status: 'pass', detail: '.gitignore excludes .env files (verified via git check-ignore)' };
+      }
+      return { id: 'gitignore-hygiene', label: '.gitignore hygiene', status: 'gap', detail: `.env is ignored only by ${source || 'external excludes'}, not .gitignore` };
     }
     if (probe.status === 1) {
       return { id: 'gitignore-hygiene', label: '.gitignore hygiene', status: 'gap', detail: '.gitignore does not ignore .env (verified via git check-ignore)' };
@@ -329,9 +340,14 @@ function hasShellScannerInvocation(text) {
 
 function hasPythonScannerInvocation(text) {
   const active = stripHashComments(text);
-  const callsSubprocess = /\b(?:subprocess\.(?:run|Popen|check_output|check_call|call)|os\.system|os\.exec\w*)\b/.test(active);
-  const invokesScanner = new RegExp(`["'](?:[^"']*\\/)?${SCANNER_NAMES}["']`, 'i').test(active);
-  return callsSubprocess && invokesScanner;
+  return PYTHON_SCANNER_CALL_RE.test(active);
+}
+
+function unquoteYamlScalar(value) {
+  if (value.length >= 2 && ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'")))) {
+    return value.slice(1, -1);
+  }
+  return value;
 }
 
 function hasPreCommitScannerHook(text) {
@@ -341,7 +357,7 @@ function hasPreCommitScannerHook(text) {
 
 function hasWorkflowScannerStep(text) {
   const lines = stripHashComments(text).split(/\r?\n/);
-  const usesScannerRe = new RegExp(`^\\s*-?\\s*uses\\s*:\\s*\\S*${SCANNER_NAMES}`, 'i');
+  const usesScannerRe = new RegExp(`^\\s*-?\\s*uses\\s*:\\s*["']?\\S*${SCANNER_NAMES}`, 'i');
   let inRunBlock = false;
   let runIndent = 0;
 
@@ -362,7 +378,7 @@ function hasWorkflowScannerStep(text) {
       if (/^[|>][+-]?\d*$/.test(value)) {
         inRunBlock = true;
         runIndent = indent;
-      } else if (value && hasShellScannerInvocation(value)) {
+      } else if (value && hasShellScannerInvocation(unquoteYamlScalar(value))) {
         return true;
       }
     }
