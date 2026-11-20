@@ -3,25 +3,25 @@ import SiteLayout from '../../layouts/SiteLayout.astro';
 import HeadlineText from '../../components/HeadlineText.astro';
 import { getGraph } from '../../lib/content.mjs';
 const graph = await getGraph();
-const sections = [...new Set(graph.documents.map((document) => document.kind))].sort();
+const sections = [...new Set([...graph.documents.map((document) => document.kind), 'Tools'])].sort();
 ---
 <SiteLayout title="Search" section="Search" noindex>
   <div class="frame tool">
     <div class="tool-panel">
       <h1 class="page-title"><HeadlineText text="Search the method" stop /></h1>
-      <p class="lede">Find names, phrases, prevented failures and the heading to share.</p>
+      <p class="lede">Search across all seven skills, the always-on core, deterministic scripts, and philosophy.</p>
       <form class="sp-card tool-form" action="/search/" method="get" data-search-form>
-        <div class="sp-field"><label class="sp-label" for="search-q">Search</label><input class="sp-input" id="search-q" name="q" type="search" autocomplete="off" placeholder="Try outside proof or bug fix" /></div>
+        <div class="sp-field"><label class="sp-label" for="search-q">Search</label><input class="sp-input" id="search-q" name="q" type="search" autocomplete="off" placeholder="Try misty-check or real running artifact" /></div>
         <div class="sp-field"><label class="sp-label" for="search-section">Section</label><select class="sp-input" id="search-section" name="section"><option value="">All sections</option>{sections.map((section) => <option value={section}>{section}</option>)}</select></div>
         <button class="sp-button" type="submit">Search</button>
       </form>
-      <noscript><p class="status">Search needs JavaScript. All content is readable without it: <a class="sp-link" href="/library/">browse the library</a> or <a class="sp-link" href="/guide/">follow the guide</a>.</p></noscript>
+      <noscript><p class="status">Search needs JavaScript. All content is readable without it: <a class="sp-link" href="/library/">browse the skills</a> or <a class="sp-link" href="/philosophy/">read Philosophy &amp; Lineage</a>.</p></noscript>
       <p class="status" role="status" aria-live="polite" data-search-status>Enter a term to search this revision.</p>
     </div>
     <div class="tool-results">
       <ol class="entries" role="list" data-search-results></ol>
       <button class="sp-secondary tool-more" type="button" data-search-more hidden>Show more results</button>
-      <p class="status"><a class="sp-link" href="/library/">Browse the full library</a> · <a class="sp-link" href="/guide/">Follow the guide</a></p>
+      <p class="status"><a class="sp-link" href="/library/">Browse all skills</a> · <a class="sp-link" href="/tools/misty-check/">Inspect misty-check.mjs</a></p>
     </div>
   </div>
   <script>import '../../scripts/search.mjs';</script>

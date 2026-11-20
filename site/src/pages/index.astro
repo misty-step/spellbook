@@ -5,69 +5,101 @@ import { getGraph } from '../lib/content.mjs';
 import { getHome } from '../lib/home.mjs';
 import '../styles/home.css';
 const page = getHome(await getGraph());
-const { hero, sections: { core, method, brief, evidence, install, read } } = page;
+const { hero, sections: { skills, core, check, install, philosophy } } = page;
 ---
 <SiteLayout title={page.title} description={hero.sub} nav={page.nav} navCta={page.navCta}>
   <div class="frame">
     <section class="hero">
       <h1><HeadlineText text={hero.headline} /></h1>
       <p class="hero-sub">{hero.sub}</p>
-      <div class="actions"><a class="sp-button" href={hero.primary.href}>{hero.primary.label}</a><a class="sp-secondary" href={hero.secondary.href}>{hero.secondary.label}</a></div>
+      <div class="actions">
+        <a class="sp-button" href={hero.primary.href}>{hero.primary.label}</a>
+        <a class="sp-secondary" href={hero.secondary.href}>{hero.secondary.label}</a>
+      </div>
       <p class="hero-proof">{hero.proof}</p>
     </section>
 
+    <section class="home-section" id="skills">
+      <div class="section-head">
+        <h2><HeadlineText text={skills.title} /></h2>
+        <p class="section-intro">{skills.intro}</p>
+      </div>
+      <ol class="skill-grid" role="list">
+        {skills.items.map((item) => (
+          <li class="sp-card skill-card">
+            <div class="skill-card-head">
+              <span class="skill-index">{item.index}</span>
+              {item.script && <a class="sp-tag skill-script-tag" href={item.script.url}>+ {item.script.name}</a>}
+            </div>
+            <h3 class="skill-card-title"><a class="sp-link" href={item.url}>{item.name}</a></h3>
+            <p class="skill-card-desc">{item.description}</p>
+            <div class="skill-card-foot">
+              <code class="skill-path">{item.id}</code>
+              <a class="sp-link skill-read" href={item.url}>Read</a>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+
     <section class="home-section home-split" id="core">
-      <div class="section-head"><h2><HeadlineText text={core.title} /></h2></div>
+      <div class="section-head">
+        <h2><HeadlineText text={core.title} /></h2>
+        <p class="section-intro">{core.intro}</p>
+        <div class="actions"><a class="sp-secondary" href={core.source.href}>Read {core.source.label}</a></div>
+      </div>
       <figure class="core-figure">
-        <pre class="sp-code core-code"><code>{core.lines.join('\n')}</code></pre>
-        <figcaption>{core.caption} <a class="sp-link" href={core.source.href}>{core.source.label}</a> at <a class="sp-link" href={core.commitUrl}><code>{core.commit}</code></a>. {core.trialNote}</figcaption>
+        <pre class="sp-code core-code" tabindex="0"><code>{core.lines.join('\n')}</code></pre>
+        <figcaption>{core.caption} <a class="sp-link" href={core.source.href}>{core.source.label}</a> at <a class="sp-link" href={core.commitUrl}><code>{core.commit}</code></a>.</figcaption>
       </figure>
     </section>
 
-    <section class="home-section" id="method">
-      <div class="section-head"><h2><HeadlineText text={method.title} /></h2><p class="section-intro">{method.intro}</p></div>
-      <ol class="method-nodes" role="list">{method.nodes.map((node) => (
-        <li class="sp-card method-node"><h3 class="method-label"><a class="sp-link" href={node.href}>{node.label}</a></h3>{node.count !== undefined && <span class="method-count">{node.count}</span>}<p class="method-body">{node.body}</p></li>
-      ))}</ol>
-    </section>
-
-    <section class="home-section" id="brief">
-      <div class="section-head"><h2><HeadlineText text={brief.title} /></h2><p class="section-intro">{brief.intro}</p></div>
-      <ul class="brief-fields" role="list">{brief.items.map((item) => <li><h3>{item.title}</h3><p>{item.body}</p></li>)}</ul>
-    </section>
-
-    <section class="home-section home-split" id="evidence">
-      <div class="section-head"><h2><HeadlineText text={evidence.title} /></h2><p class="section-intro">{evidence.intro}</p></div>
-      <div class="evidence">
-        <ul class="evidence-rows" role="list">{evidence.rows.map((row) => (
-          <li class="evidence-row" data-highlight={String(row.highlight)}><span class="evidence-label">{row.label}</span><p class="sp-closeness"><meter min="0" max={row.total} value={row.passed} aria-hidden="true"></meter><span>{row.passed}/{row.total}</span></p></li>
-        ))}</ul>
-        <ul class="limits" role="list">{evidence.limits.map((limit) => <li>{limit}</li>)}</ul>
-        <a class="sp-link" href={evidence.href}>{evidence.link}</a>
+    <section class="home-section home-split" id="check">
+      <div class="section-head">
+        <h2><HeadlineText text={check.title} /></h2>
+        <p class="section-intro">{check.intro}</p>
+        <div class="actions">
+          <a class="sp-button" href={check.primary.href}>{check.primary.label}</a>
+          <a class="sp-secondary" href={check.secondary.href}>{check.secondary.label}</a>
+        </div>
       </div>
+      <figure class="core-figure">
+        <pre class="sp-code check-sample" tabindex="0"><code>{check.sample}</code></pre>
+        <figcaption>Live build-time output of <a class="sp-link" href="/tools/misty-check/"><code>misty-check.mjs</code></a> against this repository.</figcaption>
+      </figure>
     </section>
 
     <section class="home-section home-split" id="install">
-      <div class="section-head"><h2><HeadlineText text={install.title} /></h2><p class="section-intro">{install.intro}</p></div>
+      <div class="section-head">
+        <h2><HeadlineText text={install.title} /></h2>
+        <p class="section-intro">{install.intro}</p>
+      </div>
       <div class="install">
-        <div class="sp-tabs" role="tablist" aria-label="Choose your harness">{install.tabs.map((tab, index) => (
-          <button type="button" role="tab" class="sp-tab" id={`install-tab-${tab.id}`} aria-controls={`install-panel-${tab.id}`} aria-selected={String(index === 0)} tabindex={index === 0 ? 0 : -1}>{tab.name}</button>
-        ))}</div>
+        <div class="sp-tabs" role="tablist" aria-label="Choose your harness">
+          {install.tabs.map((tab, index) => (
+            <button type="button" role="tab" class="sp-tab" id={`install-tab-${tab.id}`} aria-controls={`install-panel-${tab.id}`} aria-selected={String(index === 0)} tabindex={index === 0 ? 0 : -1}>{tab.name}</button>
+          ))}
+        </div>
         {install.tabs.map((tab, index) => (
           <div class="sp-tabpanel install-panel" role="tabpanel" id={`install-panel-${tab.id}`} aria-labelledby={`install-tab-${tab.id}`} hidden={index !== 0}>
-            {tab.lines.length > 0 && <div class="install-command"><pre class="sp-code" tabindex="0" aria-label={`${tab.name} install commands`}><code>{tab.lines.join('\n')}</code></pre><button class="sp-secondary copy" type="button" data-copied={install.copied} data-failed={install.copyFailed}>{install.copy}</button></div>}
-            <p class="install-note">{tab.note} {install.source} <a class="sp-link" href={tab.source.href}>{tab.source.label}</a>.</p>
+            <div class="install-command">
+              <pre class="sp-code" tabindex="0" aria-label={`${tab.name} install commands`}><code>{tab.lines.join('\n')}</code></pre>
+              <button class="sp-secondary copy" type="button" data-copied={install.copied} data-failed={install.copyFailed}>{install.copy}</button>
+            </div>
+            <p class="install-note">{tab.note}</p>
           </div>
         ))}
-        <noscript><p class="install-note">Each harness has its own page: {install.tabs.map((tab, index) => <>{index > 0 && ', '}<a class="sp-link" href={tab.source.href}>{tab.name}</a></>)}.</p></noscript>
         <span class="sp-sr" role="status" data-copy-status></span>
       </div>
     </section>
 
-    <section class="home-section home-close" id="read">
-      <h2><HeadlineText text={read.title} /></h2>
-      <p class="section-intro">{read.body}</p>
-      <div class="actions"><a class="sp-button" href={read.primary.href}>{read.primary.label}</a><a class="sp-secondary" href={read.secondary.href}>{read.secondary.label}</a></div>
+    <section class="home-section home-close" id="philosophy">
+      <h2><HeadlineText text={philosophy.title} /></h2>
+      <p class="section-intro">{philosophy.body}</p>
+      <div class="actions">
+        <a class="sp-button" href={philosophy.primary.href}>{philosophy.primary.label}</a>
+        <a class="sp-secondary" href={philosophy.secondary.href}>{philosophy.secondary.label}</a>
+      </div>
     </section>
   </div>
 </SiteLayout>

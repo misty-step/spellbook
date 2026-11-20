@@ -5,75 +5,15 @@
     "name": "Misty Step"
   },
   "metadata": {
-    "description": "Misty Step's method for coding agents, with pinned companion packs."
+    "description": "Lean, portable engineering method for coding agents."
   },
   "plugins": [
     {
       "name": "mistystack",
       "source": "./",
-      "description": "One home for how Misty Step agents work.",
-      "homepage": "https://github.com/misty-step/mistystack",
+      "description": "Seven lean skills, five always-on rules, and deterministic repo scripts.",
+      "homepage": "https://stack.mistystep.io",
       "repository": "https://github.com/misty-step/mistystack",
-      "license": "MIT"
-    },
-    {
-      "name": "pstack",
-      "source": {
-        "source": "git-subdir",
-        "url": "https://github.com/cursor/plugins.git",
-        "path": "pstack",
-        "sha": "536a3352a050e47cb75f86be497ea304ef342301"
-      },
-      "description": "Lauren Tan's stage skills for the default flow: how, why, architect, arena, interrogate, poteto-mode, verification and formal-verification builders.",
-      "homepage": "https://github.com/cursor/plugins/tree/main/pstack",
-      "repository": "https://github.com/cursor/plugins",
-      "license": "MIT"
-    },
-    {
-      "name": "impeccable",
-      "source": {
-        "source": "git-subdir",
-        "url": "https://github.com/pbakaus/impeccable.git",
-        "path": "plugin",
-        "sha": "c3bb418ee38ee49a6b999b7752c1368f3123a2bd"
-      },
-      "description": "Shape, critique, audit and polish frontend interfaces.",
-      "homepage": "https://impeccable.style",
-      "repository": "https://github.com/pbakaus/impeccable",
-      "license": "Apache-2.0"
-    },
-    {
-      "name": "emil-kowalski",
-      "source": {
-        "source": "github",
-        "repo": "emilkowalski/skills",
-        "sha": "c8a79627b59d72d764d6ab6f2c87c09a48169833"
-      },
-      "description": "Emil Kowalski's interface animation and design engineering skills.",
-      "repository": "https://github.com/emilkowalski/skills",
-      "license": "MIT"
-    },
-    {
-      "name": "untangle-codebase",
-      "source": {
-        "source": "github",
-        "repo": "caldoai/skills",
-        "sha": "f3cf47774975a7d9fca45730babf4ff7ad765ada"
-      },
-      "description": "Untangle a codebase so agents read less per change and debug faster.",
-      "repository": "https://github.com/caldoai/skills",
-      "license": "MIT"
-    },
-    {
-      "name": "show-me",
-      "source": {
-        "source": "git-subdir",
-        "url": "https://github.com/humanlayer/skills.git",
-        "path": "plugins/show-me",
-        "sha": "4d69d20f6e9b57b4fcf0d501ccfb1be961f0f329"
-      },
-      "description": "Explain the current topic with diagrams, code-shape sketches and focused HTML artifacts.",
-      "repository": "https://github.com/humanlayer/skills",
       "license": "MIT"
     }
   ]

@@ -51,10 +51,10 @@ jobs:
         run: |
           for i in $(seq 1 12); do
             if curl -fsSL "https://stack.mistystep.io/?v=$BUILT" | grep -q "$BUILT"; then
-              for path in /guide/verify-and-ship/ /library/skills/ship-loop/ /library/skills/watchdog/ /search/; do
+              for path in /library/misty/ /library/skills/foundations/ /tools/misty-check/ /philosophy/ /search/; do
                 curl -fsS -o /dev/null "https://stack.mistystep.io$path"
               done
-              echo "stack.mistystep.io serves $BUILT; delivery/watchdog reading journey passed" >> "$GITHUB_STEP_SUMMARY"
+              echo "stack.mistystep.io serves $BUILT; lean method reading journey passed" >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
             sleep 10

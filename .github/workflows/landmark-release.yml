@@ -71,8 +71,6 @@ jobs:
           base: master
           add-paths: |
             CHANGELOG.md
-            .codex-plugin/plugin.json
-            .antigravity-plugin/plugin.json
             package.json
           delete-branch: false
           title: ${{ steps.prepare.outputs.pull-request-title }}

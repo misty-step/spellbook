@@ -46,7 +46,7 @@ test("doctor passes on the current mistystack repository including new runner fi
 	const live = runDoctorChecks(repoRoot);
 	expect(live.errors).toEqual([]);
 	expect(live.ok).toBe(true);
-	expect(live.fileCount).toBeGreaterThan(200);
+	expect(live.fileCount).toBeGreaterThan(50);
 });
 
 test("doctor rejects unmapped files in the surface closure", () => {
@@ -103,8 +103,9 @@ test("surface closure classifies non-exec, site, plugin, shared and fail-closed 
 	});
 
 	expect(resolveChangedSurfaces(["SPEC.md", "site/src/pages/index.astro"]).surfaces).toEqual(["site"]);
-	expect(resolveChangedSurfaces([".claude-plugin/plugin.json", "adapters/pi/core.ts"]).surfaces).toEqual(["plugin"]);
-	expect(resolveChangedSurfaces(["skills/ship-loop/SKILL.md"]).surfaces).toEqual(["plugin", "site"]);
+	expect(resolveChangedSurfaces([".claude-plugin/plugin.json", ".agents/skills.json"]).surfaces).toEqual(["plugin"]);
+	expect(resolveChangedSurfaces(["skills/misty/SKILL.md"]).surfaces).toEqual(["plugin", "site"]);
+	expect(resolveChangedSurfaces(["skills/foundations/scripts/misty-check.mjs"]).surfaces).toEqual(["plugin", "site"]);
 	expect(resolveChangedSurfaces(["scripts/check-runner.ts"]).surfaces).toEqual(["plugin", "site"]);
 
 	const failClosed = resolveChangedSurfaces(["AGENTS.md", "unknown-top-level.txt"]);

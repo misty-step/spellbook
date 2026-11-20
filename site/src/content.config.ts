@@ -1,18 +1,14 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 
-// Read canonical files in place. The repository path, not a generated slug,
-// remains the identity of each document in the public graph.
+// Read canonical lean method files in place.
 const repository = defineCollection({
   loader: glob({
     base: new URL('../../', import.meta.url),
     pattern: [
-      'skills/**/*.md',
+      'skills/*/SKILL.md',
       'rules/core.md',
-      'docs/**/*.md',
-      '!docs/decisions/0000-template.md',
-      'README.md', 'ATTRIBUTION.md',
-      'CHANGELOG.md', 'CONTRIBUTING.md', 'FOUNDATIONS.md', 'SPEC.md',
+      'docs/philosophy.md',
     ],
     generateId: ({ entry }) => entry,
     deferRender: true,

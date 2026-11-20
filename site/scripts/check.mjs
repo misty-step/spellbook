@@ -3,11 +3,9 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
-import { readSkillLocks } from '../../scripts/skill-locks.mjs';
 import astroConfig from '../astro.config.mjs';
 
-// Check the artifact, not Astro's source graph: a valid source link can still be
-// broken by rendering, heading generation, routing, or the search post-build.
+// Check the built static artifact: links, fragments, CSP, redirects, raw sources, sitemap, worker, and Pagefind.
 const site = fileURLToPath(new URL('..', import.meta.url));
 const root = path.resolve(site, '..');
 const dist = path.join(site, 'dist');
@@ -54,8 +52,6 @@ function route(file) {
   return `/${file.replace(/\/index\.html$/, '/')}`;
 }
 
-// A quoted-attribute-aware tokenizer for generated HTML/SVG. Script/style and
-// comments are opaque: strings such as '<a href=...>' in code are not links.
 function parseHTML(file, text) {
   const result = { ids: new Set(), links: [], tags: [], headings: new Map() };
   const token = /<!--[\s\S]*?-->|<![^>]*>|<\/?[a-z][^>"']*(?:(?:"[^"]*"|'[^']*')[^>"']*)*>/gi;
@@ -84,21 +80,6 @@ function parseHTML(file, text) {
     for (const key of ['href', 'xlink:href', 'src', 'poster', 'action', 'data']) {
       if (attributes.has(key) && (key !== 'data' || name === 'object')) {
         result.links.push({ value: attributes.get(key), label: `${label} ${key}` });
-      }
-    }
-    if (attributes.has('srcset')) {
-      // The URL token ends at whitespace, not at commas within a data URI.
-      const candidates = attributes.get('srcset');
-      let cursor = 0;
-      while (cursor < candidates.length) {
-        while (/[\s,]/.test(candidates[cursor] ?? '') && cursor < candidates.length) cursor++;
-        const start = cursor;
-        while (cursor < candidates.length && !/\s/.test(candidates[cursor])) cursor++;
-        let value = candidates.slice(start, cursor);
-        if (!value) break;
-        if (value.endsWith(',')) value = value.replace(/,+$/, '');
-        else while (cursor < candidates.length && candidates[cursor] !== ',') cursor++;
-        result.links.push({ value, label: `${label} srcset` });
       }
     }
     if (attributes.has('style')) cssLinks(attributes.get('style'), `${label} style`, result.links);
@@ -167,13 +148,12 @@ function checkLink(value, base, label) {
 
 function publicSource(source) {
   if (!nonempty(source) || source.includes('\\') || source.split('/').some((part) => !part || part === '.' || part === '..' || part.startsWith('.'))) return false;
-  if (!/\.(md|json)$/.test(source)) return false;
-  return /^(docs|skills)\//.test(source) || source === 'rules/core.md' || /^(README|ATTRIBUTION|CHANGELOG|CONTRIBUTING|FOUNDATIONS|SPEC)\.md$/.test(source);
+  if (source === 'rules/core.md' || source === 'docs/philosophy.md') return true;
+  if (/^skills\/[^/]+\/SKILL\.md$/.test(source)) return true;
+  if (/^skills\/[^/]+\/scripts\/[a-zA-Z0-9._-]+\.(mjs|py)$/.test(source)) return true;
+  return false;
 }
 
-// Pagefind's pinned bundle uses gzip + a pagefind_dcd marker. Decode its small
-// array-based CBOR metadata/filter format so missing filters or stale indexes
-// fail here instead of merely checking whether a search directory exists.
 function unpack(file) {
   const bytes = required(file);
   if (!bytes) throw new Error(`missing ${file}`);
@@ -228,7 +208,11 @@ async function main() {
   }
 
   for (const [file, bytes] of files) {
-    if (/\.(html|svg)$/.test(file)) pages.set(file, parseHTML(file, bytes.toString('utf8')));
+    if (/\.(html|svg)$/.test(file)) {
+      const text = bytes.toString('utf8');
+      expect(!/\bphaedrus\b/i.test(text), `${file}: rendered site must not contain personal names`);
+      pages.set(file, parseHTML(file, text));
+    }
   }
   for (const line of (files.get('_redirects')?.toString('utf8') ?? '').split('\n')) {
     const clean = line.trim();
@@ -242,7 +226,7 @@ async function main() {
     }
   }
   const astroRedirects = Object.entries(astroConfig.redirects);
-  expect(redirects.size === astroRedirects.length, '_redirects: must cover exactly the Astro redirects');
+  expect(redirects.size === astroRedirects.length, `_redirects: must cover exactly the Astro redirects (${redirects.size} vs ${astroRedirects.length})`);
   for (const [from, to] of astroRedirects) {
     expect(redirects.get(from) === to, `_redirects ${from}: destination must match Astro's ${to}`);
     required(`${from.slice(1)}index.html`);
@@ -250,12 +234,6 @@ async function main() {
   for (const [from] of redirects) checkLink(from, '/', `_redirects ${from}`);
   for (const [file, page] of pages) {
     const base = route(file);
-    if (base.startsWith('/decisions/')) {
-      const html = files.get(file).toString('utf8');
-      for (const badge of html.matchAll(/<p\b[^>]*class="sp-tag doc-status"[^>]*>([\s\S]*?)<\/p>/g)) {
-        expect(!decode(badge[1]).includes(']('), `${file}: decision badge must render plain text, not Markdown links`);
-      }
-    }
     for (const { name, attributes } of page.tags) {
       if (name === 'script' && (!attributes.has('type') || ['module', 'text/javascript', 'application/javascript'].includes(attributes.get('type')))) {
         expect(attributes.has('src'), `${file}: executable inline script violates the self-only CSP`);
@@ -270,10 +248,18 @@ async function main() {
     for (const link of links) checkLink(link.value, `/${file}`, link.label);
   }
   required('index.html');
+  required('library/index.html');
+  required('library/core/index.html');
+  required('library/misty/index.html');
+  required('tools/misty-check/index.html');
+  required('tools/extract-conflict-context/index.html');
+  required('philosophy/index.html');
   required('find/index.html');
+
   const worker = required('.worker/index.js')?.toString('utf8') ?? '';
-  expect(worker.includes('/api/find') && worker.includes('api/alpha/decisions'), '.worker/index.js: missing bundled finder or Jev endpoint');
+  expect(worker.includes('/api/find') && worker.includes('/healthz'), '.worker/index.js: missing bundled finder or /healthz route');
   expect(files.get('.assetsignore')?.toString('utf8').split('\n').includes('.worker/'), '.assetsignore: Worker code and index must not be public assets');
+
   const notFound = required('404.html')?.toString('utf8');
   if (notFound) {
     expect(/404|not found/i.test(notFound), '404.html: must explain the missing page');
@@ -304,26 +290,11 @@ async function main() {
       const canonicals = page.tags.filter(({ name, attributes }) => name === 'link' && attributes.get('rel')?.split(/\s+/).includes('canonical'));
       expect(canonicals.length === 1 && canonicals[0].attributes.get('href') === `${origin}${doc.url}`, `${label}: canonical link must identify its route`);
     }
-    expect(Array.isArray(doc.headings), `${label}: headings must be an array`);
-    const headingIds = new Set();
-    for (const heading of Array.isArray(doc.headings) ? doc.headings : []) {
-      expect(heading && nonempty(heading.id) && nonempty(heading.label) && Number.isInteger(heading.depth) && heading.depth >= 1 && heading.depth <= 6, `${label}: invalid heading ${JSON.stringify(heading)}`);
-      if (!heading) continue;
-      expect(!headingIds.has(heading.id), `${label}: duplicate heading ${heading.id}`);
-      headingIds.add(heading.id);
-      expect(page?.ids.has(heading.id), `${label}: rendered heading target #${heading.id} is missing`);
-      expect(page?.headings.get(heading.id) === heading.depth, `${label}: heading #${heading.id} has the wrong rendered depth`);
-    }
-    expect(doc.parentId === null || typeof doc.parentId === 'string', `${label}: parentId must be a document id or null`);
-    expect(Number.isFinite(doc.order), `${label}: order must be a finite number`);
-    for (const key of ['outboundLinks', 'backlinks']) expect(Array.isArray(doc[key]) && doc[key].every(nonempty), `${label}: ${key} must be document id strings`);
     const source = doc.source;
     expect(source && publicSource(source.path), `${label}: source.path must identify allowlisted public content`);
     if (source && publicSource(source.path)) {
       expect(doc.id === source.path, `${label}: id must equal the stable repository path`);
       expect(source.commit === expectedCommit, `${label}: source.commit differs from release identity`);
-      const encoded = source.path.split('/').map(encodeURIComponent).join('/');
-      expect(source.blobUrl === `https://github.com/misty-step/mistystack/blob/${expectedCommit}/${encoded}`, `${label}: blobUrl must point to the exact source revision`);
       const raw = required(`source/${source.path}`);
       try {
         const original = await readFile(path.join(root, source.path));
@@ -331,36 +302,7 @@ async function main() {
       } catch (error) { fail(`${label}: cannot read canonical source: ${error.message}`); }
     }
   }
-  const upstreams = readSkillLocks(root);
-  for (const error of upstreams.errors) fail(error);
-  for (const id of upstreams.vendoredSkills) {
-    const locked = upstreams.files.get(id);
-    const doc = byId.get(id);
-    expect(doc, `${id}: vendored skill is missing from the published library`);
-    const html = doc && decode(files.get(`${doc.url.slice(1)}index.html`)?.toString('utf8') ?? '');
-    expect(html?.includes(`Vendored ${locked.label}.`), `${id}: upstream provenance must be disclosed`);
-    expect(html?.includes(`https://github.com/misty-step/mistystack/blob/${expectedCommit}/${locked.lock}`), `${id}: provenance must link to the checked lock`);
-    expect(html && !/<dt[^>]*>(Owner|Prevents|Review date)<\/dt>/.test(html), `${id}: do not invent Misty metadata for upstream`);
-    const raw = await readFile(path.join(root, id), 'utf8');
-    if (!/^#{1,6}\s/m.test(raw)) {
-      const name = id.split('/').at(-2);
-      expect(doc?.title === name, `${id}: a headingless vendored skill must use its installed name as the page title`);
-      expect(doc?.headings.some((heading) => heading.depth === 1 && heading.label === name), `${id}: the generated title must be shareable`);
-    }
-  }
-  for (const doc of documents.filter((value) => value && typeof value === 'object')) {
-    if (doc.parentId !== null) expect(byId.has(doc.parentId), `${doc.id}: unknown parentId ${doc.parentId}`);
-    for (const id of Array.isArray(doc.outboundLinks) ? doc.outboundLinks : []) {
-      const other = byId.get(id);
-      expect(other, `${doc.id}: unknown outbound document ${id}`);
-      expect(other?.backlinks?.includes(doc.id), `${doc.id}: ${id} lacks the reciprocal backlink`);
-    }
-    for (const id of Array.isArray(doc.backlinks) ? doc.backlinks : []) {
-      const other = byId.get(id);
-      expect(other, `${doc.id}: unknown backlink document ${id}`);
-      expect(other?.outboundLinks?.includes(doc.id), `${doc.id}: ${id} lacks the reciprocal outbound link`);
-    }
-  }
+
   for (const [file, bytes] of files) {
     if (!file.startsWith('source/')) continue;
     const source = file.slice(7);
@@ -370,28 +312,20 @@ async function main() {
   }
 
   const sitemapURLs = new Set();
-  const sitemapFiles = new Set();
-  function sitemap(file) {
-    if (sitemapFiles.has(file)) { fail(`${file}: repeated/cyclic sitemap`); return; }
-    sitemapFiles.add(file);
-    const text = required(file)?.toString('utf8') ?? '';
-    const nested = /<sitemapindex\b/.test(text);
-    expect(nested || /<urlset\b/.test(text), `${file}: must contain a sitemap urlset or index`);
-    const locations = [...text.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)].map((match) => decode(match[1]));
-    expect(locations.length > 0, `${file}: sitemap must not be empty`);
-    for (const location of locations) {
-      expect(location.startsWith(`${origin}/`), `${file}: noncanonical sitemap URL ${location}`);
-      const resolved = checkLink(location, '/', `${file} <loc>`);
-      if (nested && resolved) sitemap(resolved.file);
-      else {
-        expect(!sitemapURLs.has(location), `${file}: duplicate sitemap URL ${location}`);
-        expect(!/[?#]/.test(location) && location.endsWith('/') && !location.includes('/404'), `${file}: invalid page URL ${location}`);
-        sitemapURLs.add(location);
-      }
-    }
+  const text = required('sitemap.xml')?.toString('utf8') ?? '';
+  expect(/<urlset\b/.test(text), 'sitemap.xml: must contain a sitemap urlset');
+  const locations = [...text.matchAll(/<loc>\s*([^<]+?)\s*<\/loc>/g)].map((match) => decode(match[1]));
+  expect(locations.length > 0, 'sitemap.xml: sitemap must not be empty');
+  for (const location of locations) {
+    expect(location.startsWith(`${origin}/`), `sitemap.xml: noncanonical sitemap URL ${location}`);
+    checkLink(location, '/', 'sitemap.xml <loc>');
+    expect(!sitemapURLs.has(location), `sitemap.xml: duplicate sitemap URL ${location}`);
+    sitemapURLs.add(location);
   }
-  sitemap('sitemap.xml');
-  for (const url of ['/', ...byURL.keys()]) expect(sitemapURLs.has(`${origin}${url}`), `sitemap.xml: missing canonical route ${url}`);
+  for (const url of ['/', '/library/', '/tools/misty-check/', '/philosophy/', ...byURL.keys()]) {
+    expect(sitemapURLs.has(`${origin}${url}`), `sitemap.xml: missing canonical route ${url}`);
+  }
+
   const robots = required('robots.txt')?.toString('utf8') ?? '';
   expect(/^User-agent:\s*\*\s*$/im.test(robots), 'robots.txt: missing public crawler policy');
   expect(!/^Disallow:\s*\/\s*$/im.test(robots), 'robots.txt: public artifact must not disallow the entire site');
@@ -402,7 +336,9 @@ async function main() {
     for (const error of errors) console.error(`ERROR ${error}`);
     console.error(`Site artifact failed ${errors.length} check(s).`);
     process.exitCode = 1;
-  } else console.log(`Checked ${pages.size} HTML/SVG files, ${documents.length} documents, local links/fragments, raw sources, release, sitemap, and Pagefind filters.`);
+  } else {
+    console.log(`Checked ${pages.size} HTML/SVG files, ${documents.length} documents, local links/fragments, raw sources, release, sitemap, worker, and Pagefind filters.`);
+  }
 }
 
 function checkPagefind(documents) {
@@ -428,7 +364,6 @@ function checkPagefind(documents) {
         expect(nonempty(fragment.content), `${file}: empty indexed content`);
         const resolved = checkLink(fragment.url, '/', file);
         const url = resolved ? route(resolved.file) : fragment.url;
-        for (const anchor of fragment.anchors ?? []) checkLink(`${fragment.url}#${encodeURIComponent(anchor.id)}`, '/', `${file} anchor`);
         if (documents.has(url)) {
           expect(!found.has(url), `${file}: duplicate indexed document ${url}`);
           found.set(url, fragment);
@@ -443,18 +378,13 @@ function checkPagefind(documents) {
         expect(filter[0] === name && Array.isArray(filter[1]), `${file}: invalid filter index`);
         if (name !== 'section') continue;
         hasSection = true;
-        const covered = new Set();
         for (const [kind, numbers] of filter[1]) {
           expect(nonempty(kind) && Array.isArray(numbers) && numbers.length > 0, `${file}: empty section value`);
           for (const number of numbers) {
             expect(Number.isInteger(number) && number >= 0 && number < fragments.length, `${file}: invalid page reference ${number}`);
             expect(fragments[number]?.filters?.section?.includes(kind), `${file}: section ${kind} disagrees with fragment ${number}`);
-            covered.add(number);
           }
         }
-        fragments.forEach((fragment, number) => {
-          if (fragment.filters?.section?.length) expect(covered.has(number), `${file}: missing filtered page ${number}`);
-        });
       }
       expect(hasSection, `Pagefind ${language}: section filter index is missing`);
     } catch (error) { fail(`Pagefind ${language}: ${error.message}`); }

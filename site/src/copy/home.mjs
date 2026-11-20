@@ -1,84 +1,78 @@
-// The home page's words: the r2-cut stack copy from the Misty Step brand
-// configurator (misty-step/aesthetic, brand/configurator/options/copy/r2-cut), moved here
-// as this site's single copy home. Facts are not written here. src/lib/home.mjs
-// reads the core lines, install commands, counts and trial numbers from the
-// repository and passes them in as `facts`; spelled counts arrive as words.
+// Single copy home for the stack.mistystep.io home page.
+// Dynamic counts, verbatim core rules, and skill listings are read from the repository by src/lib/home.mjs.
 
 export const home = {
   title: 'mistystack',
   nav: [
-    { label: 'The core', href: '#core' },
-    { label: 'The parts', href: '#method' },
-    { label: 'Evidence', href: '#evidence' },
-    { label: 'Guide', href: '/guide/' },
+    { label: 'Skills', href: '#skills' },
+    { label: 'Core', href: '#core' },
+    { label: 'misty-check', href: '#check' },
+    { label: 'Philosophy', href: '/philosophy/' },
+    { label: 'Search', href: '/search/' },
   ],
   navCta: { label: 'Install', href: '#install' },
   hero: (facts) => ({
-    headline: 'A method for coding agents.',
-    sub: `mistystack is Misty Step's open method for coding agents. Its core is ${facts.coreLines} lines long and loads in every session. Misty routes each task to specialist skills.`,
-    primary: { label: 'Install for your harness', href: '#install' },
-    secondary: { label: `Read all ${facts.coreLines} lines`, href: '#core' },
-    proof: `One install for any harness; native plugins for ${facts.commandHarnesses}.`,
+    headline: 'A lean method for coding agents.',
+    sub: `mistystack distills software-factory discipline into ${facts.coreRules} always-on rules, ${facts.skills} crisp skills, and zero-dependency scripts. Portable across harnesses, free of bloated templates.`,
+    primary: { label: `Browse all ${facts.skillCount} skills`, href: '#skills' },
+    secondary: { label: 'Install', href: '#install' },
+    proof: `${facts.skillCount} skills · ${facts.coreCount} standing rules · 0 external companion packs · MIT licensed`,
+  }),
+  skills: (facts) => ({
+    title: `${facts.Skills} skills. What and why only.`,
+    intro: 'Every skill stays brief enough to read in seconds. Click any card to inspect its verbatim Markdown and deterministic companion script.',
   }),
   core: (facts) => ({
-    title: `${facts.CoreLines} lines. Every session.`,
-    caption: 'The whole always-on core, verbatim.',
-    trialNote: 'The trial evaluated an earlier snapshot.',
+    title: `${facts.CoreRules} rules. Every session.`,
+    intro: 'Loaded on session start and kept under twenty lines. Evidence first, strategic design, real-path verification, clear autonomy boundaries, and one cold-reader recap.',
+    caption: 'Verbatim always-on standing rules from',
   }),
-  method: (facts) => ({
-    title: `${facts.Parts} parts. One always on.`,
-    intro: `Only the core loads every time. The misty skill reads each task and routes it to a specialist skill.`,
-    // Node order and bodies. Labels and counts come from the repository.
-    nodes: {
-      core: 'The always-on routing and guardrails.',
-      misty: 'Reads the task and chooses the skills.',
-      skills: 'Specialists such as research and focused security review, loaded when a task needs one.',
-      oracle: 'A check outside the agent that can disprove completion.',
-    },
-  }),
-  brief: (facts) => ({
-    title: 'Every handoff gets a brief.',
-    intro: `When work goes to a subagent, the misty skill lists ${facts.fields} fields for its brief.`,
-    // One body per brief field in skills/misty/SKILL.md, in its order.
-    fields: {
-      'Outcome and why': 'The change the consumer gets, with links to its sources.',
-      Terms: "The project's own words for the work, from its SPEC.md.",
-      'Raw material': 'The failing run, logs, data or source to start from, rather than a summary of them.',
-      Oracle: 'The check outside the worker that proves the result, with the exact command.',
-      'Scope and keep': 'The change this worker owns, and the behavior that must remain.',
-      Effort: 'How much judgment the unit needs, and its rigor tier.',
-      Return: 'What ran and what it showed, what was not covered, and every decision the worker made.',
-    },
-  }),
-  evidence: (facts) => ({
-    title: `${facts.Tasks} tasks, one run each.`,
-    intro: `Reported artifact Oracle passes across ${facts.tasks} replayed tasks per arm. Not a general superiority claim. The ${facts.limits} limits below belong with these numbers wherever they are quoted.`,
-    highlight: 'Mistystack kernel',
-    link: 'Read the trial record and limitations',
-  }),
-  install: (facts) => ({
+  check: {
+    title: 'Code beats prose.',
+    intro: 'Spend inference once, then run a deterministic script. misty-check.mjs audits any repository in under a second using Node built-ins only — zero npm dependencies, crisp text or --json output.',
+    primary: { label: 'Read misty-check.mjs', href: '/tools/misty-check/' },
+    secondary: { label: 'Foundations skill', href: '/library/skills/foundations/' },
+  },
+  install: {
     title: 'Works on any harness.',
-    intro: `One command installs the skills on any agent that reads Agent Skills; the core goes in AGENTS.md. ${facts.native} also have a native plugin. Each command is copied from that harness's reference file in the repository.`,
+    intro: 'Standard Agent Skills format with zero auto-mounted companion packs. Drop into Cursor, Codex, Antigravity, pi, OpenCode, or Claude Code.',
     copy: 'Copy',
     copied: 'Copied',
     copyFailed: 'Select the command to copy',
-    // Tab order and one note per harness reference with an installation command.
-    harnesses: {
-      any: 'Cursor, Prime Agent and others. Then add the core to AGENTS.md.',
-      claude: 'Start a fresh session after installing.',
-      codex: 'Review and trust the native SessionStart hook. Rigor agents are installed separately.',
-      pi: 'Rigor runs inline; pi has no native subagent mechanism.',
-      antigravity: 'Install with agy locally; attach misty-step/mistystack as a Remote Project resource in cloud sessions.',
-    },
-    source: 'Source:',
-  }),
-  read: (facts) => ({
-    title: 'Done means the check passes.',
-    body: `Every part of the method is a Markdown file in a public, MIT-licensed repository. The guide walks through it in ${facts.chapters} chapters.`,
-    primary: { label: 'Read the guide', href: '/guide/' },
-    secondary: { label: 'Browse the source', href: 'https://github.com/misty-step/mistystack' },
-  }),
+    tabs: [
+      {
+        id: 'any',
+        name: 'Any harness',
+        lines: ['npx skills add misty-step/mistystack -g'],
+        note: 'Installs all 7 skills globally for Cursor, Codex, Antigravity, pi, and OpenCode. Copy rules/core.md into your always-on instruction file or AGENTS.md.',
+      },
+      {
+        id: 'claude',
+        name: 'Claude Code',
+        lines: [
+          'claude plugin marketplace add misty-step/mistystack',
+          'claude plugin install mistystack@mistystack',
+        ],
+        note: 'Mounts the 7 lean skills and registers the SessionStart core hook with zero external companion packs.',
+      },
+      {
+        id: 'local',
+        name: 'Run misty-check',
+        lines: [
+          'git clone --depth 1 https://github.com/misty-step/mistystack.git /tmp/mistystack',
+          'node /tmp/mistystack/skills/foundations/scripts/misty-check.mjs .',
+        ],
+        note: 'Run the deterministic baseline auditor against any local repository with Node 20+ and zero dependencies.',
+      },
+    ],
+  },
+  philosophy: {
+    title: 'Philosophy & Lineage.',
+    body: 'Why seven small skills beat forty playbooks — deep modules, evidence before confidence, deterministic scripts, and fast vertical slices. Kept in docs/philosophy.md for human readers and never auto-loaded into agent prompts.',
+    primary: { label: 'Read Philosophy & Lineage', href: '/philosophy/' },
+    secondary: { label: 'Browse on GitHub', href: 'https://github.com/misty-step/mistystack' },
+  },
   footer: {
-    line: "mistystack is Misty Step's engineering method, MIT licensed.",
+    line: 'mistystack is a lean, portable engineering method for coding agents, MIT licensed.',
   },
 };

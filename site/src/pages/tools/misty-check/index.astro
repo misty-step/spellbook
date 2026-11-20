@@ -1,0 +1,46 @@
+---
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import SiteLayout from '../../../layouts/SiteLayout.astro';
+import DocNavigation from '../../../components/DocNavigation.astro';
+import HeadlineText from '../../../components/HeadlineText.astro';
+import { getGraph } from '../../../lib/content.mjs';
+import { TOOL_SCRIPTS } from '../../../lib/graph.mjs';
+import { blobUrl, encodePath, release, repoRoot } from '../../../lib/release.mjs';
+import { auditRepo, formatScorecard } from '../../../../../skills/foundations/scripts/misty-check.mjs';
+
+const graph = await getGraph();
+const tool = TOOL_SCRIPTS.find((item) => item.id === 'misty-check');
+const source = readFileSync(path.join(repoRoot, tool.path), 'utf8');
+const lineCount = source.split('\n').length - (source.endsWith('\n') ? 1 : 0);
+const audit = auditRepo(repoRoot);
+const sampleOutput = formatScorecard({ ...audit, target: './mistystack' });
+---
+<SiteLayout title="misty-check.mjs" description={tool.summary} section="Tools" path={tool.url}>
+  <div class="frame docs-shell">
+    <aside class="docs-sidebar" data-pagefind-ignore><DocNavigation {graph} activeUrl={tool.url} /></aside>
+    <article class="docs-content">
+      <nav class="breadcrumb" aria-label="Breadcrumb" data-pagefind-ignore><a class="sp-link" href="/">Home</a> / <a class="sp-link" href="/library/skills/foundations/">Foundations</a> / <span>misty-check.mjs</span></nav>
+      <details class="docs-disclosure browse-mobile" data-pagefind-ignore><summary>Browse method</summary><DocNavigation {graph} activeUrl={tool.url} /></details>
+      <header class="doc-header">
+        <h1 class="page-title"><HeadlineText text="misty-check.mjs" stop /></h1>
+        <p class="doc-lede">{tool.summary}</p>
+        <p class="doc-note">{tool.language} · {lineCount} lines · Zero npm dependencies.</p>
+      </header>
+      <div class="source-provenance" data-pagefind-ignore>
+        <p><code class="sp-code-inline">{tool.path}</code></p>
+        <a class="sp-link" href={blobUrl(tool.path)}>Source at <code class="sp-code-inline">{release.commit.slice(0, 7)}</code></a> · <a class="sp-link" href={`/source/${encodePath(tool.path)}`}>Raw script</a> · <a class="sp-link" href="/library/skills/foundations/">Foundations skill</a>
+      </div>
+      <div class="doc-body prose">
+        <h2 id="usage">Usage</h2>
+        <pre class="sp-code" tabindex="0"><code>{`node ${tool.path} .
+node ${tool.path} /path/to/repo --json
+node ${tool.path} /path/to/repo --strict`}</code></pre>
+        <h2 id="sample-output">Sample output</h2>
+        <pre class="sp-code" tabindex="0"><code>{sampleOutput}</code></pre>
+        <h2 id="source">Full source</h2>
+        <pre class="sp-code source-viewer" tabindex="0"><code>{source}</code></pre>
+      </div>
+    </article>
+  </div>
+</SiteLayout>

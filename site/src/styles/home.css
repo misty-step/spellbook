@@ -1,62 +1,116 @@
 /*
-  The home page on the brand tokens: the headline, one sentence and the
-  install action, then the core, the parts, the brief, the evidence, the
-  install commands and the guide. Like site.css, every value is a brand token,
-  a ratio of one, or a structural length.
+  The home page on the brand tokens: hero, clickable 7-skill grid, always-on core,
+  deterministic misty-check preview, harness install tabs, and philosophy callout.
+  Every value uses a brand token, a ratio of one, or a structural length.
 */
 
 .hero { display: grid; justify-items: start; gap: var(--space-lg); padding-block-start: var(--space-section); }
-.hero > h1 { max-inline-size: 11em; }
-.hero-sub { max-inline-size: 38em; font-size: clamp(var(--body-size), 2vw, calc(var(--body-size) * 1.25)); }
-.hero-proof { color: var(--muted); font: var(--type-label); letter-spacing: var(--label-tracking); }
+.hero > h1 { max-inline-size: 13em; }
+.hero-sub { max-inline-size: 38em; font-size: clamp(var(--body-size), 2vw, calc(var(--body-size) * 1.2)); color: var(--muted); }
+.hero-proof { color: var(--muted); font: var(--type-mono); font-size: var(--label-size); letter-spacing: var(--mono-tracking); }
 
 .home-section { display: grid; gap: var(--space-lg); padding-block-start: var(--space-section); }
-.section-head { display: grid; align-content: start; gap: var(--space-md); max-inline-size: 40em; }
+.section-head { display: grid; align-content: start; gap: var(--space-md); max-inline-size: 42em; }
 .home-section h2 { font-size: clamp(calc(var(--heading-size) * 0.625), 5vw, var(--heading-size)); }
-.section-intro { max-inline-size: 40em; }
+.section-intro { max-inline-size: 40em; color: var(--muted); }
 @media (min-width: 1021px) {
   .home-split { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); align-items: start; }
   .home-split > .section-head { padding-inline-end: var(--space-lg); }
 }
 
-/* The always-on core: six lines, wrapped so each reads whole. */
+/* The 7 lean skills: core method anchor across the top, then a symmetrical 3x2 grid of 6 specialist skills. */
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-md);
+}
+@media (min-width: 960px) {
+  .skill-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .skill-grid > .skill-card:first-child {
+    grid-column: 1 / -1;
+  }
+}
+.skill-card {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: var(--space-sm);
+  min-inline-size: 0;
+  transition: border-color 140ms ease;
+}
+.skill-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+.skill-index {
+  color: var(--muted);
+  font: var(--type-mono);
+  font-size: var(--label-size);
+  letter-spacing: var(--mono-tracking);
+}
+.skill-script-tag {
+  text-decoration: none;
+  font: var(--type-mono);
+  font-size: var(--label-size);
+}
+.skill-card-title {
+  font: var(--type-title);
+  letter-spacing: var(--title-tracking);
+}
+.skill-card-title a {
+  color: var(--ink);
+  text-decoration: none;
+}
+.skill-card-desc {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.skill-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-block-start: var(--space-xs);
+  padding-block-start: var(--space-sm);
+  border-block-start: 1px solid var(--border);
+  font: var(--type-label);
+  letter-spacing: var(--label-tracking);
+}
+.skill-path {
+  color: var(--muted);
+  font: var(--type-mono);
+  font-size: var(--label-size);
+  overflow-wrap: anywhere;
+}
+.skill-read { flex: none; }
+
+/* The always-on core & misty-check terminal preview. */
 .core-figure { display: grid; gap: var(--space-sm); min-inline-size: 0; }
 .core-figure > pre.core-code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.core-figure > pre.check-sample { white-space: pre-wrap; overflow-wrap: anywhere; font-size: calc(var(--label-size) * 0.95); line-height: 1.55; }
 .core-figure > figcaption { color: var(--muted); font: var(--type-label); letter-spacing: var(--label-tracking); }
 
-/* The parts: one card each, in routing order. */
-.method-nodes { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: var(--space-md); }
-.method-node { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label count" "body body"; align-content: start; gap: var(--space-sm) var(--space-md); }
-.method-label { grid-area: label; }
-.method-count { grid-area: count; color: var(--ink); font-family: var(--font-mono); font-size: var(--title-size); line-height: var(--title-leading); font-variant-numeric: tabular-nums; }
-.method-body { grid-area: body; color: var(--muted); }
-
-/* The brief: each field under a hairline. */
-.brief-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: var(--space-lg); }
-.brief-fields > li { display: grid; align-content: start; gap: var(--space-sm); padding-block-start: var(--space-md); border-block-start: 1px solid var(--border); }
-.brief-fields p { color: var(--muted); }
-
-/* The evidence: each arm's passes on its denominator; the highlighted arm in Indigo, the others muted. */
-.evidence { display: grid; gap: var(--space-lg); min-inline-size: 0; }
-.evidence-rows { display: grid; gap: var(--space-md); }
-.evidence-row { display: grid; grid-template-columns: minmax(0, 12rem) minmax(0, 1fr); grid-template-areas: "label closeness"; align-items: center; gap: var(--space-xs) var(--space-md); }
-.evidence-label { grid-area: label; color: var(--muted); font: var(--type-label); font-weight: var(--body-weight); letter-spacing: var(--label-tracking); }
-.evidence-row[data-highlight="true"] .evidence-label { color: var(--ink); font-weight: var(--label-weight); }
-.evidence-row:not([data-highlight="true"]) .sp-closeness > meter::-webkit-meter-optimum-value { background: var(--muted); }
-.evidence-row:not([data-highlight="true"]) .sp-closeness > meter::-moz-meter-bar { background: var(--muted); }
-
-/* Install: one tab per harness, its commands and where they come from. */
+/* Install tabs */
 .install { display: grid; grid-template-columns: minmax(0, 1fr); min-inline-size: 0; }
 .install-panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-md); }
 .install-command { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-sm); }
-.install-command > pre { flex: 1 1 18rem; min-inline-size: 0; }
+.install-command > pre { flex: 1 1 16rem; min-inline-size: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .install-command > .copy { flex: none; }
 .install-note { color: var(--muted); font: var(--type-label); letter-spacing: var(--label-tracking); }
 
-.home-close { justify-items: start; gap: var(--space-md); }
-.home-close > h2 { max-inline-size: 16em; }
+.home-close { justify-items: start; gap: var(--space-md); padding-block-start: var(--space-section); border-block-start: 1px solid var(--border); margin-block-start: var(--space-section); }
+.home-close > h2 { max-inline-size: 18em; }
+
+@media (hover: hover) and (pointer: fine) {
+  .skill-card:hover { border-color: var(--muted); }
+  .skill-card-title a:hover { color: var(--primary); }
+}
 
 @media (max-width: 700px) {
   .hero, .home-section { padding-block-start: var(--space-xl); }
-  .evidence-row { grid-template-columns: minmax(0, 1fr); grid-template-areas: "label" "closeness"; }
+  .home-close { margin-block-start: var(--space-xl); }
 }

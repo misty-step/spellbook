@@ -3,7 +3,6 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseDocument } from 'yaml';
-import { SKILL_UPSTREAMS, readSkillLocks } from '../../../scripts/skill-locks.mjs';
 import { encodePath, release, repoRoot, repositoryUrl } from './release.mjs';
 
 export const INDEX_VERSION = 1;
@@ -19,7 +18,6 @@ const SHA = /^[0-9a-f]{40}$/;
 const REPOSITORY = /^([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+?)(?:\.git)?$/;
 const PLUGIN_NAME = /^[A-Za-z0-9](?:[A-Za-z0-9.-]{0,62}[A-Za-z0-9])?$/;
 const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
-const VENDORED_PACKS = SKILL_UPSTREAMS.map(({ pack }) => pack);
 const encoder = new TextEncoder();
 const utf8 = new TextDecoder('utf-8', { fatal: true });
 const isRecord = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -44,8 +42,6 @@ export function capUtf8(text, limit = CORE_TEXT_LIMIT_BYTES) {
   return { text: utf8.decode(bytes.subarray(0, end)), bytes: end, truncated: true };
 }
 
-// Reads a SKILL.md leniently: `name` falls back to the skill directory and
-// `enabled: false` hides the skill. The index additionally needs a description and body.
 export function parseSkill(text, label, directoryName) {
   const match = FRONTMATTER.exec(text);
   if (!match) throw new Error(`${label}: missing YAML frontmatter`);
@@ -88,7 +84,6 @@ function pluginRoot(value, label) {
   return root;
 }
 
-// The "./" entry is this repository; every other entry must be a GitHub source pinned to an exact commit.
 function catalogPlugins(catalog) {
   if (!isRecord(catalog) || typeof catalog.name !== 'string' || !catalog.name || !Array.isArray(catalog.plugins)) {
     throw new Error(`${MARKETPLACE}: invalid catalog`);
@@ -108,7 +103,6 @@ function catalogPlugins(catalog) {
       local.push(plugin.name);
       continue;
     }
-    if (VENDORED_PACKS.includes(plugin.name)) throw new Error(`${label}: plugin name collides with a vendored pack`);
     if (!isRecord(source) || !['github', 'git-subdir'].includes(source.source)) {
       throw new Error(`${label}: unsupported source ${JSON.stringify(source)}; the skill index reads this repository ("./") and github or git-subdir sources`);
     }
@@ -121,8 +115,6 @@ function catalogPlugins(catalog) {
 }
 
 async function repositorySkills(root, pack, revision) {
-  const upstreams = readSkillLocks(root);
-  if (upstreams.errors.length) throw new Error(upstreams.errors.join('\n'));
   const directories = (await readdir(path.join(root, 'skills')))
     .filter((directory) => !directory.startsWith('.') && existsSync(path.join(root, 'skills', directory, 'SKILL.md')))
     .sort();
@@ -134,11 +126,7 @@ async function repositorySkills(root, pack, revision) {
     catch (error) { throw new Error(`${file}: ${error.message}`); }
     const skill = parseSkill(text, file, directory);
     if (!skill) return null;
-    let source = { pack, pin: revision, repository: repositoryUrl, path: file };
-    if (upstreams.vendoredSkills.has(file)) {
-      const locked = upstreams.files.get(file);
-      source = { pack: locked.pack, pin: locked.commit, repository: `${GITHUB}/${locked.repo}`, path: locked.source };
-    }
+    const source = { pack, pin: revision, repository: repositoryUrl, path: file };
     return skillEntry(skill, source, blobUrl(repositoryUrl, revision, file), null);
   }));
   return skills.filter(Boolean);
@@ -153,9 +141,6 @@ function treeFrom(entries) {
   return tree;
 }
 
-// Remote sources are read as text at exact commits and never executed. The cache
-// lives under repository/commit: trees are immutable per commit and blobs are
-// verified against their Git object id on every read.
 function sourceStore({ cacheDir, fetch: fetcher, token }) {
   const trees = new Map();
   const pinDirectory = (pin) => path.join(cacheDir, 'github.com', pin.owner, pin.repo, pin.sha);
@@ -252,10 +237,6 @@ function within(root, declared) {
   return !root || directory === root || directory.startsWith(`${root}/`) ? directory : undefined;
 }
 
-// Mirrors Claude Code's plugin discovery: `.claude-plugin/plugin.json` skill paths
-// add to skills/, unless the plugin's own `.claude-plugin/marketplace.json` lists it by
-// name with source "./", whose declared paths are then the complete selection. Each skill
-// directory contributes its own SKILL.md and its immediate children's.
 async function pluginSkills(plugin, store, marketplace) {
   const pin = { owner: plugin.owner, repo: plugin.repo, sha: plugin.sha };
   const label = `${MARKETPLACE}: ${plugin.name} (${pinLabel(pin)}${plugin.root ? ` ${plugin.root}` : ''})`;

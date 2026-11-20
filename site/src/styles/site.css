@@ -266,6 +266,7 @@ html:not([data-js]) :is([data-theme-toggle], .copy) { display: none; }
 /* Code blocks and table plates scroll sideways without moving the page; code in a table keeps its tokens whole. */
 :is(.sp-code, .sp-plate) { overscroll-behavior-inline: contain; }
 .sp-plate :not(pre) > code { overflow-wrap: normal; }
+pre.source-viewer { max-block-size: 38rem; overflow: auto; }
 
 .heading-anchor { margin-inline-start: 0.3em; padding-inline: 0.15em; color: var(--muted); font-family: var(--font-body); font-size: 0.7em; font-weight: var(--body-weight); letter-spacing: 0; text-decoration: none; }
 h1 > .heading-anchor { font-size: 0.42em; vertical-align: 0.5em; }

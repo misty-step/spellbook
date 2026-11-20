@@ -87,18 +87,13 @@ export function classifyRepoPath(repoPath: string): ClosureClass {
 	if (
 		p === "CHANGELOG.md" ||
 		p === "rules/core.md" ||
-		p.startsWith("vendor/") ||
-		(p.startsWith("skills/") && p.endsWith(".md"))
+		(p.startsWith("skills/") && (p.endsWith(".md") || p.endsWith(".mjs") || p.endsWith(".py")))
 	) {
 		return { kind: "surfaces", surfaces: ["plugin", "site"] };
 	}
 	if (
 		p.startsWith("skills/") ||
-		p.startsWith("adapters/") ||
-		p.startsWith("tools/friction/") ||
 		p.startsWith(".claude-plugin/") ||
-		p.startsWith(".codex-plugin/") ||
-		p.startsWith(".antigravity-plugin/") ||
 		p.startsWith(".agents/") ||
 		p.startsWith("assets/")
 	) {
@@ -377,7 +372,7 @@ async function runFast(root: string, args: string[]): Promise<number> {
 	const startMs = Date.now();
 	const budgetSeconds = resolveBudgetSeconds("CHECK_FAST_BUDGET_SECONDS", DEFAULT_FAST_BUDGET_SECONDS);
 	const steps = [
-		["node", "--test", "tools/friction/contract.test.mjs"],
+		["node", "--test", "skills/foundations/scripts/misty-check.test.mjs"],
 		...SHELL_SCRIPTS.map((script) => ["sh", "-n", script]),
 		[process.execPath, "scripts/stamp-version.ts", "--check"],
 		[process.execPath, "scripts/verify-plugin.ts", "--strict", "--lint-only"],

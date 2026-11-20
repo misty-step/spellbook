@@ -1,7 +1,7 @@
 {
   "name": "mistystack",
   "version": "0.5.7",
-  "description": "Misty Step's harness-neutral engineering method.",
+  "description": "Lean, portable engineering method for coding agents.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -13,9 +13,6 @@
   "pi": {
     "skills": [
       "./skills"
-    ],
-    "extensions": [
-      "./adapters/pi/core.ts"
     ]
   }
 }
