@@ -5,7 +5,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-export const MANIFESTS = [".codex-plugin/plugin.json", ".antigravity-plugin/plugin.json", "package.json"];
+export const MANIFESTS = ["package.json"];
 const VERSION = /^(\s*"version":\s*")([^"]*)(")/m;
 
 export function releaseVersion(root: string) {

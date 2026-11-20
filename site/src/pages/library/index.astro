@@ -6,27 +6,31 @@ import { catalogKinds } from '../../lib/graph.mjs';
 const graph = await getGraph();
 const documents = graph.documents.filter((document) => catalogKinds.includes(document.kind));
 ---
-<SiteLayout title="Library" section="Library">
+<SiteLayout title="Skills" section="Skills">
   <div class="frame tool">
     <div class="tool-panel">
-      <h1 class="page-title"><HeadlineText text="Library" stop /></h1>
-      <p class="lede">The complete method. Supporting documents are linked from each entry.</p>
+      <h1 class="page-title"><HeadlineText text="Skills" stop /></h1>
+      <p class="lede">The complete lean catalog: always-on standing rules plus seven portable skills.</p>
       <form class="sp-card tool-form" action="/library/" method="get" data-catalog-controls hidden>
-        <div class="sp-field"><label class="sp-label" for="catalog-q">Find an entry</label><input class="sp-input" id="catalog-q" type="search" name="q" placeholder="Name, trigger or prevented failure" /></div>
+        <div class="sp-field"><label class="sp-label" for="catalog-q">Filter entries</label><input class="sp-input" id="catalog-q" type="search" name="q" placeholder="Name or trigger" /></div>
         <div class="sp-field"><label class="sp-label" for="catalog-section">Section</label><select class="sp-input" id="catalog-section" name="section"><option value="">All sections ({documents.length})</option>{catalogKinds.map((kind) => <option value={kind}>{kind} ({documents.filter((document) => document.kind === kind).length})</option>)}</select></div>
-        <button class="sp-button" type="submit">Filter library</button>
+        <button class="sp-button" type="submit">Filter</button>
       </form>
       <p class="status" role="status" aria-live="polite" data-catalog-status>{documents.length} entries</p>
-      <noscript><p class="status">All entries are available below. Filtering and search need JavaScript.</p></noscript>
+      <noscript><p class="status">All entries are available below. Interactive filtering needs JavaScript.</p></noscript>
     </div>
     <div class="tool-results">
-      <ul class="entries" role="list">{documents.map((document) => <li class="entry" data-catalog-item data-section={document.kind} data-search={`${document.title} ${document.skill?.name ?? ''} ${document.skill?.description ?? ''} ${document.skill?.prevents ?? ''}`.toLowerCase()}>
-        <div class="entry-meta"><span class="sp-tag">{document.kind}</span>{document.skill?.disableModelInvocation && <span>Explicit invocation</span>}</div>
-        <h2 class="entry-title"><a href={document.url}>{document.title}</a></h2>
-        {document.skill && <><p class="entry-body">{document.skill.description}</p>{document.skill.prevents && <p class="entry-body"><strong>Prevents:</strong> {document.skill.prevents}</p>}</>}
-        {!document.skill && <p class="entry-body"><code class="sp-code-inline">{document.id}</code></p>}
-      </li>)}</ul>
-      <div class="sp-empty" data-catalog-empty hidden><p class="sp-empty-title">No matching entries.</p><p class="sp-empty-note">Clear the filters or <a class="sp-link" href="/guide/">follow the guide</a>.</p></div>
+      <ul class="entries" role="list">{documents.map((document) => (
+        <li class="entry" data-catalog-item data-section={document.kind} data-search={`${document.title} ${document.skill?.name ?? ''} ${document.skill?.description ?? ''}`.toLowerCase()}>
+          <div class="entry-meta">
+            <span class="sp-tag">{document.kind}</span>
+            {document.skill?.script && <a class="sp-link" href={document.skill.script.url}>+ {document.skill.script.name}</a>}
+          </div>
+          <h2 class="entry-title"><a href={document.url}>{document.title}</a></h2>
+          {document.skill ? <p class="entry-body">{document.skill.description}</p> : <p class="entry-body"><code class="sp-code-inline">{document.id}</code></p>}
+        </li>
+      ))}</ul>
+      <div class="sp-empty" data-catalog-empty hidden><p class="sp-empty-title">No matching entries.</p><p class="sp-empty-note">Clear the filters or <a class="sp-link" href="/">return home</a>.</p></div>
     </div>
   </div>
   <script>import '../../scripts/catalog.mjs';</script>

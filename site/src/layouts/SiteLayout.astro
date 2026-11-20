@@ -11,11 +11,34 @@ import appIcon from '@misty-step/brand/identity/icons/app-180-ink.png?url';
 import ogCard from '@misty-step/brand/identity/og/stack.png?url';
 import { home } from '../copy/home.mjs';
 import { canonical, release, repositoryUrl } from '../lib/release.mjs';
-const links = [{ href: '/guide/', label: 'Guide' }, { href: '/library/', label: 'Library' }, { href: '/find/', label: 'Find a skill' }, { href: '/evals/', label: 'Evals' }, { href: '/search/', label: 'Search' }];
-const { title, description = 'A small always-on core, one routing skill and proof on the real running path.', section = 'About', path = Astro.url.pathname, noindex = false, nav = links, navCta = { href: '/install/', label: 'Install' } } = Astro.props;
-const more = [{ href: '/install/', label: 'Install' }, { href: '/foundation/', label: 'Foundation' }, { href: '/decisions/', label: 'Decisions' }, { href: repositoryUrl, label: 'GitHub' }];
-const footer = [{ href: 'https://mistystep.io', label: 'Misty Step' }, { href: repositoryUrl, label: 'Source' }, ...links.slice(1), { href: '/foundation/', label: 'Foundation' }, { href: '/decisions/', label: 'Decisions' }, { href: '/spec/', label: 'Spec' }, { href: '/exemplars/', label: 'Exemplars' }, { href: '/attribution/', label: 'Attribution' }, { href: '/changelog/', label: 'Changelog' }];
-const selected = (href) => (path.startsWith(href) ? 'page' : undefined);
+const links = [
+  { href: '/library/', label: 'Skills' },
+  { href: '/library/core/', label: 'Core' },
+  { href: '/tools/misty-check/', label: 'misty-check' },
+  { href: '/philosophy/', label: 'Philosophy' },
+  { href: '/search/', label: 'Search' },
+];
+const {
+  title,
+  description = 'Five always-on rules, seven lean skills, and deterministic scripts for coding agents.',
+  section = 'About',
+  path = Astro.url.pathname,
+  noindex = false,
+  nav = links,
+  navCta = { href: '/#install', label: 'Install' },
+} = Astro.props;
+const more = [
+  { href: '/#install', label: 'Install' },
+  { href: '/find/', label: 'Find a skill' },
+  { href: repositoryUrl, label: 'GitHub' },
+];
+const footer = [
+  { href: 'https://mistystep.io', label: 'Misty Step' },
+  { href: repositoryUrl, label: 'GitHub' },
+  ...links,
+  { href: '/find/', label: 'Find a skill' },
+];
+const selected = (href) => (href !== '/' && !href.startsWith('/#') && path.startsWith(href) ? 'page' : undefined);
 const fullTitle = title === 'mistystack' ? title : `${title} | mistystack`;
 const url = new URL(path, canonical);
 ---
@@ -51,13 +74,19 @@ const url = new URL(path, canonical);
     <header class="masthead" data-pagefind-ignore>
       <div class="frame masthead-bar">
         <Fragment set:html={lockup('mistystack', { href: '/', label: 'mistystack home' })} />
-        <nav class="masthead-links" aria-label="Primary">{nav.map((link) => <a href={link.href} aria-current={link.href.startsWith('/') ? selected(link.href) : undefined}>{link.label}</a>)}</nav>
+        <nav class="masthead-links" aria-label="Primary">
+          {nav.map((link) => <a href={link.href} aria-current={selected(link.href)}>{link.label}</a>)}
+        </nav>
         <div class="masthead-actions">
           <button class="sp-ghost sp-icon-only" type="button" data-theme-toggle aria-pressed="false" aria-label="Dark theme"><Fragment set:html={icon('moon')} /></button>
           <a class="sp-button masthead-cta" href={navCta.href}>{navCta.label}</a>
           <details class="nav-menu">
             <summary class="sp-secondary">Menu</summary>
-            <nav aria-label="Menu"><ul role="list">{[...links, ...more].map((link) => <li><a href={link.href} aria-current={link.href.startsWith('/') ? selected(link.href) : undefined}>{link.label}</a></li>)}</ul></nav>
+            <nav aria-label="Menu">
+              <ul role="list">
+                {[...links, ...more].map((link) => <li><a href={link.href} aria-current={selected(link.href)}>{link.label}</a></li>)}
+              </ul>
+            </nav>
           </details>
         </div>
       </div>

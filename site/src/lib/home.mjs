@@ -1,21 +1,9 @@
-import path from 'node:path';
 import { home } from '../copy/home.mjs';
-import { release, repositoryUrl } from './release.mjs';
-
-// Assemble the home page from the content graph. The copy lives in
-// src/copy/home.mjs; every fact here is read from this revision of the
-// repository. A drift between the copy and the tree fails the build with the
-// reason, instead of publishing a stale count or command.
+import { release, repoRoot, repositoryUrl } from './release.mjs';
+import { auditRepo, formatScorecard } from '../../../skills/foundations/scripts/misty-check.mjs';
 
 const CORE = 'rules/core.md';
-const MISTY = 'skills/misty/SKILL.md';
-const TRIAL = 'docs/evals/2026-10-28-kernel-trial.md';
-const HARNESSES = 'skills/misty/harnesses/';
-const BRIEF = 'The brief';
-const PARTS = ['core', 'misty', 'skills', 'oracle'];
-
-const CARDINALS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
-  'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'];
+const CARDINALS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
 
 function fail(message) {
   throw new Error(`Home page: ${message}`);
@@ -27,48 +15,10 @@ function cardinal(n, what) {
 }
 
 const Cardinal = (n, what) => cardinal(n, what).replace(/^./, (c) => c.toUpperCase());
-const series = (items) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`);
-const plain = (node) => node.value ?? (node.children ?? []).map(plain).join('');
 
-function need(graph, id) {
-  return graph.byId.get(id) ?? fail(`missing ${id}`);
-}
-
-// The core's list items, verbatim from the Markdown source.
 function coreLines(core) {
   const list = core.ast.children.find((node) => node.type === 'list') ?? fail(`${CORE} has no list`);
   return list.children.map((item) => core.body.slice(item.position.start.offset, item.position.end.offset).trim());
-}
-
-// Field names of the misty skill's brief, in source order.
-function briefFields(misty) {
-  const children = misty.ast.children;
-  const heading = children.findIndex((node) => node.type === 'heading' && plain(node) === BRIEF);
-  const list = children.slice(heading + 1).find((node) => node.type === 'list');
-  if (heading < 0 || !list) fail(`${MISTY} has no "${BRIEF}" list`);
-  return list.children.map((item) => {
-    const strong = item.children[0]?.children?.find((node) => node.type === 'strong');
-    return strong ? plain(strong).replace(/:$/, '') : fail(`${MISTY}: a brief field has no bold name`);
-  });
-}
-
-function harnesses(graph, copy) {
-  const docs = graph.documents.filter((doc) => doc.id.startsWith(HARNESSES) && doc.command);
-  const ids = docs.map((doc) => path.basename(doc.id, '.md'));
-  const order = Object.keys(copy.harnesses);
-  if (ids.length !== order.length || !ids.every((id) => order.includes(id))) {
-    fail(`${HARNESSES} holds ${ids.join(', ')}; src/copy/home.mjs writes notes for ${order.join(', ')}`);
-  }
-  return order.map((id) => {
-    const doc = docs[ids.indexOf(id)];
-    return {
-      id,
-      name: doc.title.replace(/ mechanics$/, ''),
-      lines: doc.command ? doc.command.value.split('\n').filter((line) => line.trim()) : [],
-      note: copy.harnesses[id],
-      source: { label: doc.id, href: doc.url },
-    };
-  });
 }
 
 let page;
@@ -77,41 +27,30 @@ export function getHome(graph) {
 }
 
 function build(graph) {
-  const core = need(graph, CORE);
-  const misty = need(graph, MISTY);
-  const trial = need(graph, TRIAL);
+  const core = graph.byId.get(CORE) ?? fail(`missing ${CORE}`);
   const lines = coreLines(core);
+  const skillDocs = graph.documents.filter((doc) => doc.kind === 'Skills');
+  if (skillDocs.length === 0) fail('no skills found');
 
-  const installCopy = home.install({ native: '' });
-  const tabs = harnesses(graph, installCopy);
-  const withCommands = tabs.filter((tab) => tab.lines.length);
   const facts = {
-    coreLines: cardinal(lines.length, 'core lines'),
-    CoreLines: Cardinal(lines.length, 'core lines'),
-    commandHarnesses: series(withCommands.filter((tab) => tab.id !== 'any').map((tab) => tab.name)),
+    coreCount: lines.length,
+    coreRules: cardinal(lines.length, 'core rules'),
+    CoreRules: Cardinal(lines.length, 'core rules'),
+    skillCount: skillDocs.length,
+    skills: cardinal(skillDocs.length, 'skills'),
+    Skills: Cardinal(skillDocs.length, 'skills'),
   };
 
-  const skills = graph.documents.filter((doc) => doc.kind === 'Skills');
-  for (const id of ['skills/research/SKILL.md', 'skills/security-audit/SKILL.md']) need(graph, id);
-
-  const methodCopy = home.method({ Parts: Cardinal(PARTS.length, 'parts') });
-  const contract = misty.headings.find((heading) => heading.label === BRIEF) ?? fail(`${MISTY} has no "${BRIEF}" heading`);
-  const nodes = [
-    { id: 'core', label: 'Core', href: core.url },
-    { id: 'misty', label: 'Misty', href: misty.url },
-    { id: 'skills', label: 'Skills', count: skills.length, href: '/library/?section=Skills' },
-    { id: 'oracle', label: 'Oracle', href: `${misty.url}#${contract.id}` },
-  ].map((node) => ({ ...node, body: methodCopy.nodes[node.id] }));
-
-  const fields = briefFields(misty);
-  const briefCopy = home.brief({ fields: cardinal(fields.length, 'brief fields') });
-  const written = Object.keys(briefCopy.fields);
-  if (fields.join('|') !== written.join('|')) fail(`${MISTY} lists the brief fields ${fields.join(', ')}; the copy writes ${written.join(', ')}`);
-
-  const round = trial.data;
-  const evidenceCopy = home.evidence({ Tasks: Cardinal(round.taskCount, 'tasks'), tasks: cardinal(round.taskCount, 'tasks'), limits: cardinal(round.limits.length, 'limits') });
-  if (!round.arms.some((arm) => arm.label === evidenceCopy.highlight)) fail(`${TRIAL} has no arm "${evidenceCopy.highlight}"`);
-  const chapters = graph.documents.filter((doc) => /^docs\/guide\/\d+-[^/]+\.md$/.test(doc.id)).length;
+  // Run misty-check against this repository at build time for a real, honest preview.
+  const audit = auditRepo(repoRoot);
+  const sampleReport = {
+    ...audit,
+    target: './mistystack',
+  };
+  const checkSample = [
+    '$ node skills/foundations/scripts/misty-check.mjs .',
+    formatScorecard(sampleReport),
+  ].join('\n');
 
   return {
     title: home.title,
@@ -119,17 +58,32 @@ function build(graph) {
     navCta: home.navCta,
     hero: home.hero(facts),
     sections: {
-      core: { ...home.core(facts), lines, source: { label: CORE, href: core.url }, commit: release.commit.slice(0, 7), commitUrl: core.source.blobUrl },
-      method: { title: methodCopy.title, intro: methodCopy.intro, nodes },
-      brief: { title: briefCopy.title, intro: briefCopy.intro, items: fields.map((title) => ({ title, body: briefCopy.fields[title] })) },
-      evidence: {
-        ...evidenceCopy,
-        rows: round.arms.map((arm) => ({ id: arm.id, label: arm.label, passed: arm.oraclePassed, total: arm.oracleTotal, highlight: arm.label === evidenceCopy.highlight })),
-        limits: round.limits,
-        href: trial.url,
+      skills: {
+        ...home.skills(facts),
+        items: skillDocs.map((doc, idx) => ({
+          index: String(idx + 1).padStart(2, '0'),
+          name: doc.skill.name,
+          title: doc.title,
+          description: doc.skill.description,
+          url: doc.url,
+          id: doc.id,
+          words: doc.skill.words,
+          script: doc.skill.script,
+        })),
       },
-      install: { ...home.install({ native: series(withCommands.filter((tab) => tab.id !== 'any').map((tab) => tab.name)) }), tabs },
-      read: home.read({ chapters: cardinal(chapters, 'guide chapters') }),
+      core: {
+        ...home.core(facts),
+        lines,
+        source: { label: CORE, href: core.url },
+        commit: release.commit.slice(0, 7),
+        commitUrl: core.source.blobUrl,
+      },
+      check: {
+        ...home.check,
+        sample: checkSample,
+      },
+      install: home.install,
+      philosophy: home.philosophy,
     },
     footer: home.footer,
     repositoryUrl,

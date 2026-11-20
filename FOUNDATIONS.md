@@ -1,4 +1,4 @@
 # Foundations
 
-The rubric lives in [skills/foundation/checklist.md](skills/foundation/checklist.md).
-Read [docs/guide/](docs/guide/) for the method. This pointer owns no separate rules.
+Baseline project-health standards and the deterministic `misty-check.mjs` auditor live in [skills/foundations/SKILL.md](skills/foundations/SKILL.md).
+Run `node skills/foundations/scripts/misty-check.mjs [path]` to inspect any repository.

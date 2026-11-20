@@ -1,22 +1,19 @@
 ---
 const { document } = Astro.props;
-const skill = document.skill ?? document.parent?.skill;
-const inherited = !document.skill && skill;
+const skill = document.skill;
 ---
-{skill && <section class="skill-metadata" aria-label={inherited ? 'Inherited skill provenance' : 'Skill metadata'}>
-  {inherited && <p class="skill-metadata-note">Provenance inherited from <a class="sp-link" href={document.parent.url}>{skill.name}</a>. This document has no independent Misty metadata.</p>}
-  <dl>
-    <div><dt data-pagefind-ignore>{inherited ? 'Installed parent' : 'Installed name'}</dt><dd><p><code class="sp-code-inline">{skill.name}</code></p></dd></div>
-    {!inherited && <div><dt data-pagefind-ignore>When to use</dt><dd><p>{skill.description}</p></dd></div>}
-    {skill.vendored ? <>
-      <div><dt data-pagefind-ignore>Source</dt><dd><p><a class="sp-link" href={skill.provenanceUrl}>{skill.source}</a></p></dd></div>
-      <div><dt data-pagefind-ignore>Provenance</dt><dd><p>Vendored {skill.pack}. The lock owns the upstream pin and file hashes; upstream does not supply Misty's owner, prevented-failure or review-date fields.</p></dd></div>
-    </> : <>
-      {!inherited && <div><dt data-pagefind-ignore>Prevents</dt><dd><p>{skill.prevents}</p></dd></div>}
-      <div><dt data-pagefind-ignore>Owner</dt><dd><p>{skill.owner}</p></dd></div>
-      <div><dt data-pagefind-ignore>Source</dt><dd><p>{skill.source}</p></dd></div>
-      <div><dt data-pagefind-ignore>Review date</dt><dd><p><time datetime={skill.sunset}>{skill.sunset}</time>. The source calls this sunset; it is a review date, not automatic expiry.</p></dd></div>
-    </>}
-    {!inherited && <div><dt data-pagefind-ignore>Invocation</dt><dd><p>{skill.disableModelInvocation ? 'Explicit invocation only. Hidden from automatic model discovery where the native harness enforces disable-model-invocation.' : 'Available for automatic model discovery. The native harness owns invocation behavior.'}</p></dd></div>}
-  </dl>
-</section>}
+{skill && (
+  <section class="skill-metadata" aria-label="Skill metadata">
+    <dl>
+      <div><dt data-pagefind-ignore>Skill name</dt><dd><p><code class="sp-code-inline">{skill.name}</code></p></dd></div>
+      <div><dt data-pagefind-ignore>When to use</dt><dd><p>{skill.description}</p></dd></div>
+      <div><dt data-pagefind-ignore>Size</dt><dd><p>{skill.words} words</p></dd></div>
+      {skill.script && (
+        <div>
+          <dt data-pagefind-ignore>Script</dt>
+          <dd><p><a class="sp-link" href={skill.script.url}><code class="sp-code-inline">{skill.script.path}</code></a></p></dd>
+        </div>
+      )}
+    </dl>
+  </section>
+)}

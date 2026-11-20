@@ -1,18 +1,13 @@
 {
   "name": "mistystack",
-  "description": "Misty Step's harness-neutral engineering method.",
+  "description": "Lean, portable engineering method for coding agents.",
   "author": {
     "name": "Misty Step"
   },
-  "homepage": "https://github.com/misty-step/mistystack",
+  "homepage": "https://stack.mistystep.io",
   "repository": "https://github.com/misty-step/mistystack",
   "license": "MIT",
   "skills": "./skills",
-  "agents": [
-    "./adapters/claude/agents/rigor-light.md",
-    "./adapters/claude/agents/rigor-standard.md",
-    "./adapters/claude/agents/rigor-critical.md"
-  ],
   "hooks": {
     "SessionStart": [
       {

@@ -1,9 +1,0 @@
----
-const { graph } = Astro.props;
-const harnesses = graph.documents.filter((document) => document.id.startsWith('skills/misty/harnesses/') && document.command).sort((a, b) => a.title.localeCompare(b.title));
-const install = graph.byUrl.get('/install/');
-const hermes = install.headings.find((heading) => /hermes/i.test(heading.label));
----
-<nav class="harness-chooser" aria-label="Choose your harness">
-  <ul role="list">{harnesses.map((document) => <li><a class="sp-secondary" href={document.url}>{document.title.replace(/ mechanics$/, '')}</a></li>)}{hermes && <li><a class="sp-secondary" href={`/install/#${hermes.id}`}>Hermes status</a></li>}</ul>
-</nav>
