@@ -9,7 +9,7 @@ Modern frontier coding models already know how to refactor code, write tests, an
 `mistystack` cuts the method down to what a strong model genuinely needs:
 
 - **Five standing rules** in `rules/core.md` — always on, under twenty lines, defining evidence, strategic design, real-path verification, autonomy boundaries, and cold-reader reporting.
-- **Seven concise skills** in `skills/` — each 3 to 9 sentences (or 12 terse bullets for `foundations`), stating *what* matters and *why*, never bloated *how* recipes.
+- **Seven concise skills** in `skills/` — each 3 to 9 sentences (or a terse bullet checklist for `foundations`), stating *what* matters and *why*, never bloated *how* recipes.
 - **Deterministic scripts over prose** — when a check or workflow repeats, encode it in executable code (`misty-check.mjs`, `extract_conflict_context.py`, `.githooks/trufflehog-gate.py`) rather than asking an LLM to remember twenty steps.
 - **Zero auto-mounted companion packs** — every repository and operator stays in control of what loads into context.
 
