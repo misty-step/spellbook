@@ -344,10 +344,100 @@ function hasShellScannerInvocation(text) {
   return false;
 }
 
+const PYTHON_AST_SCANNER_PROBE = `
+import ast, os, re, sys
+SCANNER = re.compile(r'^(?:.*/)?(trufflehog|gitleaks|detect-secrets|git-secrets|secretlint)(?:\\s|$)', re.I)
+SUBPROC = {'run', 'Popen', 'check_output', 'check_call', 'call'}
+try:
+    tree = ast.parse(sys.stdin.read())
+except SyntaxError:
+    sys.exit(1)
+for node in ast.walk(tree):
+    if not isinstance(node, ast.Call) or not node.args:
+        continue
+    fn = node.func
+    is_exec = (
+        isinstance(fn, ast.Attribute)
+        and isinstance(fn.value, ast.Name)
+        and (
+            (fn.value.id == 'subprocess' and fn.attr in SUBPROC)
+            or (fn.value.id == 'os' and (fn.attr == 'system' or fn.attr.startswith('exec')))
+        )
+    )
+    if not is_exec:
+        continue
+    arg = node.args[0]
+    first = None
+    if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+        first = arg.value.strip()
+    elif isinstance(arg, (ast.List, ast.Tuple)) and arg.elts:
+        el = arg.elts[0]
+        if isinstance(el, ast.Constant) and isinstance(el.value, str):
+            first = el.value.strip()
+    if first and SCANNER.match(first):
+        sys.exit(0)
+sys.exit(1)
+`;
+
+function stripPythonCommentsAndTripleStrings(text) {
+  let out = '';
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    const ch = text[i];
+    if (ch === '#') {
+      while (i < n && text[i] !== '\n') i += 1;
+      continue;
+    }
+    if ((ch === '"' || ch === "'") && text[i + 1] === ch && text[i + 2] === ch) {
+      const q = ch;
+      i += 3;
+      while (i < n) {
+        if (text[i] === '\\') {
+          i += 2;
+          continue;
+        }
+        if (text[i] === q && text[i + 1] === q && text[i + 2] === q) {
+          i += 3;
+          break;
+        }
+        i += 1;
+      }
+      out += '""';
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      const q = ch;
+      out += ch;
+      i += 1;
+      while (i < n) {
+        out += text[i];
+        if (text[i] === '\\' && i + 1 < n) {
+          i += 1;
+          out += text[i];
+        } else if (text[i] === q) {
+          i += 1;
+          break;
+        }
+        i += 1;
+      }
+      continue;
+    }
+    out += ch;
+    i += 1;
+  }
+  return out;
+}
+
 function hasPythonScannerInvocation(text) {
-  const withoutTripleQuotes = text.replace(/"""[\s\S]*?"""|'''[\s\S]*?'''/g, '');
-  const active = stripHashComments(withoutTripleQuotes);
-  return PYTHON_SCANNER_CALL_RE.test(active);
+  const probe = spawnSync('python3', ['-c', PYTHON_AST_SCANNER_PROBE], {
+    input: text,
+    encoding: 'utf8',
+  });
+  if (probe.error == null && (probe.status === 0 || probe.status === 1)) {
+    return probe.status === 0;
+  }
+  return PYTHON_SCANNER_CALL_RE.test(stripPythonCommentsAndTripleStrings(text));
 }
 
 function unquoteYamlScalar(value) {

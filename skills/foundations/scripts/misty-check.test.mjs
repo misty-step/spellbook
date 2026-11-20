@@ -103,11 +103,17 @@ test('rejects adversarial false positives across all checks', () => {
     );
   }
 
-  // Docstring-only Python gate does not pass secret-gate.
+  // Docstring-only Python gate (including escaped triple quotes) does not pass secret-gate,
+  // while a real scanner call between comments containing triple quotes DOES pass.
   const docstringGate = makeFixture({
-    '.githooks/trufflehog-gate.py': '"""Example: subprocess.run(["trufflehog", "filesystem", "."])"""\n',
+    '.githooks/trufflehog-gate.py': '"""Example \\""" subprocess.run(["trufflehog", "filesystem", "."])"""\n',
   });
   assert.equal(auditRepo(docstringGate).checks.find((c) => c.id === 'secret-gate').status, 'gap');
+
+  const commentedQuotesGate = makeFixture({
+    '.githooks/trufflehog-gate.py': 'import subprocess\n# start """\nsubprocess.run(["trufflehog", "filesystem", "."])\n# end """\n',
+  });
+  assert.equal(auditRepo(commentedQuotesGate).checks.find((c) => c.id === 'secret-gate').status, 'pass');
 });
 
 test('CLI supports --json, --strict exit codes, symlinked invocation, and rejects unknown flags or missing paths', () => {
