@@ -7,8 +7,8 @@ description: "Baseline project-health standards and deterministic repo audit (mi
 
 Run `node skills/foundations/scripts/misty-check.mjs [path]` for a fast baseline audit; every maintained project should satisfy these foundations:
 
-- **Present-tense `PRODUCT.md`:** User stories, domain terms, and non-goals with zero implementation details.
-- **Living `DESIGN.md`:** For UI projects, visual tokens, typography, and layout invariants kept in parity with shipped stylesheets.
+- **Active Folio — `PRODUCT.md`:** Present-tense user stories, domain terms, and non-goals with zero implementation details; paired with `DESIGN.md`, this Active Folio replaces stale ADR sprawl while git owns history.
+- **Active Folio — `DESIGN.md`:** For UI projects, living visual tokens, typography, and layout invariants kept in parity with shipped stylesheets.
 - **Concise agent guide:** One short `AGENTS.md` (or `CLAUDE.md`) stating repository layout, ownership, and exact verify commands.
 - **Agent ergonomics:** Every operation the user can take in the program is one an agent can take too — expose full CLI, API, or structured affordance parity, never GUI-only traps.
 - **One-command local run:** Boot the app and local dependencies with a single documented command.

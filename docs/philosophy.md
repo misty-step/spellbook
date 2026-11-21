@@ -19,8 +19,8 @@ Ticket boards and kanban backlogs rot at agent speeds. Every ticket is a frozen 
 
 Instead of materializing work into a backlog, the human operator and coding agents run on four surfaces where **work is the computed diff between Intent and Verified Reality**:
 
-- **Intent (`PRODUCT.md` / `DESIGN.md`)** — The present-tense target state: observable user stories, business rules, non-goals, and visual system invariants. When the user changes direction, Intent changes directly.
-- **Verified Reality / Evidence Ledger** — What the running product actually does today, backed by real checks, traces, screenshots, recordings, and live build identity. Gaps between Intent and Verified Reality define the next slice without creating tickets.
+- **Intent — the Active Folio (`PRODUCT.md` + `DESIGN.md`)** — The repository's present-tense truth: observable user stories, business rules, non-goals, and visual system invariants. Git owns history, replacing stale ADR sprawl; when the user changes direction, the Active Folio changes directly.
+- **Verified Reality / Evidence Ledger** — What the running product actually does today, backed by real checks, empirical traces, formal state-machine verification, screenshots, recordings, and live build identity — never abstract prose nitpicks. Gaps between Intent and Verified Reality define the next slice without creating tickets.
 - **Ephemeral Compute** — Loops, triggers, and bounded factory runs that close a specific diff between Intent and Verified Reality and then tear down cleanly, leaving verified commits and evidence rather than long-lived orchestration clutter.
 - **Sparks / Ideas** — One flat, low-ceremony capture log for rough thoughts and future possibilities. A spark stays inert until the user promotes it into Intent — never silently turned into backlog debt.
 
@@ -34,7 +34,9 @@ The lean method stands on clear, battle-tested engineering ideas:
 - **Zach Lloyd** — Fast-loop software-factory shipping. Keep feedback cycles short, remove ceremony from the inner loop, and deliver verifiable vertical slices continuously.
 - **Linus Torvalds & John Carmack** — Good taste comes from clean data structures that eliminate special cases and explicit, visible control flow free of hidden state mutation.
 - **Nate Berkopec & Richard Sutton (*The Bitter Lesson*)** — Maintain one present-tense `PRODUCT.md` describing observable user stories and non-goals with zero implementation lock-in, reconciled directly against the running product rather than materialized into a drift-prone ticket backlog.
+- **Felix Rieseberg (`#depth`)** — Push for depth over breadth before scoping or building: start from raw source data and real domain tools instead of pre-digested tables, set ambitious constraints, falsify assumptions against real telemetry, and verify outcomes with an outside judge rather than letting the model grade itself.
+- **Joseph Suarez (`PufferLib SKILL_ISSUES.md`)** — After code works, run a subtract-and-inline pass: inline single-use wrappers, flatten nested branches, and delete test-only shims and dead code without golfing, while preserving strict validation at external trust boundaries.
 
 ## Portable by design
 
-Every rule and skill in `mistystack` is written in portable language ("the user", "the human operator") with zero personal names, machine-specific paths, or hardcoded model rankings. Any team or individual can drop `rules/core.md` and `skills/` into Claude Code, Codex, Cursor, Antigravity, pi, or any other Agent Skills harness without editing a line.
+Every rule and skill in `mistystack` is written in portable language ("the user", "the human operator") with zero personal names, machine-specific paths, or hardcoded model rankings. Model routing stays provider-agnostic (working cleanly through unified gateways like OpenRouter or native provider APIs), and verification favors empirical execution and formal checks over abstract nitpicks. Any team or individual can drop `rules/core.md` and `skills/` into Claude Code, Codex, Cursor, Antigravity, pi, or any other Agent Skills harness without editing a line.
