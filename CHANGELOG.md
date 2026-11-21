@@ -1,3 +1,15 @@
+# [0.5.8](https://github.com/misty-step/mistystack/compare/v0.5.7...v0.5.8) (2026-11-21)
+<!-- landmark:protected-release previous=v0.5.7 source=55e7d1f9ec4e9ef765200d338db38c2adb8076068af43b3890542b2347eb6651 -->
+
+### Features
+
+* **friction:** qualify native Pi RPC completion capture (MIS-1218 s1) (#729) ([de34f7a](https://github.com/misty-step/mistystack/commit/de34f7aedef8a35313da2c924ecc2c1e3685a79d))
+
+### Bug Fixes
+
+* **friction:** qualify Codex subagents and Misty completion journeys (#731) ([498c42e](https://github.com/misty-step/mistystack/commit/498c42e5f7cb238495601ffa6912b34db90b0a29))
+* **context:** route agent work through Supercortex (#738) ([86403fd](https://github.com/misty-step/mistystack/commit/86403fd11635b8bb17a27cefbcd79563afb6b472))
+* **context:** honor explicit source intent for personal material (#739) ([747395b](https://github.com/misty-step/mistystack/commit/747395b235b0af80f70ee488d696b938bd6fe0db))
 # [0.5.7](https://github.com/misty-step/mistystack/compare/v0.5.6...v0.5.7) (2026-11-16)
 <!-- landmark:protected-release previous=v0.5.6 source=8b87cf5c5b66d8447b0db7a1d1665f9783412cbc7786e1384e08904bc05bb9a5 -->
 
