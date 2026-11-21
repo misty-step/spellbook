@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    runs-on: [self-hosted, hetzner-ci, mistystack-ci]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: site
