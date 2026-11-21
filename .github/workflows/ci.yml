@@ -10,7 +10,7 @@ permissions:
   contents: read
 jobs:
   verify:
-    runs-on: [self-hosted, hetzner-ci, mistystack-ci]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,7 +55,7 @@ jobs:
           LANDMARK_BIN: ${{ runner.temp }}/mistystack-release-tools/landmark
         run: bun scripts/protected-release-check.ts
   site:
-    runs-on: [self-hosted, hetzner-ci, mistystack-ci]
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: site

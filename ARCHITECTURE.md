@@ -244,8 +244,8 @@ The closure classes are listed below (`scripts/check-runner.ts:73-109`):
 ## The release path
 
 One train per manual dispatch of **Verify and Release**
-(`.github/workflows/landmark-release.yml`). Every job runs on self-hosted
-`hetzner-ci` runners (`:20`, `ci.yml:13`). Only one train runs at a time; an
+(`.github/workflows/landmark-release.yml`). Every job runs on GitHub-hosted
+`ubuntu-latest` runners (`:20`, `ci.yml:13`). Only one train runs at a time; an
 in-flight train is never cancelled (`landmark-release.yml:13-15`).
 
 1. **Dispatch.** The operator supplies `source`, a full SHA, and

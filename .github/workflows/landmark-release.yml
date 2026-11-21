@@ -17,7 +17,7 @@ permissions:
   contents: read
 jobs:
   prepare:
-    runs-on: [self-hosted, hetzner-ci, mistystack-ci]
+    runs-on: ubuntu-latest
     outputs:
       candidate: ${{ steps.candidate.outputs.sha }}
     permissions:
@@ -100,7 +100,7 @@ jobs:
       revision: ${{ needs.prepare.outputs.candidate }}
   publish:
     needs: [prepare, verify]
-    runs-on: [self-hosted, hetzner-ci, mistystack-ci]
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       issues: write
