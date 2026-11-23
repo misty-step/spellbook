@@ -192,3 +192,84 @@ test('Active Folio check is presence-based and accepts arbitrary custom section 
   assert.equal(missing.activeFolio.design, false);
   assert.match(formatScorecard(missing), /Active Folio: missing/);
 });
+
+test('surface-class advisory detection inspects web apps without rejecting custom layouts, non-web repos, or --strict', () => {
+  // Custom nested web directory with unquoted HTML attributes (including / in unquoted href), logo.svg icon link, and valid public JSON manifest passes all web advisories.
+  const customWeb = makeFixture({
+    'apps/web/index.html': '<!doctype html><html><head><meta name=viewport content="width=device-width, initial-scale=1"><link rel=icon href=/logo.svg><link rel=manifest href=/app-metadata.json></head><body>Hi</body></html>\n',
+    'apps/web/public/logo.svg': '<svg></svg>\n',
+    'apps/web/public/app-metadata.json': '{"name":"Demo","display":"standalone"}\n',
+  });
+  const webReport = auditRepo(customWeb);
+  assert.deepEqual(webReport.surfaceClass.detected, ['web-app']);
+  assert.equal(webReport.surfaceClass.advisoryOnly, true);
+  assert.equal(webReport.surfaceClass.checks.length, 3);
+  assert.ok(webReport.surfaceClass.checks.every((c) => c.status === 'pass'));
+  assert.match(formatScorecard(webReport), /Surface class \(advisory\): web-app/);
+  assert.match(formatScorecard(webReport), /Advisory surface checks \(never fail --strict\):/);
+
+  // Deeply nested monorepo Next app (apps/team/client/) detects web-app and stops at its nearest local manifest.json (rejecting extension JSON even when a farther workspace public/ copy is valid).
+  const nestedNext = makeFixture({
+    'apps/team/client/package.json': JSON.stringify({ name: 'client', dependencies: { next: '^15.0.0' } }),
+    'apps/team/client/src/app/layout.tsx': 'export const viewport = { width: "device-width" };\nexport default function Layout() { return <link rel="manifest" href="/app-metadata.json" />; }\n',
+    'apps/team/client/public/favicon.ico': 'ico',
+    'apps/team/client/public/app-metadata.json': JSON.stringify({ manifest_version: 3, name: 'Ext', version: '1.0' }),
+    'public/app-metadata.json': JSON.stringify({ name: 'Workspace PWA', display: 'standalone' }),
+  });
+  const nestedReport = auditRepo(nestedNext);
+  assert.deepEqual(nestedReport.surfaceClass.detected, ['web-app']);
+  assert.equal(nestedReport.surfaceClass.checks.find((c) => c.id === 'web-favicon').status, 'pass');
+  assert.equal(nestedReport.surfaceClass.checks.find((c) => c.id === 'web-viewport').status, 'pass');
+  assert.equal(nestedReport.surfaceClass.checks.find((c) => c.id === 'web-manifest').status, 'advisory');
+
+  // Arbitrary *.webmanifest filename passes manifest check directly, and an inline <script> containing "<!--" before real tags does not eat subsequent head tags.
+  const customWebmanifest = makeFixture({
+    'index.html': '<!doctype html><html><head><script>const ok = s.startsWith("<!--");</script><meta name=viewport content=width=device-width><link rel=icon href=/logo.svg><!-- trailing --></head><body></body></html>\n',
+    'public/pwa.webmanifest': '{"name":"PWA","display":"standalone"}\n',
+  });
+  assert.ok(auditRepo(customWebmanifest).surfaceClass.checks.every((c) => c.status === 'pass'));
+
+  // Web app rejects HTML comments (including `// note -->`), inline <script> strings, data-* attributes, unquoted Chrome extension manifest links, and NEVER fails --strict.
+  const webMissingAdvisories = makeFixture({
+    'PRODUCT.md': 'Web app product intent.\n',
+    'DESIGN.md': 'Visual tokens.\n',
+    'AGENTS.md': 'Guide.\n',
+    'README.md': '```sh\nnpm run dev\n```\n',
+    'package.json': JSON.stringify({ name: 'demo-web', scripts: { test: 'node --test' }, dependencies: { react: '^19.0.0' } }),
+    'extensions/manifest.json': JSON.stringify({ manifest_version: 3, name: 'Ext', version: '1.0' }),
+    'index.html': [
+      '<!doctype html><html><head>',
+      '<!-- <meta name="viewport" content="width=device-width"> // note -->',
+      '<meta data-name="viewport" content="width=device-width">',
+      '<link data-rel="icon" href="/favicon.ico">',
+      '<link rel="manifest" data-href="/pwa.webmanifest">',
+      '<link rel=manifest href=extensions/manifest.json>',
+      '<meta-preview name=viewport></meta-preview>',
+      '<link-preview rel=icon href=/a.ico></link-preview>',
+      '<script data-example="> </script>">const fake = \'<meta name=viewport>\';</script>',
+      '<style data-example="> </style>">/* <link rel=icon href=/a.ico> */</style>',
+      '</head><body></body></html>\n',
+    ].join('\n'),
+    '.gitignore': '.env\n',
+    '.githooks/pre-commit': '#!/bin/sh\nexec trufflehog filesystem .\n',
+    'src/server.mjs': 'export const health = "/healthz";\n',
+  });
+  const missingReport = auditRepo(webMissingAdvisories);
+  assert.deepEqual(missingReport.surfaceClass.detected, ['web-app']);
+  assert.equal(missingReport.summary.passed, 8);
+  assert.equal(missingReport.summary.gaps, 0);
+  assert.ok(missingReport.surfaceClass.checks.every((c) => c.status === 'advisory'));
+  // --strict exits 0 despite web advisories!
+  execFileSync(process.execPath, [SCRIPT, webMissingAdvisories, '--strict'], { stdio: 'pipe' });
+
+  // Non-web CLI repo (even with vite in devDependencies and a test fixture named src-tauri) receives zero web-app or native-desktop classifications.
+  const cliRepo = makeFixture({
+    'package.json': JSON.stringify({ name: 'demo-cli', bin: { demo: './bin/demo.mjs' }, devDependencies: { vite: '^6.0.0' } }),
+    'bin/demo.mjs': '#!/usr/bin/env node\nconsole.log("ok");\n',
+    'tests/fixtures/src-tauri/data.txt': 'fixture\n',
+  });
+  const cliReport = auditRepo(cliRepo);
+  assert.deepEqual(cliReport.surfaceClass.detected, ['cli-service']);
+  assert.deepEqual(cliReport.surfaceClass.checks, []);
+  assert.doesNotMatch(formatScorecard(cliReport), /Web favicon|Web viewport|Web app manifest/);
+});

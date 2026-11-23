@@ -55,6 +55,20 @@ const SHELL_SCANNER_CMD_RE = new RegExp(
   'i',
 );
 const PRINT_CMD_RE = /^\s*(?:echo|printf)\b/i;
+const WEB_FRAMEWORK_DEPS = new Set([
+  'astro', 'next', 'react', 'react-dom', 'vue', 'nuxt',
+  'svelte', '@sveltejs/kit', '@remix-run/react', 'react-router',
+  'solid-js', '@angular/core', 'gatsby', 'preact',
+]);
+const DESKTOP_FRAMEWORK_DEPS = new Set(['electron', '@tauri-apps/api', '@tauri-apps/cli']);
+const MARKUP_EXTENSIONS = new Set(['.html', '.htm', '.astro', '.tsx', '.jsx', '.svelte', '.vue', '.ejs', '.hbs', '.njk']);
+const TEST_DIRS = new Set(['__tests__', 'test', 'tests', 'fixtures']);
+const TEST_PATH_RE = /(?:^|\/)(?:__tests__|tests?|fixtures)\/|\.(?:test|spec)\.[^/]+$/i;
+const FAVICON_FILE_RE = /^(?:favicon[^/]*\.(?:ico|svg|png|webp)|apple-touch-icon[^/]*\.png)$/i;
+const VIEWPORT_EXPORT_RE = /\bexport\s+(?:const|async\s+function|function)\s+viewport\b/;
+const MANIFEST_FILE_RE = /\.webmanifest$/i;
+const NEXT_MANIFEST_RE = /(?:^|\/)app\/manifest\.[cm]?[jt]sx?$/i;
+const HTML_DOC_RE = /<!doctype\s+html\b|<html\b/i;
 
 function isWithinRoot(rootReal, filePath) {
   try {
@@ -696,6 +710,237 @@ function checkHealthzEndpoint(rootReal) {
   };
 }
 
+function stripHtmlCommentsAndRawBlocks(text) {
+  return text.replace(
+    /<!--[\s\S]*?-->|<(script|style)(?=[\s/>])(?:[^>"']|"[^"]*"|'[^']*')*>[\s\S]*?<\/\1\s*>/gi,
+    '',
+  );
+}
+
+function parseHeadTags(markup) {
+  const tags = [];
+  const tagRe = /<(link|meta)(?=[\s/>])((?:[^>"']|"[^"]*"|'[^']*')*?)\s*\/?>/gi;
+  const attrRe = /(?:^|\s)([a-zA-Z_:][\w:.-]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+  for (const match of markup.matchAll(tagRe)) {
+    const tag = match[1].toLowerCase();
+    const attrs = new Map();
+    for (const attr of match[2].matchAll(attrRe)) {
+      const key = attr[1].toLowerCase();
+      const val = attr[2] ?? attr[3] ?? attr[4] ?? '';
+      if (!attrs.has(key)) attrs.set(key, val);
+    }
+    tags.push({ tag, attrs });
+  }
+  return tags;
+}
+
+function isWebAppManifestJson(text) {
+  try {
+    const parsed = JSON.parse(text);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
+    if ('manifest_version' in parsed) return false;
+    const hasName = typeof parsed.name === 'string' || typeof parsed.short_name === 'string';
+    const hasWebField = ['icons', 'start_url', 'display', 'theme_color', 'background_color'].some((key) => key in parsed);
+    return hasName && hasWebField;
+  } catch {
+    return false;
+  }
+}
+
+function isValidManifestHref(rootReal, fileDir, rawHref) {
+  const href = rawHref.split(/[?#]/, 1)[0].trim();
+  if (!href) return false;
+  if (!/\.json$/i.test(href) || /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(href) || href.includes('{')) {
+    return true;
+  }
+  const candidates = [];
+  if (href.startsWith('/')) {
+    const cleanRel = href.replace(/^\/+/, '');
+    let dir = fileDir;
+    for (let hop = 0; hop <= MAX_SCAN_DEPTH + 1; hop += 1) {
+      candidates.push(
+        path.join(dir, cleanRel),
+        path.join(dir, 'public', cleanRel),
+        path.join(dir, 'static', cleanRel),
+      );
+      if (dir === rootReal) break;
+      const parent = path.dirname(dir);
+      if (parent === dir || !isWithinRoot(rootReal, parent)) break;
+      dir = parent;
+    }
+  } else {
+    candidates.push(path.resolve(fileDir, href));
+  }
+
+  for (const candidate of candidates) {
+    if (!existsSync(candidate) || !isWithinRoot(rootReal, candidate)) continue;
+    try {
+      if (!statSync(candidate).isFile()) continue;
+      return isWebAppManifestJson(readFileSync(candidate, 'utf8'));
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
+function inspectSurfaceClass(rootReal) {
+  const detected = new Set();
+  const webSignals = {
+    favicon: [],
+    viewport: [],
+    manifest: [],
+  };
+  let scanned = 0;
+
+  function record(list, rel) {
+    if (list.length < 3 && !list.includes(rel)) list.push(rel);
+  }
+
+  function walk(dir, depth) {
+    if (depth > MAX_SCAN_DEPTH || scanned >= MAX_FILES_SCANNED) return;
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+    for (const entry of entries) {
+      if (scanned >= MAX_FILES_SCANNED) return;
+      if (entry.isSymbolicLink()) continue;
+      const full = path.join(dir, entry.name);
+      const rel = path.relative(rootReal, full).replaceAll(path.sep, '/');
+      if (entry.isDirectory()) {
+        if (SKIP_DIRS.has(entry.name) || TEST_DIRS.has(entry.name.toLowerCase())) continue;
+        if (entry.name.endsWith('.xcodeproj') || entry.name === 'src-tauri') {
+          detected.add('native-desktop');
+        }
+        walk(full, depth + 1);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      if (TEST_PATH_RE.test(rel) || /(^|\/)misty-check(\.test)?\.mjs$/.test(rel)) continue;
+
+      const base = entry.name;
+      const lowerBase = base.toLowerCase();
+      const ext = path.extname(lowerBase);
+
+      if (FAVICON_FILE_RE.test(base)) record(webSignals.favicon, rel);
+      if (MANIFEST_FILE_RE.test(base) || NEXT_MANIFEST_RE.test(rel)) record(webSignals.manifest, rel);
+      if (base === 'tauri.conf.json' || base === 'Info.plist' || base === 'AndroidManifest.xml') {
+        detected.add('native-desktop');
+      }
+      if (rel === 'src/main.rs' || rel === 'main.go' || /^cmd\/[^/]+\/main\.go$/.test(rel)) {
+        detected.add('cli-service');
+      }
+
+      const wantsRead =
+        lowerBase === 'package.json' ||
+        (lowerBase === 'pyproject.toml' && depth <= 1) ||
+        (lowerBase === 'cargo.toml' && depth <= 1) ||
+        lowerBase === 'manifest.json' ||
+        MARKUP_EXTENSIONS.has(ext) ||
+        /(?:^|\/)(?:layout|root|document)\.[cm]?[jt]sx?$/i.test(rel);
+
+      if (!wantsRead) continue;
+      scanned += 1;
+
+      let text;
+      try {
+        const stat = lstatSync(full);
+        if (stat.size === 0 || stat.size > MAX_FILE_BYTES) continue;
+        text = readFileSync(full, 'utf8');
+        if (text.includes('\0')) continue;
+      } catch {
+        continue;
+      }
+
+      if (lowerBase === 'package.json') {
+        try {
+          const pkg = JSON.parse(text);
+          const depNames = Object.keys({
+            ...(pkg?.dependencies ?? {}),
+            ...(pkg?.devDependencies ?? {}),
+            ...(pkg?.peerDependencies ?? {}),
+          });
+          if (depNames.some((dep) => WEB_FRAMEWORK_DEPS.has(dep))) detected.add('web-app');
+          if (depNames.some((dep) => DESKTOP_FRAMEWORK_DEPS.has(dep))) detected.add('native-desktop');
+          if (pkg?.bin && (typeof pkg.bin === 'string' || (typeof pkg.bin === 'object' && Object.keys(pkg.bin).length > 0))) {
+            detected.add('cli-service');
+          }
+        } catch {
+          // Ignore malformed package.json.
+        }
+        continue;
+      }
+
+      if (lowerBase === 'pyproject.toml') {
+        if (/\[project\.scripts\]/i.test(stripHashComments(text))) detected.add('cli-service');
+        continue;
+      }
+
+      if (lowerBase === 'cargo.toml') {
+        const active = stripHashComments(text);
+        if (/\[\[bin\]\]/i.test(active)) detected.add('cli-service');
+        if (/\b(?:tauri|egui|iced)\b/i.test(active)) detected.add('native-desktop');
+        continue;
+      }
+
+      if (lowerBase === 'manifest.json') {
+        if (isWebAppManifestJson(text)) record(webSignals.manifest, rel);
+        continue;
+      }
+
+      const htmlStripped = stripHtmlCommentsAndRawBlocks(text);
+      const activeMarkup = (ext === '.html' || ext === '.htm') ? htmlStripped : stripComments(htmlStripped, ext);
+      if ((ext === '.html' || ext === '.htm') && HTML_DOC_RE.test(activeMarkup)) {
+        detected.add('web-app');
+      }
+      if (VIEWPORT_EXPORT_RE.test(activeMarkup)) {
+        record(webSignals.viewport, rel);
+      }
+      for (const { tag, attrs } of parseHeadTags(activeMarkup)) {
+        if (tag === 'meta' && attrs.get('name')?.toLowerCase() === 'viewport') {
+          record(webSignals.viewport, rel);
+        } else if (tag === 'link') {
+          const relTokens = (attrs.get('rel') ?? '').toLowerCase().split(/\s+/).filter(Boolean);
+          if (relTokens.includes('icon') || relTokens.includes('apple-touch-icon')) {
+            record(webSignals.favicon, rel);
+          }
+          if (relTokens.includes('manifest') && attrs.has('href') && isValidManifestHref(rootReal, dir, attrs.get('href'))) {
+            record(webSignals.manifest, rel);
+          }
+        }
+      }
+    }
+  }
+
+  walk(rootReal, 0);
+
+  const ordered = ['web-app', 'native-desktop', 'cli-service'].filter((s) => detected.has(s));
+  const checks = [];
+  if (detected.has('web-app')) {
+    checks.push(
+      webSignals.favicon.length > 0
+        ? { id: 'web-favicon', surface: 'web-app', label: 'Web favicon / icon', status: 'pass', detail: `Found ${webSignals.favicon.join(', ')}` }
+        : { id: 'web-favicon', surface: 'web-app', label: 'Web favicon / icon', status: 'advisory', detail: 'No favicon or Apple touch icon detected (advisory; opt out in Folio Non-Goals if N/A)' },
+      webSignals.viewport.length > 0
+        ? { id: 'web-viewport', surface: 'web-app', label: 'Web viewport meta', status: 'pass', detail: `Found ${webSignals.viewport.join(', ')}` }
+        : { id: 'web-viewport', surface: 'web-app', label: 'Web viewport meta', status: 'advisory', detail: 'No responsive viewport meta/export detected (advisory; opt out in Folio Non-Goals if N/A)' },
+      webSignals.manifest.length > 0
+        ? { id: 'web-manifest', surface: 'web-app', label: 'Web app manifest', status: 'pass', detail: `Found ${webSignals.manifest.join(', ')}` }
+        : { id: 'web-manifest', surface: 'web-app', label: 'Web app manifest', status: 'advisory', detail: 'No manifest.webmanifest or web manifest link detected (advisory; opt out in Folio Non-Goals if N/A)' },
+    );
+  }
+
+  return {
+    detected: ordered,
+    advisoryOnly: true,
+    checks,
+  };
+}
+
 export function auditRepo(targetPath = '.') {
   const target = path.resolve(targetPath);
   if (!existsSync(target) || !statSync(target).isDirectory()) {
@@ -715,6 +960,7 @@ export function auditRepo(targetPath = '.') {
     checkSecretGate(rootReal),
     checkHealthzEndpoint(rootReal),
   ];
+  const surfaceClass = inspectSurfaceClass(rootReal);
   const elapsedMs = Math.round(performance.now() - startedAt);
   const passed = checks.filter((c) => c.status === 'pass').length;
   const gaps = checks.length - passed;
@@ -722,6 +968,7 @@ export function auditRepo(targetPath = '.') {
     target,
     elapsedMs,
     activeFolio: summarizeActiveFolio(productCheck, designCheck),
+    surfaceClass,
     summary: {
       passed,
       gaps,
@@ -737,12 +984,21 @@ export function formatScorecard(report) {
     `misty-check · ${report.target}`,
     `Score: ${report.summary.score} passed · ${report.summary.gaps} gap${report.summary.gaps === 1 ? '' : 's'} (${report.elapsedMs}ms)`,
     ...(report.activeFolio ? [`Active Folio: ${report.activeFolio.status} — ${report.activeFolio.advisory}`] : []),
+    ...(report.surfaceClass?.detected?.length ? [`Surface class (advisory): ${report.surfaceClass.detected.join(', ')}`] : []),
     '',
   ];
   const labelWidth = Math.max(...report.checks.map((c) => c.label.length));
   for (const check of report.checks) {
     const tag = check.status === 'pass' ? '[PASS]' : '[GAP ]';
     lines.push(`${tag} ${check.label.padEnd(labelWidth)}  ${check.detail}`);
+  }
+  if (report.surfaceClass?.checks?.length) {
+    lines.push('', 'Advisory surface checks (never fail --strict):');
+    const advWidth = Math.max(...report.surfaceClass.checks.map((c) => c.label.length));
+    for (const check of report.surfaceClass.checks) {
+      const tag = check.status === 'pass' ? '[OK  ]' : '[ADV ]';
+      lines.push(`${tag} ${check.label.padEnd(advWidth)}  ${check.detail}`);
+    }
   }
   return lines.join('\n');
 }

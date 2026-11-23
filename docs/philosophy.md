@@ -30,6 +30,18 @@ Work flows through a simple three-step loop:
 
 **Non-prescriptive craft:** Resist template bureaucracy. Exact section headings, prose style, and organization can flex to fit the project. Every line in the Active Folio only needs to pass two tests: *if all code vanished, would omitting this line let a rebuild break user trust?* and *would keeping it block a simpler implementation that delivers the same outcome?*
 
+## The 3-Layer Intent Stack
+
+To keep repository Active Folios sharp and free of boilerplate, intent separates into three layers:
+
+1. **Universal Baseline (`mistystack` — every repository, always):** Calm hierarchy, accessible contrast, graceful empty and error states, zero console or CSP errors, and real-path verification. Never repeated in a repository's Active Folio.
+2. **Surface-Class Baselines (`mistystack` — conditional by product kind, overridable via Folio Non-Goals):**
+   - **Web App:** Brand mark plus multi-size favicon and Apple touch icon, mobile/desktop ergonomics (`390px` + `1440px`), light/dark parity, installable PWA basics (`manifest.webmanifest` + standalone viewport), and clean OG/meta tags.
+   - **Native / Desktop App:** OS-native conventions, system theme parity, clean permissions/clipboard hygiene, and a packaged or runnable artifact.
+   - **CLI / Service:** Crisp `--help`, non-interactive `--json`, and deterministic exit codes.
+   - **Evidence / Artifact / Retro:** Calm editorial layout, one focal idea per screen or beat, scannable tables (`<= 4` columns), and zero dark-HUD pill soup.
+3. **Repo Active Folio (`PRODUCT.md`, plus `DESIGN.md` for UI projects — ONLY what is unique to this product):** Do not restate Universal or Surface-Class baselines; articulate only product-specific identity, behavior, tokens, and explicit opt-outs (Non-Goals).
+
 ## Four surfaces, not ticket backlogs
 
 Instead of materializing work into a backlog, the human operator and coding agents run on four surfaces where **work is the computed diff between Intent and Verified Reality**:
