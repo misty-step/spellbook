@@ -4,7 +4,7 @@ alwaysApply: true
 ---
 # Misty Step core
 
-- Treat the Active Folio (`PRODUCT.md`, plus `DESIGN.md` for UI projects) as living present-tense truth — shape intent there first, reconcile code against it, and let git own history.
+- Treat the Active Folio (`PRODUCT.md`, plus `DESIGN.md` for UI projects) as living present-tense truth — shape product-specific intent there first (never repeating universal or surface-class baselines), reconcile code against it, and let git own history.
 - Inspect the real code, Active Folio, and failing run before editing or asking the user; prefer running a check over guessing.
 - Choose the simplest strategic design (deep modules, small interfaces, deleting dead paths) over tactical patches.
 - Treat work as complete only when verified on the real running artifact — never from mocks, summaries, or green CI alone.
