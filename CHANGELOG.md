@@ -1,3 +1,9 @@
+# [0.5.11](https://github.com/misty-step/mistystack/compare/v0.5.10...v0.5.11) (2026-11-23)
+<!-- landmark:protected-release previous=v0.5.10 source=8d77ab92f314b2ce6231476d21a1312291c302e6a430c3c3945b51bfa8a5af93 -->
+
+### Features
+
+* **method:** embody effortless Folio-reconcile loop, explicit state machines, and DST (#752) ([1296955](https://github.com/misty-step/mistystack/commit/12969553968b25446f0a10df9d022eb48e1c9765))
 # [0.5.10](https://github.com/misty-step/mistystack/compare/v0.5.9...v0.5.10) (2026-11-23)
 <!-- landmark:protected-release previous=v0.5.9 source=caa35e86cf7af1a81c19e1f2f7b2a6cf83cd2291098a62a430782b4611112ef1 -->
 
