@@ -1,3 +1,9 @@
+# [0.5.9](https://github.com/misty-step/mistystack/compare/v0.5.8...v0.5.9) (2026-11-23)
+<!-- landmark:protected-release previous=v0.5.8 source=911c5a54161bbeddad7a4786b47b33ffd2f3dbac380ba2f91b163d6acb5d7b88 -->
+
+### Features
+
+* **method:** canonize Active Folio as core operating principle (#748) ([2b58220](https://github.com/misty-step/mistystack/commit/2b58220e80bff8761017037a61ff52287e84c4a7))
 # [0.5.8](https://github.com/misty-step/mistystack/compare/v0.5.7...v0.5.8) (2026-11-21)
 <!-- landmark:protected-release previous=v0.5.7 source=55e7d1f9ec4e9ef765200d338db38c2adb8076068af43b3890542b2347eb6651 -->
 
