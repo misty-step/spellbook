@@ -118,7 +118,12 @@ function stripHashComments(text) {
 function checkProductDoc(rootReal) {
   const product = readSafeFile(rootReal, 'PRODUCT.md');
   if (product && !product.empty) {
-    return { id: 'product-doc', label: 'PRODUCT.md', status: 'pass', detail: `Found PRODUCT.md (${product.lines} lines)` };
+    return {
+      id: 'product-doc',
+      label: 'PRODUCT.md',
+      status: 'pass',
+      detail: `Found PRODUCT.md (${product.lines} lines · Active Folio)`,
+    };
   }
   const legacySpec = readSafeFile(rootReal, 'SPEC.md');
   if (legacySpec && !legacySpec.empty) {
@@ -126,18 +131,68 @@ function checkProductDoc(rootReal) {
       id: 'product-doc',
       label: 'PRODUCT.md',
       status: 'gap',
-      detail: 'Missing PRODUCT.md (legacy SPEC.md found; consolidate into present-tense PRODUCT.md)',
+      detail: 'Missing PRODUCT.md (legacy SPEC.md found; consolidate into present-tense Active Folio PRODUCT.md)',
     };
   }
-  return { id: 'product-doc', label: 'PRODUCT.md', status: 'gap', detail: 'Missing PRODUCT.md at repository root' };
+  return {
+    id: 'product-doc',
+    label: 'PRODUCT.md',
+    status: 'gap',
+    detail: 'Missing Active Folio PRODUCT.md at repository root (structure is flexible)',
+  };
 }
 
 function checkDesignDoc(rootReal) {
   const design = readSafeFile(rootReal, 'DESIGN.md');
   if (design && !design.empty) {
-    return { id: 'design-doc', label: 'DESIGN.md', status: 'pass', detail: `Found DESIGN.md (${design.lines} lines)` };
+    return {
+      id: 'design-doc',
+      label: 'DESIGN.md',
+      status: 'pass',
+      detail: `Found DESIGN.md (${design.lines} lines · Active Folio)`,
+    };
   }
-  return { id: 'design-doc', label: 'DESIGN.md', status: 'gap', detail: 'Missing DESIGN.md at repository root' };
+  return {
+    id: 'design-doc',
+    label: 'DESIGN.md',
+    status: 'gap',
+    detail: 'Missing Active Folio DESIGN.md at repository root (recommended for UI projects; structure is flexible)',
+  };
+}
+
+function summarizeActiveFolio(productCheck, designCheck) {
+  const product = productCheck.status === 'pass';
+  const design = designCheck.status === 'pass';
+  if (product && design) {
+    return {
+      status: 'complete',
+      product,
+      design,
+      advisory: 'Active Folio present (PRODUCT.md + DESIGN.md); custom section structures accepted.',
+    };
+  }
+  if (product) {
+    return {
+      status: 'partial',
+      product,
+      design,
+      advisory: 'PRODUCT.md present; add DESIGN.md for UI projects (summary is advisory; design-doc still counts under --strict).',
+    };
+  }
+  if (design) {
+    return {
+      status: 'partial',
+      product,
+      design,
+      advisory: 'DESIGN.md present; add present-tense PRODUCT.md for observable product intent (summary is advisory; product-doc still counts under --strict).',
+    };
+  }
+  return {
+    status: 'missing',
+    product,
+    design,
+    advisory: 'No Active Folio found; add present-tense PRODUCT.md (and DESIGN.md for UI projects) — structure can flex (summary adds no extra gap; doc checks still count under --strict).',
+  };
 }
 
 function checkAgentGuide(rootReal) {
@@ -648,9 +703,11 @@ export function auditRepo(targetPath = '.') {
   }
   const rootReal = realpathSync(target);
   const startedAt = performance.now();
+  const productCheck = checkProductDoc(rootReal);
+  const designCheck = checkDesignDoc(rootReal);
   const checks = [
-    checkProductDoc(rootReal),
-    checkDesignDoc(rootReal),
+    productCheck,
+    designCheck,
     checkAgentGuide(rootReal),
     checkReadmeRun(rootReal),
     checkVerifyScripts(rootReal),
@@ -664,6 +721,7 @@ export function auditRepo(targetPath = '.') {
   return {
     target,
     elapsedMs,
+    activeFolio: summarizeActiveFolio(productCheck, designCheck),
     summary: {
       passed,
       gaps,
@@ -678,6 +736,7 @@ export function formatScorecard(report) {
   const lines = [
     `misty-check · ${report.target}`,
     `Score: ${report.summary.score} passed · ${report.summary.gaps} gap${report.summary.gaps === 1 ? '' : 's'} (${report.elapsedMs}ms)`,
+    ...(report.activeFolio ? [`Active Folio: ${report.activeFolio.status} — ${report.activeFolio.advisory}`] : []),
     '',
   ];
   const labelWidth = Math.max(...report.checks.map((c) => c.label.length));

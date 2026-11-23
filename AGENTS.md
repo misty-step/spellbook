@@ -2,7 +2,7 @@
 
 Lean, portable engineering method for coding agents in Agent Skills format (`skills/<name>/SKILL.md`), paired with `rules/core.md` and the static reader in `site/` (`stack.mistystep.io`).
 
-- `rules/core.md`: 5-bullet always-on standing rules.
+- `rules/core.md`: 6-bullet always-on standing rules (Active Folio first).
 - `skills/`: 7 lean skills (`misty`, `foundations`, `design`, `define-product`, `security-audit`, `release-watch`, `resolve-merge-conflicts`) plus deterministic scripts (`misty-check.mjs`, `extract_conflict_context.py`).
 - `.claude-plugin/`, `.agents/`, `package.json`: thin native manifests with zero external companion packs.
 - `.githooks/`: TruffleHog secret-scanning hooks (`./scripts/bootstrap`).

@@ -11,7 +11,7 @@
     {
       "name": "mistystack",
       "source": "./",
-      "description": "Seven lean skills, five always-on rules, and deterministic repo scripts.",
+      "description": "Active Folio method: seven lean skills, six always-on rules, and deterministic repo scripts.",
       "homepage": "https://stack.mistystep.io",
       "repository": "https://github.com/misty-step/mistystack",
       "license": "MIT"

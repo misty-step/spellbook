@@ -13,10 +13,10 @@ export const home = {
   navCta: { label: 'Install', href: '#install' },
   hero: (facts) => ({
     headline: 'A lean method for coding agents.',
-    sub: `mistystack distills software-factory discipline into ${facts.coreRules} always-on rules, ${facts.skills} crisp skills, and zero-dependency scripts. Portable across harnesses, free of bloated templates.`,
+    sub: `mistystack codifies the Active Folio method — present-tense PRODUCT.md + DESIGN.md as living truth — in ${facts.coreRules} always-on rules, ${facts.skills} crisp skills, and zero-dependency scripts. Portable across harnesses, free of template bureaucracy.`,
     primary: { label: `Browse all ${facts.skillCount} skills`, href: '#skills' },
     secondary: { label: 'Install', href: '#install' },
-    proof: `${facts.skillCount} skills · ${facts.coreCount} standing rules · 0 external companion packs · MIT licensed`,
+    proof: `Active Folio · ${facts.skillCount} skills · ${facts.coreCount} standing rules · 0 external companion packs · MIT licensed`,
   }),
   skills: (facts) => ({
     title: `${facts.Skills} skills. What and why only.`,
@@ -24,12 +24,12 @@ export const home = {
   }),
   core: (facts) => ({
     title: `${facts.CoreRules} rules. Every session.`,
-    intro: 'Loaded on session start and kept under twenty lines. Evidence first, strategic design, real-path verification, clear autonomy boundaries, and one cold-reader recap.',
+    intro: 'Loaded on session start and kept under twenty lines. Active Folio first, real evidence, strategic design, real-path verification, clear autonomy boundaries, and one cold-reader recap.',
     caption: 'Verbatim always-on standing rules from',
   }),
   check: {
     title: 'Code beats prose.',
-    intro: 'Spend inference once, then run a deterministic script. misty-check.mjs audits any repository in under a second using Node built-ins only — zero npm dependencies, crisp text or --json output.',
+    intro: 'Spend inference once, then run a deterministic script. misty-check.mjs audits any repository in under a second using Node built-ins only — checking PRODUCT.md / DESIGN.md presence with an advisory Active Folio summary (never rejecting custom section structures), baseline hygiene, and crisp text or --json output.',
     primary: { label: 'Read misty-check.mjs', href: '/tools/misty-check/' },
     secondary: { label: 'Foundations skill', href: '/library/skills/foundations/' },
   },
@@ -67,8 +67,8 @@ export const home = {
     ],
   },
   philosophy: {
-    title: 'Philosophy & Lineage.',
-    body: 'Why seven small skills beat forty playbooks — deep modules, evidence before confidence, deterministic scripts, and fast vertical slices. Kept in docs/philosophy.md for human readers and never auto-loaded into agent prompts.',
+    title: 'Active Folio, Philosophy & Lineage.',
+    body: 'Why present-tense PRODUCT.md + DESIGN.md, clean-room recompile, seven small skills, cross-family cold critics, and calm editorial evidence beat forty rigid playbooks. Kept in docs/philosophy.md for human readers and never auto-loaded into agent prompts.',
     primary: { label: 'Read Philosophy & Lineage', href: '/philosophy/' },
     secondary: { label: 'Browse on GitHub', href: 'https://github.com/misty-step/mistystack' },
   },

@@ -157,3 +157,38 @@ test('CLI supports --json, --strict exit codes, symlinked invocation, and reject
   assert.throws(() => parseArgs(['--bogus']), /Unknown flag/);
   assert.throws(() => auditRepo(path.join(repo, 'does-not-exist')), /not an existing directory/);
 });
+
+test('Active Folio check is presence-based and accepts arbitrary custom section structures', () => {
+  const customFolio = makeFixture({
+    'PRODUCT.md': 'Users upload a receipt photo and get categorized expense rows in under two seconds.\nNo rigid template headings required.\n',
+    'DESIGN.md': 'Warm paper background, ink text, 8px spacing scale, zero decorative gradients.\n',
+  });
+  const complete = auditRepo(customFolio);
+  assert.equal(complete.checks.find((c) => c.id === 'product-doc').status, 'pass');
+  assert.equal(complete.checks.find((c) => c.id === 'design-doc').status, 'pass');
+  assert.deepEqual(complete.activeFolio, {
+    status: 'complete',
+    product: true,
+    design: true,
+    advisory: 'Active Folio present (PRODUCT.md + DESIGN.md); custom section structures accepted.',
+  });
+  assert.match(formatScorecard(complete), /Active Folio: complete — Active Folio present/);
+
+  const productOnly = makeFixture({
+    'PRODUCT.md': 'Headless CLI tool: exits 0 on valid input and 1 on schema mismatch.\n',
+  });
+  const partial = auditRepo(productOnly);
+  assert.equal(partial.checks.find((c) => c.id === 'product-doc').status, 'pass');
+  assert.equal(partial.checks.find((c) => c.id === 'design-doc').status, 'gap');
+  assert.equal(partial.activeFolio.status, 'partial');
+  assert.equal(partial.activeFolio.product, true);
+  assert.equal(partial.activeFolio.design, false);
+  assert.match(partial.activeFolio.advisory, /DESIGN\.md/);
+
+  const emptyRepo = makeFixture({});
+  const missing = auditRepo(emptyRepo);
+  assert.equal(missing.activeFolio.status, 'missing');
+  assert.equal(missing.activeFolio.product, false);
+  assert.equal(missing.activeFolio.design, false);
+  assert.match(formatScorecard(missing), /Active Folio: missing/);
+});

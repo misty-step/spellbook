@@ -8,21 +8,43 @@ Modern frontier coding models already know how to refactor code, write tests, an
 
 `mistystack` cuts the method down to what a strong model genuinely needs:
 
-- **Five standing rules** in `rules/core.md` — always on, under twenty lines, defining evidence, strategic design, real-path verification, autonomy boundaries, and cold-reader reporting.
-- **Seven concise skills** in `skills/` — each a few crisp sentences (or a terse bullet checklist for `foundations`), stating *what* matters and *why*, never bloated *how* recipes.
+- **Six standing rules** in `rules/core.md` — always on, under twenty lines, defining the Active Folio as living truth, evidence first, strategic design, real-path verification, autonomy boundaries, and cold-reader reporting.
+- **Seven concise skills** in `skills/` — each a few crisp paragraphs (or a terse bullet checklist for `foundations`), stating *what* matters and *why*, never bloated *how* recipes.
 - **Deterministic scripts over prose** — when a check or workflow repeats, encode it in executable code (`misty-check.mjs`, `extract_conflict_context.py`, `.githooks/trufflehog-gate.py`) rather than asking an LLM to remember twenty steps.
 - **Zero auto-mounted companion packs** — every repository and operator stays in control of what loads into context.
 
-## Four surfaces, not ticket backlogs
+## The Active Folio
 
-Ticket boards and kanban backlogs rot at agent speeds. Every ticket is a frozen snapshot of an earlier guess; once coding agents can reshape a module in minutes, maintaining issue statuses, duplicate cards, and stale subtasks costs more attention than doing the work.
+At agent speeds, code is cheap to regenerate while intent is expensive to rediscover. Ticket boards, kanban backlogs, and sprawling ADR directories rot almost as soon as they are written: every ticket is a frozen guess from an earlier moment, and maintaining issue states quickly costs more human attention than doing the work.
+
+The **Active Folio** solves this by anchoring each repository in two living, present-tense documents while **git owns history**:
+
+- **`PRODUCT.md`** — Observable user outcomes, domain terms, business rules, and explicit non-goals, with zero implementation lock-in (no frameworks, file paths, or vendor coupling).
+- **`DESIGN.md`** — For UI projects, visual craft, hierarchy, typography, spacing, and design tokens kept in exact parity with shipped stylesheets and assets.
+
+Work flows through a simple three-step loop:
+
+1. **Shape intent first:** Clarify or change behavior in `PRODUCT.md` (and `DESIGN.md` where applicable) before writing code (running a pre-scoping `#depth` pass so assumptions are tested against real data and telemetry).
+2. **Reconcile code against the Folio:** Close the diff between the Active Folio and the running artifact — automatically via push/reconciler agents where available, or on demand — without translating intent into ticket backlogs.
+3. **Prove completeness with clean-room `recompile`:** Periodically rebuild the system from `PRODUCT.md` (plus `DESIGN.md` for UI projects) alone without peeking at legacy hacks. Every surprise exposes missing intent; when a clean-room rebuild preserves user trust, the Folio is genuinely complete.
+
+**Non-prescriptive craft:** Resist template bureaucracy. Exact section headings, prose style, and organization can flex to fit the project. Every line in the Active Folio only needs to pass two tests: *if all code vanished, would omitting this line let a rebuild break user trust?* and *would keeping it block a simpler implementation that delivers the same outcome?*
+
+## Four surfaces, not ticket backlogs
 
 Instead of materializing work into a backlog, the human operator and coding agents run on four surfaces where **work is the computed diff between Intent and Verified Reality**:
 
-- **Intent — the Active Folio (`PRODUCT.md` + `DESIGN.md`)** — The repository's present-tense truth: observable user stories, business rules, non-goals, and visual system invariants. Git owns history, replacing stale ADR sprawl; when the user changes direction, the Active Folio changes directly.
+- **Intent — the Active Folio (`PRODUCT.md` + `DESIGN.md`)** — The repository's living present-tense truth. Git owns history, replacing stale ADR sprawl; when direction changes, the Active Folio changes directly.
 - **Verified Reality / Evidence Ledger** — What the running product actually does today, backed by real checks, empirical traces, formal state-machine verification, screenshots, recordings, and live build identity — never abstract prose nitpicks. Gaps between Intent and Verified Reality define the next slice without creating tickets.
 - **Ephemeral Compute** — Loops, triggers, and bounded factory runs that close a specific diff between Intent and Verified Reality and then tear down cleanly, leaving verified commits and evidence rather than long-lived orchestration clutter.
 - **Sparks / Ideas** — One flat, low-ceremony capture log for rough thoughts and future possibilities. A spark stays inert until the user promotes it into Intent — never silently turned into backlog debt.
+
+## Portable quality multipliers
+
+Two lightweight habits multiply quality across any model provider or harness without adding process overhead:
+
+- **Cross-Family Cold Critic:** Before merging meaningful work, have a fresh reviewer from a different model family inspect only the diff, the Active Folio, and real run evidence — never let the authoring model grade its own homework. To keep review loops convergent, apply a **Pass 3+ concrete-fixture bar**: after two review passes, a critic may only block with a concrete failing fixture or reproduction proving a real defect or Active Folio violation — never synthetic edge-case golf.
+- **Calm Editorial Evidence:** When reporting proof to the human operator, favor visually-forward, human-legible artifacts — clean typography, generous whitespace, real rendered screenshots or short walkthroughs, and concise takeaways — over dense dark HUD tables, metric soup, or walls of raw terminal logs.
 
 ## Lineage
 
