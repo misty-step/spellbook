@@ -22,10 +22,10 @@ The **Active Folio** solves this by anchoring each repository in two living, pre
 - **`PRODUCT.md`** — Observable user outcomes, domain terms, business rules, and explicit non-goals, with zero implementation lock-in (no frameworks, file paths, or vendor coupling).
 - **`DESIGN.md`** — For UI projects, visual craft, hierarchy, typography, spacing, and design tokens kept in exact parity with shipped stylesheets and assets.
 
-Work flows through a simple three-step loop:
+Whether starting a fresh greenfield repository or touching a ten-year-old legacy codebase, work flows through one default loop:
 
-1. **Shape intent first:** Clarify or change behavior in `PRODUCT.md` (and `DESIGN.md` where applicable) before writing code (running a pre-scoping `#depth` pass so assumptions are tested against real data and telemetry).
-2. **Reconcile code against the Folio:** Close the diff between the Active Folio and the running artifact — automatically via push/reconciler agents where available, or on demand — without translating intent into ticket backlogs.
+1. **Express or update intent in the Active Folio first:** Clarify or change behavior in `PRODUCT.md` (and `DESIGN.md` for UI) before writing code whenever product-specific intent changes, relying on the 3-Layer Intent Stack so universal and surface-class baselines aren't repeated (and running a pre-scoping `#depth` pass so assumptions are tested against real data and telemetry). When landing in a repository without an Active Folio, bootstrap a crisp `PRODUCT.md` (and `DESIGN.md` for UI) from user intent and observed behavior where available before making big changes rather than inventing ad-hoc tickets or PR-only prose.
+2. **Drive code from the Folio via reconciliation:** Close the diff between the Active Folio and the running artifact — automatically via push/reconciler hooks where wired, or via on-demand Folio-to-code reconciliation — without translating intent into ticket backlogs.
 3. **Prove completeness with clean-room `recompile`:** Periodically rebuild the system from `PRODUCT.md` (plus `DESIGN.md` for UI projects) alone without peeking at legacy hacks. Every surprise exposes missing intent; when a clean-room rebuild preserves user trust, the Folio is genuinely complete.
 
 **Non-prescriptive craft:** Resist template bureaucracy. Exact section headings, prose style, and organization can flex to fit the project. Every line in the Active Folio only needs to pass two tests: *if all code vanished, would omitting this line let a rebuild break user trust?* and *would keeping it block a simpler implementation that delivers the same outcome?*
@@ -46,10 +46,17 @@ To keep repository Active Folios sharp and free of boilerplate, intent separates
 
 Instead of materializing work into a backlog, the human operator and coding agents run on four surfaces where **work is the computed diff between Intent and Verified Reality**:
 
-- **Intent — the Active Folio (`PRODUCT.md` + `DESIGN.md`)** — The repository's living present-tense truth. Git owns history, replacing stale ADR sprawl; when direction changes, the Active Folio changes directly.
-- **Verified Reality / Evidence Ledger** — What the running product actually does today, backed by real checks, empirical traces, formal state-machine verification, screenshots, recordings, and live build identity — never abstract prose nitpicks. Gaps between Intent and Verified Reality define the next slice without creating tickets.
+- **Intent — the Active Folio (`PRODUCT.md`, plus `DESIGN.md` for UI)** — The repository's living present-tense truth. Git owns history, replacing stale ADR sprawl; when direction changes, the Active Folio changes directly.
+- **Verified Reality / Evidence Ledger** — Real artifact runs, empirical traces, screenshots, recordings, and live build identity establish what the running product actually does today; explicit state-machine verification and deterministic simulation runs prove transition invariants — never abstract prose nitpicks. Gaps between Intent and Verified Reality define the next slice without creating tickets.
 - **Ephemeral Compute** — Loops, triggers, and bounded factory runs that close a specific diff between Intent and Verified Reality and then tear down cleanly, leaving verified commits and evidence rather than long-lived orchestration clutter.
 - **Sparks / Ideas** — One flat, low-ceremony capture log for rough thoughts and future possibilities. A spark stays inert until the user promotes it into Intent — never silently turned into backlog debt.
+
+## Explicit state machines & Deterministic Simulation Testing
+
+Complex systems rarely fail because a pure helper computed the wrong integer; they fail in the cracks between scattered boolean flags (`isPending`, `hasRetried`, `isLocked`, `cancelled`) and rare event interleavings.
+
+- **Explicit State Machines:** Surface implicit lifecycle, protocol, billing, queue, retry, and multiplayer states as explicit, small, total transition tables or state machines with clear invariants — backed by formal specs such as **Quint** or **TLA+** whenever state-space bugs carry high cost — instead of scattering boolean flags across handlers.
+- **Deterministic Simulation Testing (DST) over Unit-Test Sprawl:** Piles of mocked unit tests lock in implementation details while missing the interleavings that break production. For stateful, concurrent, multiplayer, billing, or queue-driven domains, prefer seeded deterministic simulators that control clocks, randomness, faults, and delivery order to drive thousands of randomized valid and adversarial action sequences against explicit invariants — turning rare races into single-seed deterministic reproductions.
 
 ## Portable quality multipliers
 
