@@ -38,7 +38,7 @@ export const TOOL_SCRIPTS = [
     url: '/tools/misty-check/',
     language: 'JavaScript (Node built-ins only)',
     command: 'node skills/foundations/scripts/misty-check.mjs [path] [--json] [--strict]',
-    summary: 'Deterministic ~1-second repository baseline auditor checking PRODUCT.md, DESIGN.md, agent guide, local run docs, test/lint scripts, secret hygiene, and /healthz.',
+    summary: 'Deterministic ~1-second repository baseline auditor checking PRODUCT.md and DESIGN.md presence (with an advisory Active Folio summary that never rejects custom section structures), agent guide, local run docs, test/lint scripts, secret hygiene, and /healthz.',
   },
   {
     id: 'extract-conflict-context',
