@@ -1,3 +1,9 @@
+# [0.5.10](https://github.com/misty-step/mistystack/compare/v0.5.9...v0.5.10) (2026-11-23)
+<!-- landmark:protected-release previous=v0.5.9 source=caa35e86cf7af1a81c19e1f2f7b2a6cf83cd2291098a62a430782b4611112ef1 -->
+
+### Features
+
+* **method:** codify 3-Layer Intent Stack and surface-class advisory checks (#750) ([3ce5eec](https://github.com/misty-step/mistystack/commit/3ce5eece9e6075b684dad036f7cdc438a7427bd8))
 # [0.5.9](https://github.com/misty-step/mistystack/compare/v0.5.8...v0.5.9) (2026-11-23)
 <!-- landmark:protected-release previous=v0.5.8 source=911c5a54161bbeddad7a4786b47b33ffd2f3dbac380ba2f91b163d6acb5d7b88 -->
 
