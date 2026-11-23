@@ -13,7 +13,7 @@ export const home = {
   navCta: { label: 'Install', href: '#install' },
   hero: (facts) => ({
     headline: 'A lean method for coding agents.',
-    sub: `mistystack codifies the Active Folio method — present-tense PRODUCT.md + DESIGN.md as living truth — in ${facts.coreRules} always-on rules, ${facts.skills} crisp skills, and zero-dependency scripts. Portable across harnesses, free of template bureaucracy.`,
+    sub: `mistystack codifies the Active Folio-to-reconciler loop — bootstrap or update present-tense PRODUCT.md (plus DESIGN.md for UI) first in any greenfield or legacy repo, then reconcile code against it — in ${facts.coreRules} always-on rules, ${facts.skills} crisp skills, and zero-dependency scripts. Portable across harnesses, free of template bureaucracy.`,
     primary: { label: `Browse all ${facts.skillCount} skills`, href: '#skills' },
     secondary: { label: 'Install', href: '#install' },
     proof: `Active Folio · ${facts.skillCount} skills · ${facts.coreCount} standing rules · 0 external companion packs · MIT licensed`,
@@ -24,7 +24,7 @@ export const home = {
   }),
   core: (facts) => ({
     title: `${facts.CoreRules} rules. Every session.`,
-    intro: 'Loaded on session start and kept under twenty lines. Active Folio first, real evidence, strategic design, real-path verification, clear autonomy boundaries, and one cold-reader recap.',
+    intro: 'Loaded on session start and kept under twenty lines. Active Folio-to-reconciler default (greenfield or legacy), real evidence, strategic design with explicit state machines, real-path verification, clear autonomy boundaries, and one cold-reader recap.',
     caption: 'Verbatim always-on standing rules from',
   }),
   check: {
@@ -68,7 +68,7 @@ export const home = {
   },
   philosophy: {
     title: 'Active Folio, Philosophy & Lineage.',
-    body: 'Why the 3-Layer Intent Stack (Universal + Surface-Class baselines + lean present-tense PRODUCT.md / DESIGN.md), clean-room recompile, seven small skills, cross-family cold critics, and calm editorial evidence beat forty rigid playbooks. Kept in docs/philosophy.md for human readers and never auto-loaded into agent prompts.',
+    body: 'Why effortless Active Folio bootstrapping and reconciliation (greenfield or legacy), the 3-Layer Intent Stack, clean-room recompile, explicit state machines with Deterministic Simulation Testing (DST), seven small skills, cross-family cold critics, and calm editorial evidence beat forty rigid playbooks. Kept in docs/philosophy.md for human readers and never auto-loaded into agent prompts.',
     primary: { label: 'Read Philosophy & Lineage', href: '/philosophy/' },
     secondary: { label: 'Browse on GitHub', href: 'https://github.com/misty-step/mistystack' },
   },
