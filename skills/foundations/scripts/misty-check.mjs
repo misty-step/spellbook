@@ -1020,36 +1020,85 @@ function inspectLayoutSourceFile(fullPath, filename, buf) {
     const fileSize = fstat.size;
     if (requireShebang && fileSize < 2) return { status: 'skip' };
     if (fileSize === 0) return { status: 'ok', lines: 0, truncated: false };
+    let encoding = null;
     let totalRead = 0;
     let lineBreaks = 0;
     let prevWasCR = false;
-    let lastByte = 0;
+    let lastUnit = 0;
+    let unitsRead = 0;
+    let hasPendingByte = false;
+    let pendingByte = 0;
+
     while (totalRead < LAYOUT_MAX_READ_BYTES) {
       const toRead = Math.min(buf.length, LAYOUT_MAX_READ_BYTES - totalRead);
       const bytesRead = readSync(fd, buf, 0, toRead, totalRead);
       if (bytesRead === 0) break;
       const slice = buf.subarray(0, bytesRead);
-      if (totalRead === 0 && requireShebang && (bytesRead < 2 || slice[0] !== 0x23 || slice[1] !== 0x21)) {
-        return { status: 'skip' };
-      }
-      if (slice.includes(0)) return { status: 'binary' };
-      for (let i = 0; i < bytesRead; i += 1) {
-        const b = slice[i];
-        if (b === 0x0a) {
-          if (!prevWasCR) lineBreaks += 1;
-          prevWasCR = false;
-        } else if (b === 0x0d) {
-          lineBreaks += 1;
-          prevWasCR = true;
+      let i = 0;
+      if (encoding === null) {
+        if (bytesRead >= 2 && slice[0] === 0xff && slice[1] === 0xfe) {
+          encoding = 'utf16le';
+          i = 2;
+        } else if (bytesRead >= 2 && slice[0] === 0xfe && slice[1] === 0xff) {
+          encoding = 'utf16be';
+          i = 2;
         } else {
-          prevWasCR = false;
+          encoding = 'utf8';
+        }
+        if (requireShebang && (encoding !== 'utf8' || bytesRead < 2 || slice[0] !== 0x23 || slice[1] !== 0x21)) {
+          return { status: 'skip' };
         }
       }
-      lastByte = slice[bytesRead - 1];
+
+      if (encoding === 'utf8') {
+        if (slice.includes(0)) return { status: 'binary' };
+        for (; i < bytesRead; i += 1) {
+          const b = slice[i];
+          if (b === 0x0a) {
+            if (!prevWasCR) lineBreaks += 1;
+            prevWasCR = false;
+          } else if (b === 0x0d) {
+            lineBreaks += 1;
+            prevWasCR = true;
+          } else {
+            prevWasCR = false;
+          }
+        }
+        lastUnit = slice[bytesRead - 1];
+        unitsRead += bytesRead;
+      } else {
+        const isLE = encoding === 'utf16le';
+        for (; i < bytesRead; i += 1) {
+          if (!hasPendingByte) {
+            pendingByte = slice[i];
+            hasPendingByte = true;
+            continue;
+          }
+          const unit = isLE ? (pendingByte | (slice[i] << 8)) : ((pendingByte << 8) | slice[i]);
+          hasPendingByte = false;
+          if (unit === 0) return { status: 'binary' };
+          if (unit === 0x000a) {
+            if (!prevWasCR) lineBreaks += 1;
+            prevWasCR = false;
+          } else if (unit === 0x000d) {
+            lineBreaks += 1;
+            prevWasCR = true;
+          } else {
+            prevWasCR = false;
+          }
+          lastUnit = unit;
+          unitsRead += 1;
+        }
+      }
       totalRead += bytesRead;
     }
-    const endedWithBreak = lastByte === 0x0a || lastByte === 0x0d;
-    const lines = totalRead === 0 ? 0 : lineBreaks + (endedWithBreak ? 0 : 1);
+
+    if (hasPendingByte) {
+      unitsRead += 1;
+      lastUnit = 0xffff;
+    }
+    const endedWithBreak = lastUnit === 0x000a || lastUnit === 0x000d;
+    const lines = unitsRead === 0 ? 0 : lineBreaks + (endedWithBreak ? 0 : 1);
     return { status: 'ok', lines, truncated: totalRead < fileSize };
   } catch (error) {
     if (error && typeof error === 'object' && error.code === 'ELOOP') {
@@ -1067,11 +1116,47 @@ function inspectLayoutSourceFile(fullPath, filename, buf) {
   }
 }
 
+function decodeAllowlistBuffer(raw) {
+  if (raw.length >= 2 && raw[0] === 0xff && raw[1] === 0xfe) {
+    return raw.subarray(2).toString('utf16le');
+  }
+  if (raw.length >= 2 && raw[0] === 0xfe && raw[1] === 0xff) {
+    const evenLen = raw.length - 2 - ((raw.length - 2) % 2);
+    const body = Buffer.from(raw.subarray(2, 2 + evenLen));
+    body.swap16();
+    return body.toString('utf16le');
+  }
+  return raw.toString('utf8').replace(/^\uFEFF/, '');
+}
+
+function readSafeAllowlistText(rootReal) {
+  const filePath = path.join(rootReal, LAYOUT_ALLOW_FILENAME);
+  const openFlags = fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0);
+  let fd;
+  try {
+    if (!existsSync(filePath) || !isWithinRoot(rootReal, filePath)) return null;
+    const stat = lstatSync(filePath);
+    if (stat.isSymbolicLink() || !stat.isFile()) return null;
+    fd = openSync(filePath, openFlags);
+    if (!fstatSync(fd).isFile()) return null;
+    return decodeAllowlistBuffer(readFileSync(fd));
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) {
+      try {
+        closeSync(fd);
+      } catch {
+        // Ignore close errors.
+      }
+    }
+  }
+}
+
 function parseAllowlist(rootReal) {
-  const file = readSafeFile(rootReal, LAYOUT_ALLOW_FILENAME);
-  if (!file) return { file: null, entries: [] };
+  const text = readSafeAllowlistText(rootReal);
+  if (text === null) return { file: null, entries: [] };
   const entries = [];
-  const text = file.text.replace(/^\uFEFF/, '');
   for (const rawLine of text.split(/\r?\n/)) {
     let line = rawLine.trim();
     if (!line || line.startsWith('#')) continue;

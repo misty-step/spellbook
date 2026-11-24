@@ -711,3 +711,45 @@ test('CLI flushes complete --json output before exiting 1 on large strict-layout
   const parsed = JSON.parse(proc.stdout);
   assert.equal(parsed.layout.findings.length, 1501);
 });
+
+test('layout guard supports UTF-16LE and UTF-16BE BOM source files and allowlists while skipping UTF-16 binary NUL units', () => {
+  // 1. UTF-16LE with BOM PowerShell script (Windows PowerShell 5.1 default) triggers long-file under --strict-layout.
+  const utf16LeRepo = makeFixture({});
+  writeFileSync(
+    path.join(utf16LeRepo, 'maintenance.ps1'),
+    `\uFEFF${'Write-Output "ok"\r\n'.repeat(2001)}`,
+    'utf16le',
+  );
+  // BOM-only empty UTF-16LE file has 0 lines; UTF-16LE containing U+0000 code unit is treated as binary.
+  writeFileSync(path.join(utf16LeRepo, 'empty.ps1'), '\uFEFF', 'utf16le');
+  writeFileSync(
+    path.join(utf16LeRepo, 'binary-utf16.ps1'),
+    `\uFEFF${'Write-Output "ok"\r\n'.repeat(2005)}\u0000`,
+    'utf16le',
+  );
+  const leOut = execStrictLayoutFailure(utf16LeRepo);
+  assert.equal(leOut.layout.scannedFiles, 2);
+  assert.deepEqual(
+    leOut.layout.findings.map((f) => [f.rule, f.path, f.lines]),
+    [['long-file', 'maintenance.ps1', 2001]],
+  );
+
+  // 2. UTF-16LE BOM .misty-check.allow suppresses maintenance.ps1 cleanly and passes --strict-layout.
+  writeFileSync(path.join(utf16LeRepo, '.misty-check.allow'), '\uFEFFlong-file: maintenance.ps1\r\n', 'utf16le');
+  const leAllowedProc = spawnSync(process.execPath, [SCRIPT, utf16LeRepo, '--json', '--strict-layout'], { encoding: 'utf8' });
+  assert.equal(leAllowedProc.status, 0);
+  const leAllowed = JSON.parse(leAllowedProc.stdout);
+  assert.equal(leAllowed.layout.status, 'pass');
+  assert.equal(leAllowed.layout.suppressed.length, 1);
+
+  // 3. UTF-16BE with BOM source file counts lines accurately and fails --strict-layout.
+  const utf16BeRepo = makeFixture({});
+  const beBuf = Buffer.from(`\uFEFF${'Write-Output "ok"\n'.repeat(2001)}`, 'utf16le');
+  beBuf.swap16();
+  writeFileSync(path.join(utf16BeRepo, 'be-script.ps1'), beBuf);
+  const beOut = execStrictLayoutFailure(utf16BeRepo);
+  assert.deepEqual(
+    beOut.layout.findings.map((f) => [f.rule, f.path, f.lines]),
+    [['long-file', 'be-script.ps1', 2001]],
+  );
+});
