@@ -17,7 +17,7 @@ Code is cheap to regenerate; clear present-tense intent is the durable source of
 
 - [`rules/core.md`](rules/core.md): Six standing rules loaded in every session — Folio-to-reconciler default (greenfield or legacy), real evidence, strategic design with explicit state machines, real-path verification, autonomy boundaries, and cold-reader recaps.
 - [`skills/misty/SKILL.md`](skills/misty/SKILL.md): Core software-factory loop — effortless Active Folio bootstrapping and reconciliation, explicit state machines, Deterministic Simulation Testing (DST), subtract-and-inline craft, cross-family cold critic, calm editorial evidence, and autonomous delivery.
-- [`skills/foundations/SKILL.md`](skills/foundations/SKILL.md): Universal and surface-class project-health standards (including explicit state machines and DST) paired with [`misty-check.mjs`](skills/foundations/scripts/misty-check.mjs), a zero-dependency Node baseline auditor (`--json`, `--strict`) with non-rigid Active Folio and advisory surface-class detection.
+- [`skills/foundations/SKILL.md`](skills/foundations/SKILL.md): Universal and surface-class project-health standards (including explicit state machines and DST) paired with [`misty-check.mjs`](skills/foundations/scripts/misty-check.mjs), a zero-dependency Node baseline auditor (`--json`, `--strict`, `--strict-layout`) with non-rigid Active Folio, advisory surface-class detection, and Ousterhout structural layout checks (`.misty-check.allow`).
 - [`skills/design/SKILL.md`](skills/design/SKILL.md): Visual craft, `DESIGN.md` Active Folio parity, Calm Editorial Evidence, hierarchy, accessibility, and anti-slop taste invariants.
 - [`skills/define-product/SKILL.md`](skills/define-product/SKILL.md): Bootstrap, author, and reconcile a present-tense `PRODUCT.md` Active Folio contract (greenfield or legacy) with `#depth` and zero template bureaucracy.
 - [`skills/security-audit/SKILL.md`](skills/security-audit/SKILL.md): Evidence-backed boundary and exploit verification.
@@ -48,7 +48,10 @@ claude plugin install mistystack@mistystack
 ```sh
 node skills/foundations/scripts/misty-check.mjs /path/to/repo
 node skills/foundations/scripts/misty-check.mjs /path/to/repo --json
+node skills/foundations/scripts/misty-check.mjs /path/to/repo --strict-layout
 ```
+
+Grandfather intentional legacy files or wide directories in a repo-root `.misty-check.allow` file (one relative path or glob per line, `#` comments allowed); Rust repositories can additionally run [`deslop-please`](https://github.com/deterministic-machines/deslop-please) for SCIP architectural checks.
 
 ## Verify locally
 

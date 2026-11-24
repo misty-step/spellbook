@@ -32,3 +32,11 @@ These conditional baselines apply by product kind without repeating them in repo
 - **Native / Desktop App:** OS-native conventions, system theme parity, clean permissions/clipboard hygiene, and a packaged/runnable artifact.
 - **CLI / Service:** Crisp `--help`, non-interactive `--json`, and deterministic exit codes.
 - **Evidence / Artifact / Retro:** Calm editorial layout, one focal idea per screen or beat, scannable tables (`<= 4` columns), and zero dark-HUD pill soup.
+
+## Structural layout guard (Ousterhout deep modules)
+
+`misty-check.mjs` runs a language-agnostic layout audit flagging source directories with `> 15` source files and individual source files exceeding `2,000` lines (excluding generated, vendor, build, lock, docs, and fixture directories) so shallow file sprawl and mega-files surface before compounding:
+
+- Advisory by default (never silently breaks `--strict` baseline scores); pass `--strict-layout` to fail with exit code `1` on unallowed findings.
+- Grandfather intentional legacy files or directories in a repo-root `.misty-check.allow` file (one relative path or `*`/`**` glob per line, `#` comments and inline justifications supported, optional `wide-directory:` or `long-file:` rule prefix). A directory path or trailing `/` allows directory sprawl without hiding nested mega-files unless `dir/**` is specified.
+- For Rust repositories needing semantic dependency-graph checks (cycles, tangles, field leaks), pair with [`deslop-please`](https://github.com/deterministic-machines/deslop-please).

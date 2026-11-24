@@ -273,3 +273,208 @@ test('surface-class advisory detection inspects web apps without rejecting custo
   assert.deepEqual(cliReport.surfaceClass.checks, []);
   assert.doesNotMatch(formatScorecard(cliReport), /Web favicon|Web viewport|Web app manifest/);
 });
+
+test('layout guard passes at exact thresholds (15 files/dir, 2,000 LOC) and flags sprawl/mega-files cleanly', () => {
+  const cleanFiles = {
+    'PRODUCT.md': '# Product\n\nIntent.\n',
+    'AGENTS.md': '# Guide\n',
+  };
+  for (let i = 1; i <= 15; i += 1) {
+    cleanFiles[`src/mod/file-${String(i).padStart(2, '0')}.ts`] = `export const n${i} = ${i};\n`;
+  }
+  cleanFiles['src/boundary.ts'] = 'export const x = 1;\n'.repeat(2000);
+  const cleanRepo = makeFixture(cleanFiles);
+
+  const cleanReport = auditRepo(cleanRepo);
+  assert.equal(cleanReport.layout.status, 'pass');
+  assert.equal(cleanReport.layout.advisoryOnly, true);
+  assert.deepEqual(cleanReport.layout.thresholds, { maxFilesPerDir: 15, maxLinesPerFile: 2000 });
+  assert.deepEqual(cleanReport.layout.findings, []);
+  assert.ok(cleanReport.layout.checks.every((c) => c.status === 'pass'));
+  assert.match(formatScorecard(cleanReport), /Structural layout \(advisory; enforce with --strict-layout\):/);
+  execFileSync(process.execPath, [SCRIPT, cleanRepo, '--strict-layout'], { stdio: 'pipe' });
+
+  // 16 source files in a directory, 2,001-line file (without trailing newline), and >300 KiB mega-file (above 256 KiB MAX_FILE_BYTES).
+  const dirtyFiles = {
+    'PRODUCT.md': '# Product\n\nIntent.\n',
+    'DESIGN.md': '# Design\n\nTokens.\n',
+    'AGENTS.md': '# Guide\n',
+    'README.md': '```sh\nnpm test\n```\n',
+    'package.json': JSON.stringify({ name: 'dirty', scripts: { test: 'node --test' } }),
+    '.gitignore': '.env\n',
+    '.githooks/pre-commit': '#!/bin/sh\nexec trufflehog filesystem .\n',
+    'src/app.mjs': 'export const health = "/healthz";\n',
+  };
+  for (let i = 1; i <= 16; i += 1) {
+    dirtyFiles[`src/sprawl/item-${String(i).padStart(2, '0')}.rs`] = `pub fn f${i}() -> usize { ${i} }\n`;
+  }
+  dirtyFiles['src/exact-2001.py'] = `${'x = 1\n'.repeat(2000)}x = 2`;
+  dirtyFiles['src/huge-over-256kb.mjs'] = `${`export const longVariableNameForSizeTesting = "${'a'.repeat(160)}";\n`.repeat(2005)}`;
+  const dirtyRepo = makeFixture(dirtyFiles);
+
+  const dirtyReport = auditRepo(dirtyRepo);
+  assert.equal(dirtyReport.summary.score, '8/8');
+  assert.equal(dirtyReport.summary.gaps, 0);
+  assert.equal(dirtyReport.layout.status, 'advisory');
+  assert.equal(dirtyReport.layout.findings.length, 3);
+  assert.deepEqual(dirtyReport.layout.findings[0], {
+    rule: 'wide-directory',
+    path: 'src/sprawl',
+    count: 16,
+    threshold: 15,
+  });
+  assert.equal(dirtyReport.layout.findings[1].rule, 'long-file');
+  assert.equal(dirtyReport.layout.findings[1].path, 'src/huge-over-256kb.mjs');
+  assert.equal(dirtyReport.layout.findings[1].lines, 2005);
+  assert.equal(dirtyReport.layout.findings[2].rule, 'long-file');
+  assert.equal(dirtyReport.layout.findings[2].path, 'src/exact-2001.py');
+  assert.equal(dirtyReport.layout.findings[2].lines, 2001);
+
+  const scorecard = formatScorecard(dirtyReport);
+  assert.match(scorecard, /\[ADV \] Directory sprawl/);
+  assert.match(scorecard, /- src\/sprawl \(16 files > 15\)/);
+  assert.match(scorecard, /\[ADV \] Mega-files/);
+  assert.match(scorecard, /- src\/huge-over-256kb\.mjs \(2,005 lines > 2,000\)/);
+  assert.match(scorecard, /- src\/exact-2001\.py \(2,001 lines > 2,000\)/);
+
+  // Non-breaking rollout: --strict passes 8/8 despite advisory layout findings, while --strict-layout fails with exit 1.
+  execFileSync(process.execPath, [SCRIPT, dirtyRepo, '--strict'], { stdio: 'pipe' });
+
+  let strictLayoutExit = 0;
+  let strictLayoutJson = '';
+  try {
+    execFileSync(process.execPath, [SCRIPT, dirtyRepo, '--json', '--strict-layout'], { encoding: 'utf8', stdio: 'pipe' });
+  } catch (error) {
+    strictLayoutExit = error.status;
+    strictLayoutJson = error.stdout;
+  }
+  assert.equal(strictLayoutExit, 1);
+  assert.equal(JSON.parse(strictLayoutJson).layout.findings.length, 3);
+});
+
+test('.misty-check.allow suppresses only listed entries (respecting dir-only, globs, comments, and rule prefixes)', () => {
+  const files = {
+    '.misty-check.allow': `\uFEFF# Grandfathered structural debt\r\n\r\nsrc/allowed-dir/   # legacy bucket\r\nwide-directory: src/prefix-only\r\nlong-file: src/legacy-*.ts # monolithic parser\r\nsrc/glob-dir/**\r\n`,
+  };
+  for (let i = 1; i <= 16; i += 1) {
+    files[`src/allowed-dir/m${i}.ts`] = `export const a = ${i};\n`;
+    files[`src/prefix-only/p${i}.ts`] = `export const p = ${i};\n`;
+    files[`src/glob-dir/g${i}.ts`] = `export const g = ${i};\n`;
+    files[`src/unlisted-dir/u${i}.ts`] = `export const u = ${i};\n`;
+  }
+  // Mega-file inside src/allowed-dir/ must NOT be suppressed by trailing-slash dir entry `src/allowed-dir/`.
+  files['src/allowed-dir/mega-unlisted.ts'] = 'export const x = 1;\n'.repeat(2005);
+  // Mega-file matching prefix-only dir path as wide-directory: rule must NOT be suppressed.
+  files['src/prefix-only/unallowed-mega.ts'] = 'export const y = 1;\n'.repeat(2002);
+  files['src/legacy-parser.ts'] = 'export const z = 1;\n'.repeat(2050);
+  files['src/glob-dir/nested/deep-mega.ts'] = 'export const d = 1;\n'.repeat(2010);
+  files['src/unlisted-mega.ts'] = 'export const w = 1;\n'.repeat(2001);
+
+  const repo = makeFixture(files);
+  const report = auditRepo(repo);
+
+  assert.equal(report.layout.allowFile, '.misty-check.allow');
+  assert.equal(report.layout.allowRuleCount, 4);
+  assert.equal(report.layout.status, 'advisory');
+
+  assert.deepEqual(
+    report.layout.suppressed.map((item) => [item.rule, item.path, item.matchedPattern]),
+    [
+      ['wide-directory', 'src/allowed-dir', 'src/allowed-dir/'],
+      ['wide-directory', 'src/prefix-only', 'wide-directory: src/prefix-only'],
+      ['wide-directory', 'src/glob-dir', 'src/glob-dir/**'],
+      ['long-file', 'src/legacy-parser.ts', 'long-file: src/legacy-*.ts'],
+      ['long-file', 'src/glob-dir/nested/deep-mega.ts', 'src/glob-dir/**'],
+    ],
+  );
+  assert.deepEqual(
+    report.layout.findings.map((item) => [item.rule, item.path]),
+    [
+      ['wide-directory', 'src/unlisted-dir'],
+      ['long-file', 'src/allowed-dir/mega-unlisted.ts'],
+      ['long-file', 'src/prefix-only/unallowed-mega.ts'],
+      ['long-file', 'src/unlisted-mega.ts'],
+    ],
+  );
+
+  // Allowing every remaining entry passes --strict-layout cleanly, even when core baseline checks fail.
+  writeFileSync(
+    path.join(repo, '.misty-check.allow'),
+    [
+      'src/allowed-dir/**',
+      'src/prefix-only/**',
+      'src/glob-dir/**',
+      'src/unlisted-dir',
+      'src/legacy-parser.ts',
+      'src/unlisted-mega.ts',
+    ].join('\n'),
+  );
+  const cleanReport = auditRepo(repo);
+  assert.equal(cleanReport.layout.status, 'pass');
+  assert.deepEqual(cleanReport.layout.findings, []);
+  assert.equal(cleanReport.summary.gaps, 8);
+  execFileSync(process.execPath, [SCRIPT, repo, '--strict-layout'], { stdio: 'pipe' });
+
+  let bothStrictExit = 0;
+  try {
+    execFileSync(process.execPath, [SCRIPT, repo, '--strict', '--strict-layout'], { stdio: 'pipe' });
+  } catch (error) {
+    bothStrictExit = error.status;
+  }
+  assert.equal(bothStrictExit, 1);
+});
+
+test('layout guard ignores vendor/build/docs/non-source files and blocks symlink escapes', () => {
+  const outside = makeFixture({
+    'outside-mega.ts': 'export const o = 1;\n'.repeat(2500),
+    'outside.allow': 'src/real-sprawl\nsrc/real-mega.ts\n',
+  });
+  for (let i = 1; i <= 20; i += 1) {
+    writeFileSync(path.join(outside, `outside-${i}.ts`), `export const o${i} = ${i};\n`);
+  }
+
+  const files = {};
+  for (const dir of ['node_modules/pkg', 'target/debug', 'dist/assets', 'build/out', '.next/cache', 'vendor/lib', '__pycache__', 'evidence/run1', 'docs/adr', 'fixtures/sample', '__snapshots__/snap']) {
+    for (let i = 1; i <= 20; i += 1) {
+      files[`${dir}/f${i}.ts`] = 'export const x = 1;\n'.repeat(i === 1 ? 2200 : 1);
+    }
+  }
+  for (let i = 1; i <= 20; i += 1) {
+    files[`data/item-${i}.json`] = '{"ok": true}\n'.repeat(i === 1 ? 2500 : 1);
+    files[`notes/doc-${i}.md`] = '# Heading\n'.repeat(i === 1 ? 2500 : 1);
+    files[`src/gen-${i}.d.ts`] = 'export declare const x: number;\n'.repeat(i === 1 ? 2500 : 1);
+    files[`src/bundle-${i}.min.js`] = 'var a=1;\n'.repeat(i === 1 ? 2500 : 1);
+  }
+  // NUL-byte binary file masquerading as .js should be skipped safely.
+  files['src/binary.js'] = Buffer.concat([Buffer.from('const x = 1;\n'.repeat(2100)), Buffer.from([0])]);
+  // Put NUL byte in the first 8 KiB header so binary detection catches it deterministically.
+  files['src/binary-header.js'] = Buffer.concat([Buffer.from([0, 1, 2]), Buffer.from('\n'.repeat(2500))]);
+
+  const repo = makeFixture(files);
+  symlinkSync(outside, path.join(repo, 'src/linked-dir'));
+  symlinkSync(path.join(outside, 'outside-mega.ts'), path.join(repo, 'src/linked-mega.ts'));
+  symlinkSync(path.join(outside, 'outside.allow'), path.join(repo, '.misty-check.allow'));
+
+  const cleanCheck = auditRepo(repo);
+  assert.equal(cleanCheck.layout.status, 'pass');
+  assert.equal(cleanCheck.layout.allowFile, null);
+  assert.deepEqual(cleanCheck.layout.findings, []);
+
+  // Verify symlinked .misty-check.allow escaping root NEVER suppresses real inside-repo violations.
+  for (let i = 1; i <= 16; i += 1) {
+    const p = path.join(repo, `src/real-sprawl/s${i}.ts`);
+    mkdirSync(path.dirname(p), { recursive: true });
+    writeFileSync(p, `export const s = ${i};\n`);
+  }
+  writeFileSync(path.join(repo, 'src/real-mega.ts'), 'export const r = 1;\n'.repeat(2005));
+
+  const escapeReport = auditRepo(repo);
+  assert.equal(escapeReport.layout.allowFile, null);
+  assert.deepEqual(
+    escapeReport.layout.findings.map((f) => [f.rule, f.path]),
+    [
+      ['wide-directory', 'src/real-sprawl'],
+      ['long-file', 'src/real-mega.ts'],
+    ],
+  );
+});

@@ -4,11 +4,11 @@
  * Zero external dependencies — Node built-ins only.
  *
  * Usage:
- *   node skills/foundations/scripts/misty-check.mjs [path] [--json] [--strict]
+ *   node skills/foundations/scripts/misty-check.mjs [path] [--json] [--strict] [--strict-layout]
  */
 
 import { spawnSync } from 'node:child_process';
-import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { closeSync, existsSync, lstatSync, openSync, readdirSync, readFileSync, readSync, realpathSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -69,6 +69,55 @@ const VIEWPORT_EXPORT_RE = /\bexport\s+(?:const|async\s+function|function)\s+vie
 const MANIFEST_FILE_RE = /\.webmanifest$/i;
 const NEXT_MANIFEST_RE = /(?:^|\/)app\/manifest\.[cm]?[jt]sx?$/i;
 const HTML_DOC_RE = /<!doctype\s+html\b|<html\b/i;
+
+const LAYOUT_MAX_DIR_FILES = 15;
+const LAYOUT_MAX_FILE_LINES = 2000;
+const LAYOUT_MAX_DEPTH = 16;
+const LAYOUT_MAX_FILES = 10000;
+const LAYOUT_LINE_CHUNK_BYTES = 64 * 1024;
+const LAYOUT_MAX_READ_BYTES = 16 * 1024 * 1024;
+const LAYOUT_TEXT_FINDING_LIMIT = 20;
+const LAYOUT_ALLOW_FILENAME = '.misty-check.allow';
+const LAYOUT_EXTRA_SKIP_DIRS = new Set([
+  'docs',
+  'doc',
+  'documentation',
+  'evidence',
+  'artifacts',
+  'captures',
+  'fixtures',
+  '__fixtures__',
+  'testdata',
+  '__snapshots__',
+  'snapshots',
+  'generated',
+  'third_party',
+  'third-party',
+  'assets',
+  'public',
+  'static',
+  'out',
+  '.output',
+  '.tox',
+  '.pytest_cache',
+  '.mypy_cache',
+  '.ruff_cache',
+  '.gradle',
+]);
+const LAYOUT_SOURCE_EXTENSIONS = new Set([
+  '.js', '.mjs', '.cjs', '.jsx',
+  '.ts', '.mts', '.cts', '.tsx',
+  '.py', '.pyi',
+  '.rs', '.go', '.rb',
+  '.java', '.kt', '.kts', '.scala',
+  '.cs', '.fs', '.fsx', '.php', '.swift',
+  '.c', '.h', '.cc', '.cpp', '.cxx', '.hh', '.hpp', '.hxx', '.m', '.mm',
+  '.zig', '.dart', '.lua',
+  '.ex', '.exs', '.erl', '.hrl', '.hs', '.ml', '.mli', '.clj', '.cljs', '.cljc',
+  '.sh', '.bash', '.zsh',
+  '.astro', '.svelte', '.vue',
+]);
+const LAYOUT_GENERATED_FILE_RE = /\.(?:min|bundle)\.[cm]?[jt]sx?$|\.d\.[cm]?ts$|\.(?:pb|gen)\.go$|\.generated\.[^/]+$/i;
 
 function isWithinRoot(rootReal, filePath) {
   try {
@@ -941,6 +990,307 @@ function inspectSurfaceClass(rootReal) {
   };
 }
 
+function isLayoutSourceFile(filename) {
+  const lower = filename.toLowerCase();
+  if (LAYOUT_GENERATED_FILE_RE.test(lower)) return false;
+  return LAYOUT_SOURCE_EXTENSIONS.has(path.extname(lower));
+}
+
+function countSourceLines(fullPath, buf) {
+  let fd;
+  try {
+    const stat = lstatSync(fullPath);
+    if (!stat.isFile() || stat.isSymbolicLink()) return null;
+    if (stat.size === 0) return 0;
+    fd = openSync(fullPath, 'r');
+    let totalRead = 0;
+    let newlines = 0;
+    let lastByte = 0;
+    while (totalRead < LAYOUT_MAX_READ_BYTES) {
+      const toRead = Math.min(buf.length, LAYOUT_MAX_READ_BYTES - totalRead);
+      const bytesRead = readSync(fd, buf, 0, toRead, totalRead);
+      if (bytesRead === 0) break;
+      const slice = buf.subarray(0, bytesRead);
+      if (slice.includes(0)) return null;
+      for (let i = 0; i < bytesRead; i += 1) {
+        if (slice[i] === 0x0a) newlines += 1;
+      }
+      lastByte = slice[bytesRead - 1];
+      totalRead += bytesRead;
+    }
+    if (totalRead === 0) return 0;
+    return newlines + (lastByte === 0x0a ? 0 : 1);
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) {
+      try {
+        closeSync(fd);
+      } catch {
+        // Ignore close errors.
+      }
+    }
+  }
+}
+
+function parseAllowlist(rootReal) {
+  const file = readSafeFile(rootReal, LAYOUT_ALLOW_FILENAME);
+  if (!file) return { file: null, entries: [] };
+  const entries = [];
+  const text = file.text.replace(/^\uFEFF/, '');
+  for (const rawLine of text.split(/\r?\n/)) {
+    let line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+    line = line.replace(/\s+#.*$/, '').trim();
+    if (!line) continue;
+
+    const rawPattern = line;
+    let rule = null;
+    const prefixMatch = /^(wide-directory|long-file):(.*)$/.exec(line);
+    if (prefixMatch) {
+      rule = prefixMatch[1];
+      line = prefixMatch[2].trim();
+      if (!line) continue;
+    }
+
+    let normalized = line.replaceAll('\\', '/').replace(/\/+/g, '/');
+    const isExactDot = normalized === '.' || normalized === './';
+    const dirOnly = isExactDot ? normalized === './' : normalized.endsWith('/');
+    while (normalized.startsWith('./') && normalized.length > 2) {
+      normalized = normalized.slice(2);
+    }
+    if (!isExactDot) {
+      normalized = normalized.replace(/^\/+/, '').replace(/\/+$/, '');
+    } else {
+      normalized = '.';
+    }
+    if (!normalized) continue;
+
+    const segments = normalized === '.' ? ['.'] : normalized.split('/').filter(Boolean);
+    if (segments.length === 0) continue;
+    if (normalized !== '.' && segments.some((seg) => seg === '..' || seg === '.')) continue;
+
+    entries.push({
+      rawPattern,
+      rule,
+      dirOnly,
+      pattern: normalized,
+      segments,
+    });
+  }
+  return { file: LAYOUT_ALLOW_FILENAME, entries };
+}
+
+function matchGlobSegment(pat, str) {
+  let p = 0;
+  let s = 0;
+  let starIdx = -1;
+  let matchIdx = 0;
+
+  while (s < str.length) {
+    if (p < pat.length && (pat[p] === '?' || pat[p] === str[s])) {
+      p += 1;
+      s += 1;
+    } else if (p < pat.length && pat[p] === '*') {
+      starIdx = p;
+      matchIdx = s;
+      p += 1;
+    } else if (starIdx !== -1) {
+      p = starIdx + 1;
+      matchIdx += 1;
+      s = matchIdx;
+    } else {
+      return false;
+    }
+  }
+  while (p < pat.length && pat[p] === '*') p += 1;
+  return p === pat.length;
+}
+
+function matchPathSegments(patSegs, pathSegs) {
+  let pi = 0;
+  let si = 0;
+  let starPi = -1;
+  let starSi = 0;
+
+  while (si < pathSegs.length) {
+    if (pi < patSegs.length && patSegs[pi] === '**') {
+      starPi = pi;
+      starSi = si;
+      pi += 1;
+    } else if (pi < patSegs.length && matchGlobSegment(patSegs[pi], pathSegs[si])) {
+      pi += 1;
+      si += 1;
+    } else if (starPi !== -1) {
+      pi = starPi + 1;
+      starSi += 1;
+      si = starSi;
+    } else {
+      return false;
+    }
+  }
+  while (pi < patSegs.length && patSegs[pi] === '**') pi += 1;
+  return pi === patSegs.length;
+}
+
+function matchAllowEntry(entry, rule, relPath) {
+  if (entry.rule && entry.rule !== rule) return false;
+  if (entry.dirOnly && rule !== 'wide-directory') return false;
+  if (relPath === '.') {
+    return entry.pattern === '.' || entry.pattern === '**' || entry.pattern === '*';
+  }
+  return matchPathSegments(entry.segments, relPath.split('/'));
+}
+
+function compareLayoutItems(a, b) {
+  if (a.rule !== b.rule) return a.rule === 'wide-directory' ? -1 : 1;
+  const metricA = a.rule === 'wide-directory' ? a.count : a.lines;
+  const metricB = b.rule === 'wide-directory' ? b.count : b.lines;
+  if (metricA !== metricB) return metricB - metricA;
+  return a.path.localeCompare(b.path);
+}
+
+function checkStructuralLayout(rootReal) {
+  const allowlist = parseAllowlist(rootReal);
+  const candidates = [];
+  const buf = Buffer.allocUnsafe(LAYOUT_LINE_CHUNK_BYTES);
+  let scannedDirs = 0;
+  let scannedFiles = 0;
+  let truncated = false;
+
+  function walk(dir, depth) {
+    if (depth > LAYOUT_MAX_DEPTH || truncated) return;
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+    const subdirs = [];
+    let dirSourceCount = 0;
+
+    for (const entry of entries) {
+      if (truncated) break;
+      if (entry.isSymbolicLink()) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        const lower = entry.name.toLowerCase();
+        if (SKIP_DIRS.has(entry.name) || SKIP_DIRS.has(lower) || LAYOUT_EXTRA_SKIP_DIRS.has(lower)) continue;
+        if (!isWithinRoot(rootReal, full)) continue;
+        subdirs.push(full);
+        continue;
+      }
+      if (!entry.isFile() || !isLayoutSourceFile(entry.name)) continue;
+      if (scannedFiles >= LAYOUT_MAX_FILES) {
+        truncated = true;
+        break;
+      }
+      const lines = countSourceLines(full, buf);
+      if (lines === null) continue;
+      scannedFiles += 1;
+      dirSourceCount += 1;
+      if (lines > LAYOUT_MAX_FILE_LINES) {
+        const rel = path.relative(rootReal, full).replaceAll(path.sep, '/');
+        candidates.push({
+          rule: 'long-file',
+          path: rel,
+          lines,
+          threshold: LAYOUT_MAX_FILE_LINES,
+        });
+      }
+    }
+
+    if (dirSourceCount > 0) {
+      scannedDirs += 1;
+      if (dirSourceCount > LAYOUT_MAX_DIR_FILES) {
+        const relDir = dir === rootReal ? '.' : path.relative(rootReal, dir).replaceAll(path.sep, '/');
+        candidates.push({
+          rule: 'wide-directory',
+          path: relDir,
+          count: dirSourceCount,
+          threshold: LAYOUT_MAX_DIR_FILES,
+        });
+      }
+    }
+
+    if (truncated) return;
+    for (const subdir of subdirs) {
+      if (truncated) break;
+      walk(subdir, depth + 1);
+    }
+  }
+
+  walk(rootReal, 0);
+
+  const findings = [];
+  const suppressed = [];
+  for (const item of candidates) {
+    const matched = allowlist.entries.find((entry) => matchAllowEntry(entry, item.rule, item.path));
+    if (matched) {
+      suppressed.push({ ...item, matchedPattern: matched.rawPattern });
+    } else {
+      findings.push(item);
+    }
+  }
+  findings.sort(compareLayoutItems);
+  suppressed.sort(compareLayoutItems);
+
+  const wideFindings = findings.filter((f) => f.rule === 'wide-directory');
+  const longFindings = findings.filter((f) => f.rule === 'long-file');
+  const wideSuppressed = suppressed.filter((f) => f.rule === 'wide-directory').length;
+  const longSuppressed = suppressed.filter((f) => f.rule === 'long-file').length;
+  const truncNote = truncated ? ` (scan capped at ${LAYOUT_MAX_FILES.toLocaleString('en-US')} source files)` : '';
+  const wideAllowedNote = wideSuppressed > 0 ? ` (${wideSuppressed} allowed via ${LAYOUT_ALLOW_FILENAME})` : '';
+  const longAllowedNote = longSuppressed > 0 ? ` (${longSuppressed} allowed via ${LAYOUT_ALLOW_FILENAME})` : '';
+
+  const checks = [
+    wideFindings.length === 0
+      ? {
+          id: 'layout-dir-sprawl',
+          label: 'Directory sprawl',
+          status: 'pass',
+          detail: `All ${scannedDirs} scanned source dir${scannedDirs === 1 ? '' : 's'} have <= ${LAYOUT_MAX_DIR_FILES} source files${wideAllowedNote}${truncNote}`,
+        }
+      : {
+          id: 'layout-dir-sprawl',
+          label: 'Directory sprawl',
+          status: 'advisory',
+          detail: `${wideFindings.length} director${wideFindings.length === 1 ? 'y exceeds' : 'ies exceed'} ${LAYOUT_MAX_DIR_FILES} source files${wideAllowedNote}; pass --strict-layout to enforce or list in ${LAYOUT_ALLOW_FILENAME}${truncNote}`,
+        },
+    longFindings.length === 0
+      ? {
+          id: 'layout-mega-files',
+          label: 'Mega-files',
+          status: 'pass',
+          detail: `All ${scannedFiles} scanned source file${scannedFiles === 1 ? '' : 's'} are <= ${LAYOUT_MAX_FILE_LINES.toLocaleString('en-US')} lines${longAllowedNote}${truncNote}`,
+        }
+      : {
+          id: 'layout-mega-files',
+          label: 'Mega-files',
+          status: 'advisory',
+          detail: `${longFindings.length} source file${longFindings.length === 1 ? ' exceeds' : 's exceed'} ${LAYOUT_MAX_FILE_LINES.toLocaleString('en-US')} lines${longAllowedNote}; pass --strict-layout to enforce or list in ${LAYOUT_ALLOW_FILENAME}${truncNote}`,
+        },
+  ];
+
+  return {
+    advisoryOnly: true,
+    thresholds: {
+      maxFilesPerDir: LAYOUT_MAX_DIR_FILES,
+      maxLinesPerFile: LAYOUT_MAX_FILE_LINES,
+    },
+    scannedDirs,
+    scannedFiles,
+    truncated,
+    allowFile: allowlist.file,
+    allowRuleCount: allowlist.entries.length,
+    status: findings.length === 0 ? 'pass' : 'advisory',
+    findings,
+    suppressed,
+    checks,
+  };
+}
+
 export function auditRepo(targetPath = '.') {
   const target = path.resolve(targetPath);
   if (!existsSync(target) || !statSync(target).isDirectory()) {
@@ -961,6 +1311,7 @@ export function auditRepo(targetPath = '.') {
     checkHealthzEndpoint(rootReal),
   ];
   const surfaceClass = inspectSurfaceClass(rootReal);
+  const layout = checkStructuralLayout(rootReal);
   const elapsedMs = Math.round(performance.now() - startedAt);
   const passed = checks.filter((c) => c.status === 'pass').length;
   const gaps = checks.length - passed;
@@ -969,6 +1320,7 @@ export function auditRepo(targetPath = '.') {
     elapsedMs,
     activeFolio: summarizeActiveFolio(productCheck, designCheck),
     surfaceClass,
+    layout,
     summary: {
       passed,
       gaps,
@@ -1000,6 +1352,25 @@ export function formatScorecard(report) {
       lines.push(`${tag} ${check.label.padEnd(advWidth)}  ${check.detail}`);
     }
   }
+  if (report.layout?.checks?.length) {
+    lines.push('', 'Structural layout (advisory; enforce with --strict-layout):');
+    const layoutWidth = Math.max(...report.layout.checks.map((c) => c.label.length));
+    for (const check of report.layout.checks) {
+      const tag = check.status === 'pass' ? '[OK  ]' : '[ADV ]';
+      lines.push(`${tag} ${check.label.padEnd(layoutWidth)}  ${check.detail}`);
+      const rule = check.id === 'layout-dir-sprawl' ? 'wide-directory' : 'long-file';
+      const ruleFindings = (report.layout.findings ?? []).filter((f) => f.rule === rule);
+      for (const item of ruleFindings.slice(0, LAYOUT_TEXT_FINDING_LIMIT)) {
+        const metric = item.rule === 'wide-directory'
+          ? `${item.count} files > ${item.threshold}`
+          : `${item.lines.toLocaleString('en-US')} lines > ${item.threshold.toLocaleString('en-US')}`;
+        lines.push(`  - ${item.path} (${metric})`);
+      }
+      if (ruleFindings.length > LAYOUT_TEXT_FINDING_LIMIT) {
+        lines.push(`  ... (+${ruleFindings.length - LAYOUT_TEXT_FINDING_LIMIT} more; use --json for full list)`);
+      }
+    }
+  }
   return lines.join('\n');
 }
 
@@ -1007,12 +1378,14 @@ export function parseArgs(argv) {
   let target = '.';
   let json = false;
   let strict = false;
+  let strictLayout = false;
   let help = false;
   let positionalSeen = false;
 
   for (const arg of argv) {
     if (arg === '--json') json = true;
     else if (arg === '--strict') strict = true;
+    else if (arg === '--strict-layout') strictLayout = true;
     else if (arg === '-h' || arg === '--help') help = true;
     else if (arg.startsWith('-')) throw new Error(`Unknown flag: ${arg}`);
     else if (!positionalSeen) {
@@ -1022,17 +1395,21 @@ export function parseArgs(argv) {
       throw new Error(`Unexpected extra positional argument: ${arg}`);
     }
   }
-  return { target, json, strict, help };
+  return { target, json, strict, strictLayout, help };
 }
 
 const USAGE = [
-  'Usage: misty-check.mjs [path] [--json] [--strict]',
+  'Usage: misty-check.mjs [path] [--json] [--strict] [--strict-layout]',
   '',
   'Audit a repository against mistystack baseline foundations.',
-  '  path      Target directory (default: ".")',
-  '  --json    Emit machine-readable JSON scorecard',
-  '  --strict  Exit with code 1 when any gap is reported',
-  '  -h,--help Show this help text',
+  '  path             Target directory (default: ".")',
+  '  --json           Emit machine-readable JSON scorecard',
+  '  --strict         Exit with code 1 when any baseline gap is reported',
+  '  --strict-layout  Exit with code 1 when unallowed layout sprawl (>15 files/dir or >2,000 LOC/file) is reported',
+  '  -h,--help        Show this help text',
+  '',
+  'Grandfather legacy layout exceptions in a repo-root .misty-check.allow file',
+  '(one relative path or glob per line, # comments allowed, optional wide-directory: or long-file: prefix).',
 ].join('\n');
 
 function isDirectInvocation() {
@@ -1053,7 +1430,9 @@ if (isDirectInvocation()) {
     }
     const report = auditRepo(opts.target);
     console.log(opts.json ? JSON.stringify(report, null, 2) : formatScorecard(report));
-    if (opts.strict && report.summary.gaps > 0) process.exit(1);
+    if ((opts.strict && report.summary.gaps > 0) || (opts.strictLayout && report.layout.findings.length > 0)) {
+      process.exit(1);
+    }
   } catch (error) {
     console.error(`misty-check error: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(2);
