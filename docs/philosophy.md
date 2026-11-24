@@ -10,7 +10,7 @@ Modern frontier coding models already know how to refactor code, write tests, an
 
 - **Six standing rules** in `rules/core.md` — always on, under twenty lines, defining the Active Folio as living truth, evidence first, strategic design, real-path verification, autonomy boundaries, and cold-reader reporting.
 - **Seven concise skills** in `skills/` — each a few crisp paragraphs (or a terse bullet checklist for `foundations`), stating *what* matters and *why*, never bloated *how* recipes.
-- **Deterministic scripts over prose** — when a check or workflow repeats, encode it in executable code (`misty-check.mjs` — including its zero-dependency Ousterhout layout thresholds and `.misty-check.allow` ratchet, `extract_conflict_context.py`, `.githooks/trufflehog-gate.py`) rather than asking an LLM to remember twenty steps.
+- **Deterministic scripts over prose** — when a check or workflow repeats, encode it in executable code (`misty-check.mjs` — including its zero-dependency structural layout thresholds and `.misty-check.allow` ratchet, `extract_conflict_context.py`, `.githooks/trufflehog-gate.py`) rather than asking an LLM to remember twenty steps.
 - **Zero auto-mounted companion packs** — every repository and operator stays in control of what loads into context.
 
 ## The Active Folio

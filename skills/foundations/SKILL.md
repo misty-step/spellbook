@@ -33,7 +33,7 @@ These conditional baselines apply by product kind without repeating them in repo
 - **CLI / Service:** Crisp `--help`, non-interactive `--json`, and deterministic exit codes.
 - **Evidence / Artifact / Retro:** Calm editorial layout, one focal idea per screen or beat, scannable tables (`<= 4` columns), and zero dark-HUD pill soup.
 
-## Structural layout guard (Ousterhout deep modules)
+## Structural layout guard (deep modules)
 
 `misty-check.mjs` runs a language-agnostic layout audit flagging source directories with `> 15` source files and individual source files exceeding `2,000` lines (excluding generated, vendor, build, lock, docs, and fixture directories) so shallow file sprawl and mega-files surface before compounding:
 

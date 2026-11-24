@@ -122,6 +122,7 @@ const LAYOUT_SOURCE_EXTENSIONS = new Set([
   '.f', '.f90', '.f95', '.for', '.f03', '.f08',
   '.vb', '.vbs', '.pas', '.pp', '.ada', '.adb', '.ads',
   '.awk', '.tcl', '.cu', '.cuh', '.ino', '.wgsl', '.glsl', '.hlsl', '.metal',
+  '.sql', '.proto', '.graphql', '.gql',
 ]);
 const LAYOUT_GENERATED_FILE_RE = /\.(?:min|bundle)\.[cm]?[jt]sx?$|\.d\.[cm]?ts$|\.(?:pb|gen)\.go$|\.generated\.[^/]+$/i;
 
@@ -996,20 +997,24 @@ function inspectSurfaceClass(rootReal) {
   };
 }
 
-function isLayoutSourceFile(filename) {
+function inspectLayoutSourceFile(fullPath, filename, buf) {
   const lower = filename.toLowerCase();
-  if (LAYOUT_GENERATED_FILE_RE.test(lower)) return false;
-  return LAYOUT_SOURCE_EXTENSIONS.has(path.extname(lower));
-}
+  const ext = path.extname(lower);
+  const requireShebang = ext === '';
+  if (requireShebang) {
+    if (filename.startsWith('.')) return { status: 'skip' };
+  } else if (LAYOUT_GENERATED_FILE_RE.test(lower) || !LAYOUT_SOURCE_EXTENSIONS.has(ext)) {
+    return { status: 'skip' };
+  }
 
-function countSourceLines(fullPath, buf) {
   let fd;
   try {
     const stat = lstatSync(fullPath);
-    if (!stat.isFile() || stat.isSymbolicLink()) return null;
+    if (!stat.isFile() || stat.isSymbolicLink()) return { status: 'skip' };
     fd = openSync(fullPath, 'r');
     const fileSize = fstatSync(fd).size;
-    if (fileSize === 0) return { lines: 0, truncated: false };
+    if (requireShebang && fileSize < 2) return { status: 'skip' };
+    if (fileSize === 0) return { status: 'ok', lines: 0, truncated: false };
     let totalRead = 0;
     let newlines = 0;
     let lastByte = 0;
@@ -1018,7 +1023,10 @@ function countSourceLines(fullPath, buf) {
       const bytesRead = readSync(fd, buf, 0, toRead, totalRead);
       if (bytesRead === 0) break;
       const slice = buf.subarray(0, bytesRead);
-      if (slice.includes(0)) return null;
+      if (totalRead === 0 && requireShebang && (bytesRead < 2 || slice[0] !== 0x23 || slice[1] !== 0x21)) {
+        return { status: 'skip' };
+      }
+      if (slice.includes(0)) return { status: 'binary' };
       for (let i = 0; i < bytesRead; i += 1) {
         if (slice[i] === 0x0a) newlines += 1;
       }
@@ -1026,9 +1034,9 @@ function countSourceLines(fullPath, buf) {
       totalRead += bytesRead;
     }
     const lines = totalRead === 0 ? 0 : newlines + (lastByte === 0x0a ? 0 : 1);
-    return { lines, truncated: totalRead < fileSize };
+    return { status: 'ok', lines, truncated: totalRead < fileSize };
   } catch {
-    return null;
+    return { status: 'error', requireShebang };
   } finally {
     if (fd !== undefined) {
       try {
@@ -1180,6 +1188,9 @@ function checkStructuralLayout(rootReal) {
     try {
       entries = readdirSync(dir, { withFileTypes: true });
     } catch {
+      truncatedDirs = true;
+      truncatedFiles = true;
+      truncationReasons.add('unreadable directory');
       return;
     }
     entries.sort((a, b) => a.name.localeCompare(b.name));
@@ -1196,17 +1207,32 @@ function checkStructuralLayout(rootReal) {
         subdirs.push(full);
         continue;
       }
-      if (!entry.isFile() || !isLayoutSourceFile(entry.name)) continue;
+      if (!entry.isFile()) continue;
+      const lineResult = inspectLayoutSourceFile(full, entry.name, buf);
+      if (lineResult.status === 'skip' || lineResult.status === 'binary') continue;
+      if (lineResult.status === 'error') {
+        truncatedFiles = true;
+        if (lineResult.requireShebang) {
+          truncatedDirs = true;
+          truncationReasons.add('unreadable file');
+        } else {
+          dirSourceCount += 1;
+          truncationReasons.add('unreadable source file');
+        }
+        continue;
+      }
       if (scannedFiles >= LAYOUT_MAX_FILES) {
         truncatedDirs = true;
         truncatedFiles = true;
         truncationReasons.add(`max files ${LAYOUT_MAX_FILES.toLocaleString('en-US')}`);
         break;
       }
-      const lineResult = countSourceLines(full, buf);
-      if (lineResult === null) continue;
       scannedFiles += 1;
       dirSourceCount += 1;
+      if (lineResult.truncated) {
+        truncatedFiles = true;
+        truncationReasons.add(`max file size ${Math.round(LAYOUT_MAX_READ_BYTES / (1024 * 1024))}MiB`);
+      }
       if (lineResult.lines > LAYOUT_MAX_FILE_LINES) {
         const rel = path.relative(rootReal, full).replaceAll(path.sep, '/');
         candidates.push({
@@ -1214,10 +1240,8 @@ function checkStructuralLayout(rootReal) {
           path: rel,
           lines: lineResult.lines,
           threshold: LAYOUT_MAX_FILE_LINES,
+          ...(lineResult.truncated ? { truncated: true } : {}),
         });
-      } else if (lineResult.truncated) {
-        truncatedFiles = true;
-        truncationReasons.add(`max file size ${Math.round(LAYOUT_MAX_READ_BYTES / (1024 * 1024))}MiB`);
       }
     }
 

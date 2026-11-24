@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
@@ -574,3 +574,64 @@ function execStrictLayoutFailure(repo) {
   assert.equal(status, 1, `expected --strict-layout to exit 1 for ${repo}, got ${status}`);
   return JSON.parse(stdout);
 }
+
+test('layout guard fails closed on unreadable files/dirs and 64 MiB allowlisted caps, and classifies SQL and shebang scripts', () => {
+  const overLimit = 'x = 1\n'.repeat(2001);
+
+  // 1. Unreadable directory or unreadable source file fails closed under --strict-layout (skip if running as root).
+  if (typeof process.getuid === 'function' && process.getuid() !== 0) {
+    const permDirRepo = makeFixture({ 'private/long.py': overLimit });
+    const privateDir = path.join(permDirRepo, 'private');
+    chmodSync(privateDir, 0o000);
+    try {
+      const permDirOut = execStrictLayoutFailure(permDirRepo);
+      assert.equal(permDirOut.layout.truncated, true);
+      assert.equal(permDirOut.layout.status, 'advisory');
+    } finally {
+      chmodSync(privateDir, 0o700);
+    }
+
+    const permFileRepo = makeFixture({ 'private/long.py': overLimit });
+    const privateFile = path.join(permFileRepo, 'private/long.py');
+    chmodSync(privateFile, 0o000);
+    try {
+      const permFileOut = execStrictLayoutFailure(permFileRepo);
+      assert.equal(permFileOut.layout.truncated, true);
+      assert.equal(permFileOut.layout.status, 'advisory');
+    } finally {
+      chmodSync(privateFile, 0o600);
+    }
+  }
+
+  // 2. Allowlisted >64 MiB file with >2,000 lines before the cutoff still marks truncated=true and fails closed under --strict-layout.
+  const hugeAllowRepo = makeFixture({
+    '.misty-check.allow': 'long-file: long.py\n',
+    'long.py': `${overLimit}#${'x'.repeat(64 * 1024 * 1024)}\n${'y = 1\n'.repeat(100)}`,
+  });
+  const hugeAllowOut = execStrictLayoutFailure(hugeAllowRepo);
+  assert.equal(hugeAllowOut.layout.truncated, true);
+  assert.equal(hugeAllowOut.layout.status, 'advisory');
+  assert.equal(hugeAllowOut.layout.findings.length, 0);
+  assert.equal(hugeAllowOut.layout.suppressed.length, 1);
+  assert.equal(hugeAllowOut.layout.suppressed[0].truncated, true);
+
+  // 3. .sql migrations and extensionless #! scripts are scanned, while extensionless non-shebang files (e.g. LICENSE) are ignored.
+  const sqlAndShebang = {
+    'LICENSE': 'MIT License\n'.repeat(2500),
+    'scripts/check': `#!/bin/sh\n${'echo ok\n'.repeat(2001)}`,
+    'migrations/0001.sql': 'SELECT 1;\n'.repeat(2001),
+  };
+  for (let i = 2; i <= 16; i += 1) {
+    sqlAndShebang[`migrations/${String(i).padStart(4, '0')}.sql`] = `SELECT ${i};\n`;
+  }
+  const polyRepo = makeFixture(sqlAndShebang);
+  const polyOut = execStrictLayoutFailure(polyRepo);
+  assert.deepEqual(
+    polyOut.layout.findings.map((f) => [f.rule, f.path]),
+    [
+      ['wide-directory', 'migrations'],
+      ['long-file', 'scripts/check'],
+      ['long-file', 'migrations/0001.sql'],
+    ],
+  );
+});
