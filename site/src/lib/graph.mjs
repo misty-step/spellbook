@@ -37,8 +37,8 @@ export const TOOL_SCRIPTS = [
     path: 'skills/foundations/scripts/misty-check.mjs',
     url: '/tools/misty-check/',
     language: 'JavaScript (Node built-ins only)',
-    command: 'node skills/foundations/scripts/misty-check.mjs [path] [--json] [--strict]',
-    summary: 'Deterministic ~1-second repository baseline auditor checking PRODUCT.md and DESIGN.md presence (with advisory Active Folio and surface-class summaries that never reject custom structures or non-web repos), agent guide, local run docs, test/lint scripts, secret hygiene, and /healthz.',
+    command: 'node skills/foundations/scripts/misty-check.mjs [path] [--json] [--strict] [--strict-layout]',
+    summary: 'Deterministic ~1-second repository baseline auditor checking PRODUCT.md and DESIGN.md presence (with advisory Active Folio and surface-class summaries that never reject custom structures or non-web repos), structural layout thresholds (<=15 source files/dir, <=2,000 LOC/file, .misty-check.allow), agent guide, local run docs, test/lint scripts, secret hygiene, and /healthz.',
   },
   {
     id: 'extract-conflict-context',

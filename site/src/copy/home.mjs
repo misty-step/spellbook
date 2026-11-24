@@ -29,7 +29,7 @@ export const home = {
   }),
   check: {
     title: 'Code beats prose.',
-    intro: 'Spend inference once, then run a deterministic script. misty-check.mjs audits any repository in under a second using Node built-ins only — checking PRODUCT.md / DESIGN.md presence with an advisory Active Folio summary and lightweight surface-class detection (never rejecting custom section structures or non-web repos), baseline hygiene, and crisp text or --json output.',
+    intro: 'Spend inference once, then run a deterministic script. misty-check.mjs audits any repository in under a second using Node built-ins only — checking PRODUCT.md / DESIGN.md presence with an advisory Active Folio summary, lightweight surface-class detection, structural layout thresholds (.misty-check.allow), baseline hygiene, and crisp text or --json output.',
     primary: { label: 'Read misty-check.mjs', href: '/tools/misty-check/' },
     secondary: { label: 'Foundations skill', href: '/library/skills/foundations/' },
   },
