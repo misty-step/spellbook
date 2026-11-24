@@ -652,3 +652,44 @@ test('layout guard fails closed on unreadable files/dirs and 64 MiB allowlisted 
     ],
   );
 });
+
+test('layout guard handles CR line endings, chunk-split CRLF, authored CSS, and sibling walks after depth cap', () => {
+  // 1. CR-only line endings (classic Python / Mac CR files) are counted and fail --strict-layout.
+  const crRepo = makeFixture({ 'legacy.py': 'x = 1\r'.repeat(2001) });
+  const crOut = execStrictLayoutFailure(crRepo);
+  assert.deepEqual(
+    crOut.layout.findings.map((f) => [f.rule, f.path, f.lines]),
+    [['long-file', 'legacy.py', 2001]],
+  );
+
+  // 2. CRLF split across the 64 KiB read chunk boundary does not double-count.
+  const crlfSplitRepo = makeFixture({
+    'boundary.py': `${'a'.repeat(65535)}\r\n${'x = 1\n'.repeat(1999)}`,
+  });
+  const crlfSplitOut = auditRepo(crlfSplitRepo);
+  assert.equal(crlfSplitOut.layout.status, 'pass');
+  assert.deepEqual(crlfSplitOut.layout.findings, []);
+
+  // 3. Authored CSS stylesheets are scanned while minified CSS is skipped.
+  const cssRepo = makeFixture({
+    'program.css': '.rule { color: red; }\n'.repeat(2001),
+    'vendor.min.css': '.min{color:red}\n'.repeat(2500),
+  });
+  const cssOut = execStrictLayoutFailure(cssRepo);
+  assert.deepEqual(
+    cssOut.layout.findings.map((f) => [f.rule, f.path, f.lines]),
+    [['long-file', 'program.css', 2001]],
+  );
+
+  // 4. Hitting max depth in branch a/ marks truncated=true without halting eligible sibling z/.
+  const siblingRepo = makeFixture({
+    [`${'a/'.repeat(65)}deep.py`]: 'x = 1\n'.repeat(2001),
+    'z/long.py': 'x = 1\n'.repeat(2001),
+  });
+  const siblingOut = execStrictLayoutFailure(siblingRepo);
+  assert.equal(siblingOut.layout.truncated, true);
+  assert.deepEqual(
+    siblingOut.layout.findings.map((f) => [f.rule, f.path, f.lines]),
+    [['long-file', 'z/long.py', 2001]],
+  );
+});

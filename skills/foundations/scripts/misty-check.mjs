@@ -8,7 +8,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { closeSync, existsSync, fstatSync, lstatSync, openSync, readdirSync, readFileSync, readSync, realpathSync, statSync } from 'node:fs';
+import { closeSync, constants as fsConstants, existsSync, fstatSync, lstatSync, openSync, readdirSync, readFileSync, readSync, realpathSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -123,8 +123,10 @@ const LAYOUT_SOURCE_EXTENSIONS = new Set([
   '.vb', '.vbs', '.pas', '.pp', '.ada', '.adb', '.ads',
   '.awk', '.tcl', '.cu', '.cuh', '.ino', '.wgsl', '.glsl', '.hlsl', '.metal',
   '.sql', '.proto', '.graphql', '.gql',
+  '.css', '.scss', '.sass', '.less', '.styl',
+  '.html', '.htm', '.ejs', '.hbs', '.njk', '.erb', '.haml', '.pug', '.twig',
 ]);
-const LAYOUT_GENERATED_FILE_RE = /\.(?:min|bundle)\.[cm]?[jt]sx?$|\.d\.[cm]?ts$|\.(?:pb|gen)\.go$|\.generated\.[^/]+$/i;
+const LAYOUT_GENERATED_FILE_RE = /\.(?:min|bundle)\.(?:[cm]?[jt]sx?|css)$|\.d\.[cm]?ts$|\.(?:pb|gen)\.go$|\.generated\.[^/]+$/i;
 
 function isWithinRoot(rootReal, filePath) {
   try {
@@ -1007,16 +1009,20 @@ function inspectLayoutSourceFile(fullPath, filename, buf) {
     return { status: 'skip' };
   }
 
+  const openFlags = fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0);
   let fd;
   try {
     const stat = lstatSync(fullPath);
     if (!stat.isFile() || stat.isSymbolicLink()) return { status: 'skip' };
-    fd = openSync(fullPath, 'r');
-    const fileSize = fstatSync(fd).size;
+    fd = openSync(fullPath, openFlags);
+    const fstat = fstatSync(fd);
+    if (!fstat.isFile()) return { status: 'skip' };
+    const fileSize = fstat.size;
     if (requireShebang && fileSize < 2) return { status: 'skip' };
     if (fileSize === 0) return { status: 'ok', lines: 0, truncated: false };
     let totalRead = 0;
-    let newlines = 0;
+    let lineBreaks = 0;
+    let prevWasCR = false;
     let lastByte = 0;
     while (totalRead < LAYOUT_MAX_READ_BYTES) {
       const toRead = Math.min(buf.length, LAYOUT_MAX_READ_BYTES - totalRead);
@@ -1028,14 +1034,27 @@ function inspectLayoutSourceFile(fullPath, filename, buf) {
       }
       if (slice.includes(0)) return { status: 'binary' };
       for (let i = 0; i < bytesRead; i += 1) {
-        if (slice[i] === 0x0a) newlines += 1;
+        const b = slice[i];
+        if (b === 0x0a) {
+          if (!prevWasCR) lineBreaks += 1;
+          prevWasCR = false;
+        } else if (b === 0x0d) {
+          lineBreaks += 1;
+          prevWasCR = true;
+        } else {
+          prevWasCR = false;
+        }
       }
       lastByte = slice[bytesRead - 1];
       totalRead += bytesRead;
     }
-    const lines = totalRead === 0 ? 0 : newlines + (lastByte === 0x0a ? 0 : 1);
+    const endedWithBreak = lastByte === 0x0a || lastByte === 0x0d;
+    const lines = totalRead === 0 ? 0 : lineBreaks + (endedWithBreak ? 0 : 1);
     return { status: 'ok', lines, truncated: totalRead < fileSize };
-  } catch {
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === 'ELOOP') {
+      return { status: 'skip' };
+    }
     return { status: 'error', requireShebang };
   } finally {
     if (fd !== undefined) {
@@ -1174,15 +1193,32 @@ function checkStructuralLayout(rootReal) {
   let scannedFiles = 0;
   let truncatedDirs = false;
   let truncatedFiles = false;
+  let fileCapReached = false;
   const truncationReasons = new Set();
 
   function walk(dir, depth) {
-    if (truncatedDirs && truncatedFiles) return;
+    if (fileCapReached) return;
     if (depth > LAYOUT_MAX_DEPTH) {
       truncatedDirs = true;
       truncatedFiles = true;
       truncationReasons.add(`max depth ${LAYOUT_MAX_DEPTH}`);
       return;
+    }
+    if (depth > 0) {
+      try {
+        const dirStat = lstatSync(dir);
+        if (dirStat.isSymbolicLink() || !dirStat.isDirectory()) return;
+        const resolvedDir = realpathSync(dir);
+        const relDir = path.relative(rootReal, resolvedDir);
+        if (relDir !== '' && (path.isAbsolute(relDir) || relDir === '..' || relDir.startsWith(`..${path.sep}`))) {
+          return;
+        }
+      } catch {
+        truncatedDirs = true;
+        truncatedFiles = true;
+        truncationReasons.add('unreadable directory');
+        return;
+      }
     }
     let entries;
     try {
@@ -1252,6 +1288,7 @@ function checkStructuralLayout(rootReal) {
         continue;
       }
       if (scannedFiles >= LAYOUT_MAX_FILES) {
+        fileCapReached = true;
         truncatedDirs = true;
         truncatedFiles = true;
         truncationReasons.add(`max files ${LAYOUT_MAX_FILES.toLocaleString('en-US')}`);
@@ -1288,9 +1325,9 @@ function checkStructuralLayout(rootReal) {
       }
     }
 
-    if (truncatedDirs && truncatedFiles) return;
+    if (fileCapReached) return;
     for (const subdir of subdirs) {
-      if (truncatedDirs && truncatedFiles) break;
+      if (fileCapReached) break;
       walk(subdir, depth + 1);
     }
   }
