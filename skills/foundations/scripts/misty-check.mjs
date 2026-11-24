@@ -1200,14 +1200,44 @@ function checkStructuralLayout(rootReal) {
     for (const entry of entries) {
       if (entry.isSymbolicLink()) continue;
       const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
+      let isDir = entry.isDirectory();
+      let isFile = entry.isFile();
+      if (!isDir && !isFile) {
+        if (entry.isBlockDevice() || entry.isCharacterDevice() || entry.isFIFO() || entry.isSocket()) {
+          continue;
+        }
+        try {
+          const stat = lstatSync(full);
+          if (stat.isSymbolicLink()) continue;
+          isDir = stat.isDirectory();
+          isFile = stat.isFile();
+        } catch {
+          truncatedDirs = true;
+          truncatedFiles = true;
+          truncationReasons.add('unreadable entry');
+          continue;
+        }
+      }
+      if (isDir) {
         const lower = entry.name.toLowerCase();
         if (SKIP_DIRS.has(entry.name) || SKIP_DIRS.has(lower) || LAYOUT_EXTRA_SKIP_DIRS.has(lower)) continue;
-        if (!isWithinRoot(rootReal, full)) continue;
+        let resolvedSubdir;
+        try {
+          resolvedSubdir = realpathSync(full);
+        } catch {
+          truncatedDirs = true;
+          truncatedFiles = true;
+          truncationReasons.add('unreadable directory');
+          continue;
+        }
+        const relSub = path.relative(rootReal, resolvedSubdir);
+        if (relSub !== '' && (path.isAbsolute(relSub) || relSub === '..' || relSub.startsWith(`..${path.sep}`))) {
+          continue;
+        }
         subdirs.push(full);
         continue;
       }
-      if (!entry.isFile()) continue;
+      if (!isFile) continue;
       const lineResult = inspectLayoutSourceFile(full, entry.name, buf);
       if (lineResult.status === 'skip' || lineResult.status === 'binary') continue;
       if (lineResult.status === 'error') {

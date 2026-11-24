@@ -601,6 +601,23 @@ test('layout guard fails closed on unreadable files/dirs and 64 MiB allowlisted 
     } finally {
       chmodSync(privateFile, 0o600);
     }
+
+    const execOnlyBlockedRepo = makeFixture({ 'restricted/nested/long.py': overLimit });
+    const restrictedDir = path.join(execOnlyBlockedRepo, 'restricted');
+    chmodSync(restrictedDir, 0o400);
+    try {
+      const restrictedOut = execStrictLayoutFailure(execOnlyBlockedRepo);
+      assert.equal(restrictedOut.layout.truncated, true);
+      assert.equal(restrictedOut.layout.status, 'advisory');
+    } finally {
+      chmodSync(restrictedDir, 0o700);
+    }
+    const restoredOut = execStrictLayoutFailure(execOnlyBlockedRepo);
+    assert.equal(restoredOut.layout.truncated, false);
+    assert.deepEqual(
+      restoredOut.layout.findings.map((f) => [f.rule, f.path, f.lines]),
+      [['long-file', 'restricted/nested/long.py', 2001]],
+    );
   }
 
   // 2. Allowlisted >64 MiB file with >2,000 lines before the cutoff still marks truncated=true and fails closed under --strict-layout.
