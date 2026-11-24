@@ -478,3 +478,99 @@ test('layout guard ignores vendor/build/docs/non-source files and blocks symlink
     ],
   );
 });
+
+test('layout guard fails closed on truncation, rejects absolute allowlist paths, and scans deep/large/polyglot source files', () => {
+  const overLimit = 'x = 1\n'.repeat(2001);
+
+  // 1. Deeply nested source file at depth 17 is scanned and fails --strict-layout.
+  const nestedPath = `${'a/'.repeat(17)}long.py`;
+  const deepRepo = makeFixture({ [nestedPath]: overLimit });
+  const deepOut = execStrictLayoutFailure(deepRepo);
+  assert.equal(deepOut.layout.truncated, false);
+  assert.deepEqual(deepOut.layout.findings.map((f) => f.path), [nestedPath]);
+
+  // 2. Depth > 64 triggers incomplete scan fail-closed behavior under --strict-layout (while leaving --strict unaffected).
+  const overDepthRepo = makeFixture({
+    'PRODUCT.md': '# Product\n\nIntent.\n',
+    'DESIGN.md': '# Design\n\nTokens.\n',
+    'AGENTS.md': '# Guide\n',
+    'README.md': '```sh\nnpm test\n```\n',
+    'package.json': JSON.stringify({ name: 'deep', scripts: { test: 'node --test' } }),
+    '.gitignore': '.env\n',
+    '.githooks/pre-commit': '#!/bin/sh\nexec trufflehog filesystem .\n',
+    'src/app.mjs': 'export const health = "/healthz";\n',
+    [`${'d/'.repeat(65)}long.py`]: overLimit,
+  });
+  execFileSync(process.execPath, [SCRIPT, overDepthRepo, '--strict'], { stdio: 'pipe' });
+  const overDepthOut = execStrictLayoutFailure(overDepthRepo);
+  assert.equal(overDepthOut.layout.truncated, true);
+  assert.equal(overDepthOut.layout.status, 'advisory');
+  assert.ok(overDepthOut.layout.checks.every((c) => c.status === 'advisory'));
+
+  // 3. >16 MiB first line followed by 2,001 lines is scanned up to 64 MiB and fails --strict-layout.
+  const hugeHeaderRepo = makeFixture({
+    'long.py': `#${'x'.repeat(16 * 1024 * 1024)}\n${overLimit}`,
+  });
+  const hugeHeaderOut = execStrictLayoutFailure(hugeHeaderRepo);
+  assert.equal(hugeHeaderOut.layout.truncated, false);
+  assert.equal(hugeHeaderOut.layout.findings[0].path, 'long.py');
+  assert.equal(hugeHeaderOut.layout.findings[0].lines, 2002);
+
+  // 4. Absolute paths and drive-letter paths in .misty-check.allow are ignored; `*` does not silence `.`.
+  const absFiles = {
+    '.misty-check.allow': [
+      'long-file: /src/long.py',
+      '/src/sprawl',
+      'C:\\src\\long.py',
+      '*',
+    ].join('\n'),
+    'src/long.py': overLimit,
+  };
+  for (let i = 1; i <= 16; i += 1) {
+    absFiles[`root-${i}.py`] = 'x = 1\n';
+    absFiles[`src/sprawl/f${i}.py`] = 'x = 1\n';
+  }
+  const absRepo = makeFixture(absFiles);
+  const absOut = execStrictLayoutFailure(absRepo);
+  assert.equal(absOut.layout.allowRuleCount, 1);
+  assert.deepEqual(
+    absOut.layout.findings.map((f) => [f.rule, f.path]),
+    [
+      ['wide-directory', '.'],
+      ['wide-directory', 'src/sprawl'],
+      ['long-file', 'src/long.py'],
+    ],
+  );
+
+  // 5. Polyglot source extensions (e.g. .R) and artifacts/ source dirs are scanned.
+  const rFiles = {
+    'R/long.R': 'x <- 1\n'.repeat(2001),
+    'artifacts/mod.go': 'package artifacts\n'.repeat(2001),
+  };
+  for (let i = 1; i <= 15; i += 1) {
+    rFiles[`R/f${i}.R`] = 'x <- 1\n';
+  }
+  const rRepo = makeFixture(rFiles);
+  const rOut = execStrictLayoutFailure(rRepo);
+  assert.deepEqual(
+    rOut.layout.findings.map((f) => [f.rule, f.path]),
+    [
+      ['wide-directory', 'R'],
+      ['long-file', 'artifacts/mod.go'],
+      ['long-file', 'R/long.R'],
+    ],
+  );
+});
+
+function execStrictLayoutFailure(repo) {
+  let status = 0;
+  let stdout = '';
+  try {
+    stdout = execFileSync(process.execPath, [SCRIPT, repo, '--json', '--strict-layout'], { encoding: 'utf8', stdio: 'pipe' });
+  } catch (error) {
+    status = error.status;
+    stdout = error.stdout;
+  }
+  assert.equal(status, 1, `expected --strict-layout to exit 1 for ${repo}, got ${status}`);
+  return JSON.parse(stdout);
+}

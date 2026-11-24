@@ -8,7 +8,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { closeSync, existsSync, lstatSync, openSync, readdirSync, readFileSync, readSync, realpathSync, statSync } from 'node:fs';
+import { closeSync, existsSync, fstatSync, lstatSync, openSync, readdirSync, readFileSync, readSync, realpathSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -72,10 +72,10 @@ const HTML_DOC_RE = /<!doctype\s+html\b|<html\b/i;
 
 const LAYOUT_MAX_DIR_FILES = 15;
 const LAYOUT_MAX_FILE_LINES = 2000;
-const LAYOUT_MAX_DEPTH = 16;
-const LAYOUT_MAX_FILES = 10000;
+const LAYOUT_MAX_DEPTH = 64;
+const LAYOUT_MAX_FILES = 50000;
 const LAYOUT_LINE_CHUNK_BYTES = 64 * 1024;
-const LAYOUT_MAX_READ_BYTES = 16 * 1024 * 1024;
+const LAYOUT_MAX_READ_BYTES = 64 * 1024 * 1024;
 const LAYOUT_TEXT_FINDING_LIMIT = 20;
 const LAYOUT_ALLOW_FILENAME = '.misty-check.allow';
 const LAYOUT_EXTRA_SKIP_DIRS = new Set([
@@ -83,7 +83,6 @@ const LAYOUT_EXTRA_SKIP_DIRS = new Set([
   'doc',
   'documentation',
   'evidence',
-  'artifacts',
   'captures',
   'fixtures',
   '__fixtures__',
@@ -114,8 +113,15 @@ const LAYOUT_SOURCE_EXTENSIONS = new Set([
   '.c', '.h', '.cc', '.cpp', '.cxx', '.hh', '.hpp', '.hxx', '.m', '.mm',
   '.zig', '.dart', '.lua',
   '.ex', '.exs', '.erl', '.hrl', '.hs', '.ml', '.mli', '.clj', '.cljs', '.cljc',
-  '.sh', '.bash', '.zsh',
-  '.astro', '.svelte', '.vue',
+  '.r', '.pl', '.pm', '.jl', '.nim', '.cr', '.d',
+  '.v', '.sv', '.vhd', '.vhdl', '.groovy',
+  '.sh', '.bash', '.zsh', '.fish', '.ksh', '.csh', '.ps1', '.psm1',
+  '.astro', '.svelte', '.vue', '.elm', '.purs',
+  '.rkt', '.scm', '.lisp', '.el', '.vim', '.nix', '.tf', '.hcl', '.cue', '.bzl', '.star',
+  '.sol', '.move', '.cairo', '.qnt', '.tla',
+  '.f', '.f90', '.f95', '.for', '.f03', '.f08',
+  '.vb', '.vbs', '.pas', '.pp', '.ada', '.adb', '.ads',
+  '.awk', '.tcl', '.cu', '.cuh', '.ino', '.wgsl', '.glsl', '.hlsl', '.metal',
 ]);
 const LAYOUT_GENERATED_FILE_RE = /\.(?:min|bundle)\.[cm]?[jt]sx?$|\.d\.[cm]?ts$|\.(?:pb|gen)\.go$|\.generated\.[^/]+$/i;
 
@@ -1001,8 +1007,9 @@ function countSourceLines(fullPath, buf) {
   try {
     const stat = lstatSync(fullPath);
     if (!stat.isFile() || stat.isSymbolicLink()) return null;
-    if (stat.size === 0) return 0;
     fd = openSync(fullPath, 'r');
+    const fileSize = fstatSync(fd).size;
+    if (fileSize === 0) return { lines: 0, truncated: false };
     let totalRead = 0;
     let newlines = 0;
     let lastByte = 0;
@@ -1018,8 +1025,8 @@ function countSourceLines(fullPath, buf) {
       lastByte = slice[bytesRead - 1];
       totalRead += bytesRead;
     }
-    if (totalRead === 0) return 0;
-    return newlines + (lastByte === 0x0a ? 0 : 1);
+    const lines = totalRead === 0 ? 0 : newlines + (lastByte === 0x0a ? 0 : 1);
+    return { lines, truncated: totalRead < fileSize };
   } catch {
     return null;
   } finally {
@@ -1054,13 +1061,14 @@ function parseAllowlist(rootReal) {
     }
 
     let normalized = line.replaceAll('\\', '/').replace(/\/+/g, '/');
+    if (normalized.startsWith('/') || /^[a-zA-Z]:/.test(normalized)) continue;
     const isExactDot = normalized === '.' || normalized === './';
     const dirOnly = isExactDot ? normalized === './' : normalized.endsWith('/');
     while (normalized.startsWith('./') && normalized.length > 2) {
       normalized = normalized.slice(2);
     }
     if (!isExactDot) {
-      normalized = normalized.replace(/^\/+/, '').replace(/\/+$/, '');
+      normalized = normalized.replace(/\/+$/, '');
     } else {
       normalized = '.';
     }
@@ -1137,7 +1145,7 @@ function matchAllowEntry(entry, rule, relPath) {
   if (entry.rule && entry.rule !== rule) return false;
   if (entry.dirOnly && rule !== 'wide-directory') return false;
   if (relPath === '.') {
-    return entry.pattern === '.' || entry.pattern === '**' || entry.pattern === '*';
+    return entry.pattern === '.' || entry.pattern === '**';
   }
   return matchPathSegments(entry.segments, relPath.split('/'));
 }
@@ -1156,10 +1164,18 @@ function checkStructuralLayout(rootReal) {
   const buf = Buffer.allocUnsafe(LAYOUT_LINE_CHUNK_BYTES);
   let scannedDirs = 0;
   let scannedFiles = 0;
-  let truncated = false;
+  let truncatedDirs = false;
+  let truncatedFiles = false;
+  const truncationReasons = new Set();
 
   function walk(dir, depth) {
-    if (depth > LAYOUT_MAX_DEPTH || truncated) return;
+    if (truncatedDirs && truncatedFiles) return;
+    if (depth > LAYOUT_MAX_DEPTH) {
+      truncatedDirs = true;
+      truncatedFiles = true;
+      truncationReasons.add(`max depth ${LAYOUT_MAX_DEPTH}`);
+      return;
+    }
     let entries;
     try {
       entries = readdirSync(dir, { withFileTypes: true });
@@ -1171,7 +1187,6 @@ function checkStructuralLayout(rootReal) {
     let dirSourceCount = 0;
 
     for (const entry of entries) {
-      if (truncated) break;
       if (entry.isSymbolicLink()) continue;
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
@@ -1183,21 +1198,26 @@ function checkStructuralLayout(rootReal) {
       }
       if (!entry.isFile() || !isLayoutSourceFile(entry.name)) continue;
       if (scannedFiles >= LAYOUT_MAX_FILES) {
-        truncated = true;
+        truncatedDirs = true;
+        truncatedFiles = true;
+        truncationReasons.add(`max files ${LAYOUT_MAX_FILES.toLocaleString('en-US')}`);
         break;
       }
-      const lines = countSourceLines(full, buf);
-      if (lines === null) continue;
+      const lineResult = countSourceLines(full, buf);
+      if (lineResult === null) continue;
       scannedFiles += 1;
       dirSourceCount += 1;
-      if (lines > LAYOUT_MAX_FILE_LINES) {
+      if (lineResult.lines > LAYOUT_MAX_FILE_LINES) {
         const rel = path.relative(rootReal, full).replaceAll(path.sep, '/');
         candidates.push({
           rule: 'long-file',
           path: rel,
-          lines,
+          lines: lineResult.lines,
           threshold: LAYOUT_MAX_FILE_LINES,
         });
+      } else if (lineResult.truncated) {
+        truncatedFiles = true;
+        truncationReasons.add(`max file size ${Math.round(LAYOUT_MAX_READ_BYTES / (1024 * 1024))}MiB`);
       }
     }
 
@@ -1214,9 +1234,9 @@ function checkStructuralLayout(rootReal) {
       }
     }
 
-    if (truncated) return;
+    if (truncatedDirs && truncatedFiles) return;
     for (const subdir of subdirs) {
-      if (truncated) break;
+      if (truncatedDirs && truncatedFiles) break;
       walk(subdir, depth + 1);
     }
   }
@@ -1236,41 +1256,57 @@ function checkStructuralLayout(rootReal) {
   findings.sort(compareLayoutItems);
   suppressed.sort(compareLayoutItems);
 
+  const truncated = truncatedDirs || truncatedFiles;
   const wideFindings = findings.filter((f) => f.rule === 'wide-directory');
   const longFindings = findings.filter((f) => f.rule === 'long-file');
   const wideSuppressed = suppressed.filter((f) => f.rule === 'wide-directory').length;
   const longSuppressed = suppressed.filter((f) => f.rule === 'long-file').length;
-  const truncNote = truncated ? ` (scan capped at ${LAYOUT_MAX_FILES.toLocaleString('en-US')} source files)` : '';
+  const truncationReasonText = [...truncationReasons].join(', ');
+  const truncNote = truncated ? ` (scan incomplete: ${truncationReasonText})` : '';
   const wideAllowedNote = wideSuppressed > 0 ? ` (${wideSuppressed} allowed via ${LAYOUT_ALLOW_FILENAME})` : '';
   const longAllowedNote = longSuppressed > 0 ? ` (${longSuppressed} allowed via ${LAYOUT_ALLOW_FILENAME})` : '';
 
   const checks = [
-    wideFindings.length === 0
+    wideFindings.length === 0 && !truncatedDirs
       ? {
           id: 'layout-dir-sprawl',
           label: 'Directory sprawl',
           status: 'pass',
           detail: `All ${scannedDirs} scanned source dir${scannedDirs === 1 ? '' : 's'} have <= ${LAYOUT_MAX_DIR_FILES} source files${wideAllowedNote}${truncNote}`,
         }
-      : {
-          id: 'layout-dir-sprawl',
-          label: 'Directory sprawl',
-          status: 'advisory',
-          detail: `${wideFindings.length} director${wideFindings.length === 1 ? 'y exceeds' : 'ies exceed'} ${LAYOUT_MAX_DIR_FILES} source files${wideAllowedNote}; pass --strict-layout to enforce or list in ${LAYOUT_ALLOW_FILENAME}${truncNote}`,
-        },
-    longFindings.length === 0
+      : wideFindings.length === 0
+        ? {
+            id: 'layout-dir-sprawl',
+            label: 'Directory sprawl',
+            status: 'advisory',
+            detail: `Layout scan incomplete (${truncationReasonText}); cannot confirm all directories have <= ${LAYOUT_MAX_DIR_FILES} source files${wideAllowedNote}`,
+          }
+        : {
+            id: 'layout-dir-sprawl',
+            label: 'Directory sprawl',
+            status: 'advisory',
+            detail: `${wideFindings.length} director${wideFindings.length === 1 ? 'y exceeds' : 'ies exceed'} ${LAYOUT_MAX_DIR_FILES} source files${wideAllowedNote}; pass --strict-layout to enforce or list in ${LAYOUT_ALLOW_FILENAME}${truncNote}`,
+          },
+    longFindings.length === 0 && !truncatedFiles
       ? {
           id: 'layout-mega-files',
           label: 'Mega-files',
           status: 'pass',
-          detail: `All ${scannedFiles} scanned source file${scannedFiles === 1 ? '' : 's'} are <= ${LAYOUT_MAX_FILE_LINES.toLocaleString('en-US')} lines${longAllowedNote}${truncNote}`,
+          detail: `All ${scannedFiles} scanned source file${scannedFiles === 1 ? '' : 's'} are <= ${LAYOUT_MAX_FILE_LINES.toLocaleString('en-US')} lines${longAllowedNote}`,
         }
-      : {
-          id: 'layout-mega-files',
-          label: 'Mega-files',
-          status: 'advisory',
-          detail: `${longFindings.length} source file${longFindings.length === 1 ? ' exceeds' : 's exceed'} ${LAYOUT_MAX_FILE_LINES.toLocaleString('en-US')} lines${longAllowedNote}; pass --strict-layout to enforce or list in ${LAYOUT_ALLOW_FILENAME}${truncNote}`,
-        },
+      : longFindings.length === 0
+        ? {
+            id: 'layout-mega-files',
+            label: 'Mega-files',
+            status: 'advisory',
+            detail: `Layout scan incomplete (${truncationReasonText}); cannot confirm all files are <= ${LAYOUT_MAX_FILE_LINES.toLocaleString('en-US')} lines${longAllowedNote}`,
+          }
+        : {
+            id: 'layout-mega-files',
+            label: 'Mega-files',
+            status: 'advisory',
+            detail: `${longFindings.length} source file${longFindings.length === 1 ? ' exceeds' : 's exceed'} ${LAYOUT_MAX_FILE_LINES.toLocaleString('en-US')} lines${longAllowedNote}; pass --strict-layout to enforce or list in ${LAYOUT_ALLOW_FILENAME}${truncNote}`,
+          },
   ];
 
   return {
@@ -1284,7 +1320,7 @@ function checkStructuralLayout(rootReal) {
     truncated,
     allowFile: allowlist.file,
     allowRuleCount: allowlist.entries.length,
-    status: findings.length === 0 ? 'pass' : 'advisory',
+    status: findings.length === 0 && !truncated ? 'pass' : 'advisory',
     findings,
     suppressed,
     checks,
@@ -1405,7 +1441,7 @@ const USAGE = [
   '  path             Target directory (default: ".")',
   '  --json           Emit machine-readable JSON scorecard',
   '  --strict         Exit with code 1 when any baseline gap is reported',
-  '  --strict-layout  Exit with code 1 when unallowed layout sprawl (>15 files/dir or >2,000 LOC/file) is reported',
+  '  --strict-layout  Exit with code 1 when unallowed layout sprawl (>15 files/dir, >2,000 LOC/file) or scan truncation is reported',
   '  -h,--help        Show this help text',
   '',
   'Grandfather legacy layout exceptions in a repo-root .misty-check.allow file',
@@ -1430,7 +1466,7 @@ if (isDirectInvocation()) {
     }
     const report = auditRepo(opts.target);
     console.log(opts.json ? JSON.stringify(report, null, 2) : formatScorecard(report));
-    if ((opts.strict && report.summary.gaps > 0) || (opts.strictLayout && report.layout.findings.length > 0)) {
+    if ((opts.strict && report.summary.gaps > 0) || (opts.strictLayout && (report.layout.findings.length > 0 || report.layout.truncated))) {
       process.exit(1);
     }
   } catch (error) {
