@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { chmodSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -692,4 +692,22 @@ test('layout guard handles CR line endings, chunk-split CRLF, authored CSS, and 
     siblingOut.layout.findings.map((f) => [f.rule, f.path, f.lines]),
     [['long-file', 'z/long.py', 2001]],
   );
+});
+
+test('CLI flushes complete --json output before exiting 1 on large strict-layout reports', () => {
+  const files = {};
+  const longPy = 'pass\n'.repeat(2001);
+  for (let i = 0; i < 1500; i += 1) {
+    files[`mod/f${i}.py`] = longPy;
+  }
+  const largeRepo = makeFixture(files);
+
+  const proc = spawnSync(process.execPath, [SCRIPT, largeRepo, '--json', '--strict-layout'], {
+    encoding: 'utf8',
+    maxBuffer: 10 * 1024 * 1024,
+  });
+  assert.equal(proc.status, 1);
+  assert.ok(Buffer.byteLength(proc.stdout) > 150_000, 'expected large JSON stdout payload (>150 KiB)');
+  const parsed = JSON.parse(proc.stdout);
+  assert.equal(parsed.layout.findings.length, 1501);
 });

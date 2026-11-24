@@ -1553,15 +1553,15 @@ if (isDirectInvocation()) {
     const opts = parseArgs(process.argv.slice(2));
     if (opts.help) {
       console.log(USAGE);
-      process.exit(0);
-    }
-    const report = auditRepo(opts.target);
-    console.log(opts.json ? JSON.stringify(report, null, 2) : formatScorecard(report));
-    if ((opts.strict && report.summary.gaps > 0) || (opts.strictLayout && (report.layout.findings.length > 0 || report.layout.truncated))) {
-      process.exit(1);
+    } else {
+      const report = auditRepo(opts.target);
+      console.log(opts.json ? JSON.stringify(report, null, 2) : formatScorecard(report));
+      if ((opts.strict && report.summary.gaps > 0) || (opts.strictLayout && (report.layout.findings.length > 0 || report.layout.truncated))) {
+        process.exitCode = 1;
+      }
     }
   } catch (error) {
     console.error(`misty-check error: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(2);
+    process.exitCode = 2;
   }
 }
