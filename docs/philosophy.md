@@ -51,6 +51,16 @@ Instead of materializing work into a backlog, the human operator and coding agen
 - **Ephemeral Compute** — Loops, triggers, and bounded factory runs that close a specific diff between Intent and Verified Reality and then tear down cleanly, leaving verified commits and evidence rather than long-lived orchestration clutter.
 - **Sparks / Ideas** — One flat, low-ceremony capture log for rough thoughts and future possibilities. A spark stays inert until the user promotes it into Intent — never silently turned into backlog debt.
 
+## Information-hiding decomposition & deep modules
+
+Flowchart-driven decomposition splits code along sequential execution steps (`input -> transform -> sort -> output`), forcing every module to share raw in-memory formats, pointer conventions, and ordering assumptions. When a representation or schedule changes, every stage breaks together.
+
+Parnas (1972) identified the cure that Ousterhout's *A Philosophy of Software Design* later expanded into deep modules:
+
+- **Change-Decision Decomposition Check:** Before decomposing a system into modules or files, list the **3–5 difficult or likely-to-change design decisions** (storage layout, transport/protocol, auth/grants, external provider/wire format, scheduling/execution order) and assign each behind **one** information-hiding boundary.
+- **Minimal interfaces:** Design module interfaces to reveal only what callers truly need — never prescribe accidental ordering or format assumptions that foreclose simpler implementations.
+- **Acyclic `uses` hierarchy:** Keep dependency direction strictly partial-ordered so lower-level modules never depend on higher-level modules, leaving lower layers independently reusable and upper layers cleanly prunable.
+
 ## Explicit state machines & Deterministic Simulation Testing
 
 Complex systems rarely fail because a pure helper computed the wrong integer; they fail in the cracks between scattered boolean flags (`isPending`, `hasRetried`, `isLocked`, `cancelled`) and rare event interleavings.
@@ -69,6 +79,7 @@ Two lightweight habits multiply quality across any model provider or harness wit
 
 The lean method stands on clear, battle-tested engineering ideas:
 
+- **David Parnas (*On the Criteria To Be Used in Decomposing Systems into Modules*, 1972)** — Foundational ancestor of Ousterhout's *A Philosophy of Software Design*: decompose around difficult or likely-to-change design decisions (*information hiding*) rather than temporal flowchart steps; keep interfaces minimal so callers cannot rely on accidental format or ordering assumptions; and separate clean decomposition from an acyclic `uses` hierarchy so lower layers remain reusable without upward dependencies.
 - **John Ousterhout (*A Philosophy of Software Design*)** — Prefer deep modules with small, simple interfaces over shallow layers and tactical patches. Pull complexity downward; migrate callers and delete dead code rather than working around it; guard against shallow file sprawl (`> 15` source files/dir) and mega-files (`> 2,000` LOC) via `misty-check.mjs` (plus `deslop-please` in Rust repos).
 - **Lauren Tan (`poteto` / `pstack`)** — Evidence before confidence. Keep skills short around *what* and *why*; observe the real code and running system directly instead of arguing from summaries or abstract reviews.
 - **Kent C. Dodds** — Spend inference once to build durable, deterministic scripts, linters, and use-shaped verification across real boundaries. Never treat mocked unit passes as proof of shipped behavior.

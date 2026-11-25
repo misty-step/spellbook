@@ -24,7 +24,7 @@ export const home = {
   }),
   core: (facts) => ({
     title: `${facts.CoreRules} rules. Every session.`,
-    intro: 'Loaded on session start and kept under twenty lines. Active Folio-to-reconciler default (greenfield or legacy), real evidence, strategic design with explicit state machines, real-path verification, clear autonomy boundaries, and one cold-reader recap.',
+    intro: 'Loaded on session start and kept under twenty lines. Active Folio-to-reconciler default (greenfield or legacy), real evidence, information-hiding strategic design with explicit state machines, real-path verification, clear autonomy boundaries, and one cold-reader recap.',
     caption: 'Verbatim always-on standing rules from',
   }),
   check: {
@@ -68,7 +68,7 @@ export const home = {
   },
   philosophy: {
     title: 'Active Folio, Philosophy & Lineage.',
-    body: 'Why effortless Active Folio bootstrapping and reconciliation (greenfield or legacy), the 3-Layer Intent Stack, clean-room recompile, explicit state machines with Deterministic Simulation Testing (DST), seven small skills, cross-family cold critics, and calm editorial evidence beat forty rigid playbooks. Kept in docs/philosophy.md for human readers and never auto-loaded into agent prompts.',
+    body: 'Why effortless Active Folio bootstrapping and reconciliation (greenfield or legacy), the 3-Layer Intent Stack, clean-room recompile, information-hiding decomposition, explicit state machines with Deterministic Simulation Testing (DST), seven small skills, cross-family cold critics, and calm editorial evidence beat forty rigid playbooks. Kept in docs/philosophy.md for human readers and never auto-loaded into agent prompts.',
     primary: { label: 'Read Philosophy & Lineage', href: '/philosophy/' },
     secondary: { label: 'Browse on GitHub', href: 'https://github.com/misty-step/mistystack' },
   },
