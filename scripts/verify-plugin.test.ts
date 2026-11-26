@@ -45,11 +45,11 @@ function makeFixture() {
 	return { root, put };
 }
 
-test("current lean repository passes strict plugin lint with 8 skills", () => {
+test("current lean repository passes strict plugin lint with 10 skills", () => {
 	const report = lintPlugin(repoRoot, true);
 	expect(report.errors).toEqual([]);
 	expect(report.warnings).toEqual([]);
-	expect(report.skillCount).toBe(8);
+	expect(report.skillCount).toBe(10);
 });
 
 test("rejects personal names, external companion packs, oversized core, and broken links", () => {

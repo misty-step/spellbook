@@ -16,7 +16,7 @@ Read it at <https://stack.mistystep.io> · the reasoning lives in [`docs/philoso
 ## What ships
 
 - [`rules/core.md`](rules/core.md) — six always-on standing rules.
-- [`skills/`](skills/) — eight short skills in open Agent Skills format: [`misty`](skills/misty/SKILL.md) (the core loop), [`foundations`](skills/foundations/SKILL.md), [`design`](skills/design/SKILL.md), [`present`](skills/present/SKILL.md) (show, don't tell), [`define-product`](skills/define-product/SKILL.md), [`security-audit`](skills/security-audit/SKILL.md), [`release-watch`](skills/release-watch/SKILL.md), and [`resolve-merge-conflicts`](skills/resolve-merge-conflicts/SKILL.md).
+- [`skills/`](skills/) — ten short skills in open Agent Skills format: [`misty`](skills/misty/SKILL.md) (the core loop), [`foundations`](skills/foundations/SKILL.md), [`design`](skills/design/SKILL.md), [`design-exploration`](skills/design-exploration/SKILL.md) (distinct directions, judged before human eyes), [`present`](skills/present/SKILL.md) (show, don't tell), [`trace-mining`](skills/trace-mining/SKILL.md) (recurring corrections become craft), [`define-product`](skills/define-product/SKILL.md), [`security-audit`](skills/security-audit/SKILL.md), [`release-watch`](skills/release-watch/SKILL.md), and [`resolve-merge-conflicts`](skills/resolve-merge-conflicts/SKILL.md).
 - Deterministic scripts — [`misty-check.mjs`](skills/foundations/scripts/misty-check.mjs) (a zero-dependency baseline auditor) and [`extract_conflict_context.py`](skills/resolve-merge-conflicts/scripts/extract_conflict_context.py).
 - [`.githooks/`](.githooks/) — TruffleHog secret scanning on commit and push (`./scripts/bootstrap`).
 - [`docs/philosophy.md`](docs/philosophy.md) — the why, for humans; never auto-loaded into agent prompts.

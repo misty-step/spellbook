@@ -3,7 +3,7 @@
 Spellbook (formerly `mistystack`): portable agent craft and philosophy in Agent Skills format (`skills/<name>/SKILL.md`), paired with `rules/core.md` and the static reader in `site/` (`stack.mistystep.io`).
 
 - `rules/core.md`: 6-bullet always-on standing rules (Active Folio first).
-- `skills/`: 8 lean skills (`misty`, `foundations`, `design`, `present`, `define-product`, `security-audit`, `release-watch`, `resolve-merge-conflicts`) plus deterministic scripts (`misty-check.mjs`, `extract_conflict_context.py`).
+- `skills/`: 10 lean skills (`misty`, `foundations`, `design`, `design-exploration`, `present`, `trace-mining`, `define-product`, `security-audit`, `release-watch`, `resolve-merge-conflicts`) plus deterministic scripts (`misty-check.mjs`, `extract_conflict_context.py`).
 - `.claude-plugin/`, `.agents/`, `package.json`: thin native manifests with zero external companion packs.
 - `.githooks/`: TruffleHog secret-scanning hooks (`./scripts/bootstrap`).
 - `docs/philosophy.md`: human-readable philosophy and lineage (never auto-loaded into agent prompts).
