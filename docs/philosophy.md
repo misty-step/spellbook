@@ -20,7 +20,7 @@ Everything else is left to the model, and improves when the model does.
 Long procedural playbooks, rigid templates, and hardcoded model tables burn context, contradict each other as tools evolve, and train agents to perform theater instead of thinking. Spellbook keeps:
 
 - **Six standing rules** in `rules/core.md` — always on, under twenty lines.
-- **Eight concise skills** in `skills/` — each a few paragraphs (or a terse checklist for `foundations`).
+- **Ten concise skills** in `skills/` — each a few paragraphs (or a terse checklist for `foundations`).
 - **Deterministic scripts over prose** — `misty-check.mjs` (including its structural layout thresholds and `.misty-check.allow` ratchet), `extract_conflict_context.py`, and `.githooks/trufflehog-gate.py`.
 - **Zero auto-mounted companion packs** — every repository and operator decides what loads into context.
 
@@ -82,6 +82,8 @@ Systems rarely fail because a pure helper computed the wrong integer; they fail 
 - **Cross-family cold critic:** before merging meaningful work, a fresh reviewer from a different model family reads only the diff, the Folio, and real run evidence; the author never grades its own homework. After two passes, a critic blocks only with a concrete failing fixture, so reviews converge.
 - **Calm editorial evidence:** proof for the human operator is visual and legible — real screenshots, short walkthroughs, concise takeaways — not metric soup or walls of terminal logs.
 - **Show, don't tell:** after a long or multi-step run, the reader's attention is the scarcest resource left. The `present` skill picks the lowest medium that carries the meaning (three lines, an inline visual, or an interactive walkthrough) and catches the reader up in five beats — *Look at this · What differs · Pay attention to · Why · Needs you* — so the result lands in seconds and the only work left for the human is the decision.
+- **Explore wide, judge before showing:** a design exploration offers directions that differ in structure and typography rather than costume, lets layout and real content speak instead of narrator copy, passes approved assets through as checked-in files rather than prose, and puts every candidate through a headed, cross-family visual critique before a human sees it (`design-exploration`).
+- **Mine the exhaust:** every human correction and harness stall is signal about where the method is wrong. The `trace-mining` skill clusters recurring ones from raw traces, graduates each into the smallest durable fix — a check first, then a sharper rule, then a pruned workflow — deletes what the evidence shows is obsolete, and watches whether the failure stops recurring.
 
 ## Lineage
 

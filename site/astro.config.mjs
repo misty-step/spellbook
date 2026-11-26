@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 const retired = (base, names, to) => Object.fromEntries(names.map((name) => [`${base}${name}/`, to]));
 
 const retiredSkills = [
-  'agent-design', 'artifact-standard', 'bakeoff', 'bespoke-resume', 'boat-workers',
+  'agent-design', 'artifact-standard', 'bespoke-resume', 'boat-workers',
   'coordinator', 'daily-retro', 'daybook', 'daybook-dream', 'deepen', 'domain-modeling',
   'finance-friday', 'grilling', 'grill-me', 'grill-with-docs', 'herdr', 'merge-risk',
   'monologue-digest', 'recompile', 'research', 'retro', 'setup-mistystack', 'ship-loop',
@@ -104,6 +104,7 @@ export const siteRedirects = {
   '/library/principles/skill-diet/': '/philosophy/',
   '/library/playbooks/incident/': '/library/skills/release-watch/',
   '/library/playbooks/refactor/': '/library/misty/',
+  '/library/skills/bakeoff/': '/library/skills/design-exploration/',
   ...retired('/library/skills/security-audit/references/', legacySecurityRefs, '/library/skills/security-audit/'),
   ...retired('/library/playbooks/', legacyPlaybooks, '/library/misty/'),
   ...retired('/library/principles/', legacyPrinciples, '/philosophy/'),
