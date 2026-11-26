@@ -14,7 +14,7 @@ afterEach(() => {
 function makeFixture() {
 	const scratch = process.env.TMPDIR ?? join(homedir(), ".cache/tmp");
 	mkdirSync(scratch, { recursive: true });
-	const root = mkdtempSync(join(scratch, "mistystack-plugin-test-"));
+	const root = mkdtempSync(join(scratch, "spellbook-plugin-test-"));
 	tempDirs.push(root);
 	const put = (rel: string, content: string) => {
 		const dest = join(root, rel);
@@ -69,5 +69,15 @@ test("rejects personal names, external companion packs, oversized core, and brok
 	const report = lintPlugin(root, true);
 	expect(report.errors.some((e) => e.includes("personal names"))).toBe(true);
 	expect(report.errors.some((e) => e.includes("missing reference"))).toBe(true);
+	expect(report.errors.some((e) => e.includes("only the local mistystack plugin"))).toBe(true);
+});
+
+test("rejects lineage names in portable rules and renaming the stable Claude install identifier", () => {
+	const { root, put } = makeFixture();
+	put("rules/core.md", "---\ntrigger: always_on\nalwaysApply: true\n---\n# Core\n\n- Decompose like Parnas (1972).\n");
+	put(".claude-plugin/marketplace.json", JSON.stringify({ name: "spellbook", owner: { name: "Misty Step" }, plugins: [{ name: "spellbook", source: "./" }] }));
+	const report = lintPlugin(root, true);
+	expect(report.errors).toContain("rules/core.md: portable skills and rules must not contain personal names");
+	expect(report.errors.some((e) => e.includes("marketplace.json: name must stay mistystack"))).toBe(true);
 	expect(report.errors.some((e) => e.includes("only the local mistystack plugin"))).toBe(true);
 });

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import astroConfig from '../astro.config.mjs';
+import { PERSONAL_NAMES } from '../src/lib/portable-voice.mjs';
 
 // Check the built static artifact: links, fragments, CSP, redirects, raw sources, sitemap, worker, and Pagefind.
 const site = fileURLToPath(new URL('..', import.meta.url));
@@ -210,7 +211,7 @@ async function main() {
   for (const [file, bytes] of files) {
     if (/\.(html|svg)$/.test(file)) {
       const text = bytes.toString('utf8');
-      expect(!/\bphaedrus\b/i.test(text), `${file}: rendered site must not contain personal names`);
+      expect(!PERSONAL_NAMES.test(text), `${file}: rendered site must not contain personal names`);
       pages.set(file, parseHTML(file, text));
     }
   }

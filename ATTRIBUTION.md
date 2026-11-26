@@ -1,10 +1,27 @@
 # Attribution
 
-Mistystack vendors and adapts the material listed below. Misty Step owns the method, and upstream authors do not endorse this plugin. Reference-only reading is listed in [docs/exemplars.md](docs/exemplars.md).
+Spellbook (formerly Mistystack) vendors and adapts the material listed below. Misty Step owns the method, and upstream authors do not endorse this plugin. Reference-only reading is listed in [docs/exemplars.md](docs/exemplars.md).
 
 Misty-authored skills keep a short source identity and pointer in `metadata.source`; [Skill provenance](#skill-provenance) owns their complete directory-level source records. Supporting files carry no frontmatter. Retain contributing upstreams, required copyright and licence notices and identify modifications; moving a file does not remove attribution.
 
 pstack is no longer vendored ([ADR 0026](docs/decisions/0026-one-page-method.md)). From 2026-11-02 to 2026-11-10 mistystack installed the pstack tree at `cursor/plugins@c742dd61706fbacc1b95f1a20b7b988cf096ce6c/pstack`; Git history holds those bytes and their lock. The current method page, its principles and several task skills were shaped by pstack's structure and ideas and restate some of them in our own words, so the MIT notice below is retained.
+
+## Lineage credits
+
+[Philosophy & Lineage](docs/philosophy.md) restates these ideas in portable voice; credit for them belongs here.
+
+| Idea | Credit |
+| --- | --- |
+| Information hiding (*On the Criteria To Be Used in Decomposing Systems into Modules*, 1972) | David Parnas |
+| Deep modules (*A Philosophy of Software Design*) | John Ousterhout |
+| Evidence before confidence (`pstack`) | Lauren Tan |
+| Spend inference once | Kent C. Dodds |
+| Fast-loop shipping | Zach Lloyd |
+| Good taste in data structures and control flow | Linus Torvalds and John Carmack |
+| Present-tense product intent | Nate Berkopec |
+| *The Bitter Lesson* | Richard Sutton |
+| Depth over breadth (`#depth`) | Felix Rieseberg |
+| Subtract and inline (PufferLib `SKILL_ISSUES.md`) | Joseph Suarez |
 
 ## Source map
 

@@ -1,11 +1,11 @@
 {
   "name": "mistystack",
-  "description": "Lean, portable engineering method for coding agents.",
+  "description": "Spellbook (formerly Mistystack): portable agent craft and philosophy for coding agents.",
   "author": {
     "name": "Misty Step"
   },
   "homepage": "https://stack.mistystep.io",
-  "repository": "https://github.com/misty-step/mistystack",
+  "repository": "https://github.com/misty-step/spellbook",
   "license": "MIT",
   "skills": "./skills",
   "hooks": {

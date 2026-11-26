@@ -1,94 +1,104 @@
 # Philosophy & Lineage
 
-This page explains why `mistystack` is shaped the way it is. It is written for human readers and intentionally lives outside `skills/` and `rules/` so it is never auto-loaded into coding-agent prompts.
+Why Spellbook is shaped the way it is. This page is for human readers; it lives outside `skills/` and `rules/` so it is never auto-loaded into coding-agent prompts.
+
+## The bitter lesson, applied to method
+
+General methods that ride growing capability beat hand-encoded cleverness — not always at first, but eventually and decisively. Agent method is no exception. Each model generation already knows more about refactoring, testing, and Git than a playbook can teach, and every step-by-step recipe written for last year's model becomes friction for this year's.
+
+So Spellbook encodes only what capability cannot supply on its own:
+
+- **Intent** — what the product must do for its users, stated in the present tense.
+- **Invariants** — the few standing rules that hold however capable the agent becomes: evidence over assertion, verification on the real running artifact, clear autonomy boundaries.
+- **Taste** — short skills that say *what* matters and *why*, never a *how* recipe.
+- **Checks** — anything a machine can verify becomes a deterministic script, not a paragraph an agent must remember.
+
+Everything else is left to the model, and improves when the model does.
 
 ## Why seven small skills beat forty playbooks
 
-Modern frontier coding models already know how to refactor code, write tests, and navigate Git. Long procedural playbooks, rigid templates, and hardcoded model tables actively hurt performance: they burn context window, contradict each other as tools evolve, and train agents to perform theater instead of thinking.
+Long procedural playbooks, rigid templates, and hardcoded model tables burn context, contradict each other as tools evolve, and train agents to perform theater instead of thinking. Spellbook keeps:
 
-`mistystack` cuts the method down to what a strong model genuinely needs:
-
-- **Six standing rules** in `rules/core.md` — always on, under twenty lines, defining the Active Folio as living truth, evidence first, strategic design, real-path verification, autonomy boundaries, and cold-reader reporting.
-- **Seven concise skills** in `skills/` — each a few crisp paragraphs (or a terse bullet checklist for `foundations`), stating *what* matters and *why*, never bloated *how* recipes.
-- **Deterministic scripts over prose** — when a check or workflow repeats, encode it in executable code (`misty-check.mjs` — including its zero-dependency structural layout thresholds and `.misty-check.allow` ratchet, `extract_conflict_context.py`, `.githooks/trufflehog-gate.py`) rather than asking an LLM to remember twenty steps.
-- **Zero auto-mounted companion packs** — every repository and operator stays in control of what loads into context.
+- **Six standing rules** in `rules/core.md` — always on, under twenty lines.
+- **Seven concise skills** in `skills/` — each a few paragraphs (or a terse checklist for `foundations`).
+- **Deterministic scripts over prose** — `misty-check.mjs` (including its structural layout thresholds and `.misty-check.allow` ratchet), `extract_conflict_context.py`, and `.githooks/trufflehog-gate.py`.
+- **Zero auto-mounted companion packs** — every repository and operator decides what loads into context.
 
 ## The Active Folio
 
-At agent speeds, code is cheap to regenerate while intent is expensive to rediscover. Ticket boards, kanban backlogs, and sprawling ADR directories rot almost as soon as they are written: every ticket is a frozen guess from an earlier moment, and maintaining issue states quickly costs more human attention than doing the work.
+At agent speed, code is cheap to regenerate while intent is expensive to rediscover. Ticket boards and sprawling decision logs rot as soon as they are written: every ticket is a frozen guess from an earlier moment, and maintaining their states soon costs more attention than the work.
 
-The **Active Folio** solves this by anchoring each repository in two living, present-tense documents while **git owns history**:
+The **Active Folio** anchors each repository in living, present-tense documents while **git owns history**:
 
-- **`PRODUCT.md`** — Observable user outcomes, domain terms, business rules, and explicit non-goals, with zero implementation lock-in (no frameworks, file paths, or vendor coupling).
-- **`DESIGN.md`** — For UI projects, visual craft, hierarchy, typography, spacing, and design tokens kept in exact parity with shipped stylesheets and assets.
+- **`PRODUCT.md`** — observable user outcomes, domain terms, business rules, and explicit non-goals, with zero implementation lock-in (no frameworks, file paths, or vendors).
+- **`DESIGN.md`** — for UI projects, visual craft, hierarchy, typography, spacing, and design tokens in exact parity with shipped assets.
 
-Whether starting a fresh greenfield repository or touching a ten-year-old legacy codebase, work flows through one default loop:
+Greenfield or legacy, work flows through one loop:
 
-1. **Express or update intent in the Active Folio first:** Clarify or change behavior in `PRODUCT.md` (and `DESIGN.md` for UI) before writing code whenever product-specific intent changes, relying on the 3-Layer Intent Stack so universal and surface-class baselines aren't repeated (and running a pre-scoping `#depth` pass so assumptions are tested against real data and telemetry). When landing in a repository without an Active Folio, bootstrap a crisp `PRODUCT.md` (and `DESIGN.md` for UI) from user intent and observed behavior where available before making big changes rather than inventing ad-hoc tickets or PR-only prose.
-2. **Drive code from the Folio via reconciliation:** Close the diff between the Active Folio and the running artifact — automatically via push/reconciler hooks where wired, or via on-demand Folio-to-code reconciliation — without translating intent into ticket backlogs.
-3. **Prove completeness with clean-room `recompile`:** Periodically rebuild the system from `PRODUCT.md` (plus `DESIGN.md` for UI projects) alone without peeking at legacy hacks. Every surprise exposes missing intent; when a clean-room rebuild preserves user trust, the Folio is genuinely complete.
+1. **Intent first.** Change `PRODUCT.md` (and `DESIGN.md` for UI) before code whenever product-specific intent changes, after a `#depth` pass that tests assumptions against real data. Landing in a repository without a Folio, bootstrap one from user intent and observed behavior before making big changes.
+2. **Reconcile.** Close the diff between the Folio and the running artifact — through push/reconciler hooks where wired, or on demand — without translating intent into a backlog.
+3. **Recompile.** Periodically rebuild from the Folio alone without peeking at legacy code. Every surprise exposes missing intent; when the rebuild preserves user trust, the Folio is complete.
 
-**Non-prescriptive craft:** Resist template bureaucracy. Exact section headings, prose style, and organization can flex to fit the project. Every line in the Active Folio only needs to pass two tests: *if all code vanished, would omitting this line let a rebuild break user trust?* and *would keeping it block a simpler implementation that delivers the same outcome?*
+Headings and structure flex to fit the project. Every line only has to pass two tests: *if all code vanished, would omitting this line let a rebuild break user trust?* and *would keeping it block a simpler implementation of the same outcome?*
 
 ## The 3-Layer Intent Stack
 
-To keep repository Active Folios sharp and free of boilerplate, intent separates into three layers:
+Intent separates into three layers so each Folio stays free of boilerplate:
 
-1. **Universal Baseline (`mistystack` — every repository, always):** Calm hierarchy, accessible contrast, graceful empty and error states, zero console or CSP errors, and real-path verification. Never repeated in a repository's Active Folio.
-2. **Surface-Class Baselines (`mistystack` — conditional by product kind, overridable via Folio Non-Goals):**
-   - **Web App:** Brand mark plus multi-size favicon and Apple touch icon, mobile/desktop ergonomics (`390px` + `1440px`), light/dark parity, installable PWA basics (`manifest.webmanifest` + standalone viewport), and clean OG/meta tags.
-   - **Native / Desktop App:** OS-native conventions, system theme parity, clean permissions/clipboard hygiene, and a packaged or runnable artifact.
-   - **CLI / Service:** Crisp `--help`, non-interactive `--json`, and deterministic exit codes.
-   - **Evidence / Artifact / Retro:** Calm editorial layout, one focal idea per screen or beat, scannable tables (`<= 4` columns), and zero dark-HUD pill soup.
-3. **Repo Active Folio (`PRODUCT.md`, plus `DESIGN.md` for UI projects — ONLY what is unique to this product):** Do not restate Universal or Surface-Class baselines; articulate only product-specific identity, behavior, tokens, and explicit opt-outs (Non-Goals).
+1. **Universal baseline (Spellbook — every repository):** calm hierarchy, accessible contrast, graceful empty and error states, zero console or CSP errors, and real-path verification.
+2. **Surface-class baselines (Spellbook — by product kind, overridable through Folio Non-Goals):**
+   - **Web App:** brand mark with multi-size favicon and Apple touch icon, `390px` and `1440px` ergonomics, light/dark parity, installable PWA basics, and clean OG/meta tags.
+   - **Native / Desktop App:** OS-native conventions, system theme parity, permission and clipboard hygiene, and a packaged or runnable artifact.
+   - **CLI / Service:** crisp `--help`, non-interactive `--json`, and deterministic exit codes.
+   - **Evidence / Artifact / Retro:** calm editorial layout, one focal idea per screen, scannable tables (`<= 4` columns), and no dark-HUD pill soup.
+3. **Repository Folio (`PRODUCT.md`, plus `DESIGN.md` for UI):** only what is unique to this product — identity, behavior, tokens, and explicit opt-outs.
 
 ## Four surfaces, not ticket backlogs
 
-Instead of materializing work into a backlog, the human operator and coding agents run on four surfaces where **work is the computed diff between Intent and Verified Reality**:
+Work is the computed diff between Intent and Verified Reality:
 
-- **Intent — the Active Folio (`PRODUCT.md`, plus `DESIGN.md` for UI)** — The repository's living present-tense truth. Git owns history, replacing stale ADR sprawl; when direction changes, the Active Folio changes directly.
-- **Verified Reality / Evidence Ledger** — Real artifact runs, empirical traces, screenshots, recordings, and live build identity establish what the running product actually does today; explicit state-machine verification and deterministic simulation runs prove transition invariants — never abstract prose nitpicks. Gaps between Intent and Verified Reality define the next slice without creating tickets.
-- **Ephemeral Compute** — Loops, triggers, and bounded factory runs that close a specific diff between Intent and Verified Reality and then tear down cleanly, leaving verified commits and evidence rather than long-lived orchestration clutter.
-- **Sparks / Ideas** — One flat, low-ceremony capture log for rough thoughts and future possibilities. A spark stays inert until the user promotes it into Intent — never silently turned into backlog debt.
+- **Intent** — the Active Folio. When direction changes, the Folio changes directly.
+- **Verified Reality** — real runs, traces, screenshots, recordings, and live build identity, plus state-machine and simulation proofs of transition invariants. Gaps between Intent and Verified Reality define the next slice without creating tickets.
+- **Ephemeral Compute** — bounded runs that close one specific diff and tear down, leaving verified commits and evidence instead of orchestration clutter.
+- **Sparks** — one flat, low-ceremony log of rough ideas. A spark stays inert until the user promotes it into Intent.
 
-## Information-hiding decomposition & deep modules
+## Decompose around decisions, not steps
 
-Flowchart-driven decomposition splits code along sequential execution steps (`input -> transform -> sort -> output`), forcing every module to share raw in-memory formats, pointer conventions, and ordering assumptions. When a representation or schedule changes, every stage breaks together.
+Flowchart decomposition splits code along execution steps (`input -> transform -> sort -> output`), so every module shares raw formats and ordering assumptions, and one representation change breaks every stage together. The information-hiding criterion, later expanded into deep modules, is the cure:
 
-Parnas (1972) identified the cure that Ousterhout's *A Philosophy of Software Design* later expanded into deep modules:
-
-- **Change-Decision Decomposition Check:** Before decomposing a system into modules or files, list the **3–5 difficult or likely-to-change design decisions** (storage layout, transport/protocol, auth/grants, external provider/wire format, scheduling/execution order) and assign each behind **one** information-hiding boundary.
-- **Minimal interfaces:** Design module interfaces to reveal only what callers truly need — never prescribe accidental ordering or format assumptions that foreclose simpler implementations.
-- **Acyclic `uses` hierarchy:** Keep dependency direction strictly partial-ordered so lower-level modules never depend on higher-level modules, leaving lower layers independently reusable and upper layers cleanly prunable.
+- **Change-Decision Decomposition Check:** before splitting a system, list the **3–5 difficult or likely-to-change design decisions** (storage layout, protocol, auth, external wire format, execution order) and hide each behind **one** module boundary.
+- **Minimal interfaces:** reveal only what callers need, so nobody depends on accidental ordering or format.
+- **Acyclic `uses` hierarchy:** lower layers never depend on higher ones, so they stay reusable and upper layers stay prunable.
 
 ## Explicit state machines & Deterministic Simulation Testing
 
-Complex systems rarely fail because a pure helper computed the wrong integer; they fail in the cracks between scattered boolean flags (`isPending`, `hasRetried`, `isLocked`, `cancelled`) and rare event interleavings.
+Systems rarely fail because a pure helper computed the wrong integer; they fail between scattered boolean flags (`isPending`, `hasRetried`, `cancelled`) and rare event interleavings.
 
-- **Explicit State Machines:** Surface implicit lifecycle, protocol, billing, queue, retry, and multiplayer states as explicit, small, total transition tables or state machines with clear invariants — backed by formal specs such as **Quint** or **TLA+** whenever state-space bugs carry high cost — instead of scattering boolean flags across handlers.
-- **Deterministic Simulation Testing (DST) over Unit-Test Sprawl:** Piles of mocked unit tests lock in implementation details while missing the interleavings that break production. For stateful, concurrent, multiplayer, billing, or queue-driven domains, prefer seeded deterministic simulators that control clocks, randomness, faults, and delivery order to drive thousands of randomized valid and adversarial action sequences against explicit invariants — turning rare races into single-seed deterministic reproductions.
+- **Explicit state machines:** make lifecycle, protocol, billing, queue, retry, and multiplayer states small, total transition tables with clear invariants — backed by formal specs such as **Quint** or **TLA+** when state-space bugs are costly.
+- **Deterministic Simulation Testing over unit-test sprawl:** mocked unit tests lock in implementation details and miss the interleavings that break production. Seeded simulators that control clocks, randomness, faults, and delivery order drive thousands of valid and adversarial sequences against those invariants, turning rare races into one-seed reproductions.
 
 ## Portable quality multipliers
 
-Two lightweight habits multiply quality across any model provider or harness without adding process overhead:
-
-- **Cross-Family Cold Critic:** Before merging meaningful work, have a fresh reviewer from a different model family inspect only the diff, the Active Folio, and real run evidence — never let the authoring model grade its own homework. To keep review loops convergent, apply a **Pass 3+ concrete-fixture bar**: after two review passes, a critic may only block with a concrete failing fixture or reproduction proving a real defect or Active Folio violation — never synthetic edge-case golf.
-- **Calm Editorial Evidence:** When reporting proof to the human operator, favor visually-forward, human-legible artifacts — clean typography, generous whitespace, real rendered screenshots or short walkthroughs, and concise takeaways — over dense dark HUD tables, metric soup, or walls of raw terminal logs.
+- **Cross-family cold critic:** before merging meaningful work, a fresh reviewer from a different model family reads only the diff, the Folio, and real run evidence; the author never grades its own homework. After two passes, a critic blocks only with a concrete failing fixture, so reviews converge.
+- **Calm editorial evidence:** proof for the human operator is visual and legible — real screenshots, short walkthroughs, concise takeaways — not metric soup or walls of terminal logs.
 
 ## Lineage
 
-The lean method stands on clear, battle-tested engineering ideas:
+Spellbook restates well-tested engineering ideas in its own words:
 
-- **David Parnas (*On the Criteria To Be Used in Decomposing Systems into Modules*, 1972)** — Foundational ancestor of Ousterhout's *A Philosophy of Software Design*: decompose around difficult or likely-to-change design decisions (*information hiding*) rather than temporal flowchart steps; keep interfaces minimal so callers cannot rely on accidental format or ordering assumptions; and separate clean decomposition from an acyclic `uses` hierarchy so lower layers remain reusable without upward dependencies.
-- **John Ousterhout (*A Philosophy of Software Design*)** — Prefer deep modules with small, simple interfaces over shallow layers and tactical patches. Pull complexity downward; migrate callers and delete dead code rather than working around it; guard against shallow file sprawl (`> 15` source files/dir) and mega-files (`> 2,000` LOC) via `misty-check.mjs` (plus `deslop-please` in Rust repos).
-- **Lauren Tan (`poteto` / `pstack`)** — Evidence before confidence. Keep skills short around *what* and *why*; observe the real code and running system directly instead of arguing from summaries or abstract reviews.
-- **Kent C. Dodds** — Spend inference once to build durable, deterministic scripts, linters, and use-shaped verification across real boundaries. Never treat mocked unit passes as proof of shipped behavior.
-- **Zach Lloyd** — Fast-loop software-factory shipping. Keep feedback cycles short, remove ceremony from the inner loop, and deliver verifiable vertical slices continuously.
-- **Linus Torvalds & John Carmack** — Good taste comes from clean data structures that eliminate special cases and explicit, visible control flow free of hidden state mutation.
-- **Nate Berkopec & Richard Sutton (*The Bitter Lesson*)** — Maintain one present-tense `PRODUCT.md` describing observable user stories and non-goals with zero implementation lock-in, reconciled directly against the running product rather than materialized into a drift-prone ticket backlog.
-- **Felix Rieseberg (`#depth`)** — Push for depth over breadth before scoping or building: start from raw source data and real domain tools instead of pre-digested tables, set ambitious constraints, falsify assumptions against real telemetry, and verify outcomes with an outside judge rather than letting the model grade itself.
-- **Joseph Suarez (`PufferLib SKILL_ISSUES.md`)** — After code works, run a subtract-and-inline pass: inline single-use wrappers, flatten nested branches, and delete test-only shims and dead code without golfing, while preserving strict validation at external trust boundaries.
+- **Information hiding** (*On the Criteria To Be Used in Decomposing Systems into Modules*, 1972) — decompose around likely-to-change decisions rather than flowchart steps, keep interfaces minimal, and keep the `uses` hierarchy acyclic.
+- **Deep modules** (*A Philosophy of Software Design*) — small interfaces over deep implementations; pull complexity downward, migrate callers, and delete dead code instead of working around it. `misty-check.mjs` guards against shallow file sprawl (`> 15` source files per directory) and mega-files (`> 2,000` lines).
+- **Evidence before confidence** (`pstack`) — keep skills short around *what* and *why*; observe the real code and running system rather than arguing from summaries.
+- **Spend inference once** — turn repeated judgment into durable scripts, linters, and use-shaped verification across real boundaries; a mocked unit pass is not proof of shipped behavior.
+- **Fast-loop shipping** — short feedback cycles, no ceremony in the inner loop, verifiable vertical slices delivered continuously.
+- **Good taste** — clean data structures that eliminate special cases, and visible control flow without hidden state mutation.
+- **Present-tense product intent** — one `PRODUCT.md` of observable user stories and non-goals, reconciled against the running product instead of a drift-prone backlog.
+- **The Bitter Lesson** — methods that scale with capability win; encode intent and invariants, not procedures.
+- **Depth over breadth** (`#depth`) — start from raw data and real domain tools, set ambitious constraints, falsify assumptions against telemetry, and let an outside judge verify the outcome.
+- **Subtract and inline** (PufferLib's `SKILL_ISSUES.md`) — once code works, inline single-use wrappers, flatten branches, and delete test-only shims and dead code, while keeping strict validation at trust boundaries.
+
+Named credit for each idea lives in the repository's `ATTRIBUTION.md`; published method content stays in portable voice.
 
 ## Portable by design
 
-Every rule and skill in `mistystack` is written in portable language ("the user", "the human operator") with zero personal names, machine-specific paths, or hardcoded model rankings. Model routing stays provider-agnostic (working cleanly through unified gateways like OpenRouter or native provider APIs), and verification favors empirical execution and formal checks over abstract nitpicks. Any team or individual can drop `rules/core.md` and `skills/` into Claude Code, Codex, Cursor, Antigravity, pi, or any other Agent Skills harness without editing a line.
+Every rule and skill is written in portable language ("the user", "the human operator") with no personal names, machine-specific paths, or hardcoded model rankings. Model routing stays provider-agnostic, and verification favors real execution and formal checks over abstract nitpicks. Any team can drop `rules/core.md` and `skills/` into Claude Code, Codex, Cursor, Antigravity, pi, or any other Agent Skills harness without editing a line.

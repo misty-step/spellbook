@@ -1,4 +1,4 @@
-# Mistystack architecture
+# Spellbook architecture
 
 How the repository runs today: what each part does, how one skill reaches a
 session, how a release is cut, and where trust changes hands. This page is
@@ -63,16 +63,16 @@ on `master` by squash merge. No CI runs on PRs or pushes: `doctor` rejects any
 
 Each native adapter installs from the repository itself:
 
-- Claude: `claude plugin marketplace add misty-step/mistystack`
+- Claude: `claude plugin marketplace add misty-step/spellbook`
   (`skills/misty/harnesses/claude.md:11-14`). The marketplace entry's source is
   `./` (`.claude-plugin/marketplace.json:12-13`).
-- Codex: `codex plugin marketplace add misty-step/mistystack`
+- Codex: `codex plugin marketplace add misty-step/spellbook`
   (`skills/misty/harnesses/codex.md:11-14`). Its marketplace uses a local source
   `./` (`.agents/plugins/marketplace.json:6-9`).
-- pi: `pi install git:github.com/misty-step/mistystack` (`skills/misty/harnesses/pi.md:11-13`).
-- Antigravity: `agy plugin install https://github.com/misty-step/mistystack`
+- pi: `pi install git:github.com/misty-step/spellbook` (`skills/misty/harnesses/pi.md:11-13`).
+- Antigravity: `agy plugin install https://github.com/misty-step/spellbook`
   (`skills/misty/harnesses/antigravity.md:9-11`).
-- Universal: `npx skills add misty-step/mistystack -g` (`skills/misty/harnesses/any.md:9-11`).
+- Universal: `npx skills add misty-step/spellbook -g` (`skills/misty/harnesses/any.md:9-11`).
 
 None of these commands names a tag. The Claude manifest deliberately has no
 `version`, so Claude Code updates by commit (`skills/misty/harnesses/claude.md:23-27`).
@@ -253,7 +253,7 @@ in-flight train is never cancelled (`landmark-release.yml:13-15`).
    `docs/release-convention.md:79-83`).
 2. **prepare** (`:19-97`):
    - Asserts that `source` is 40 hex characters, that the review URL starts
-     with `https://github.com/misty-step/mistystack/`, and that both `HEAD` and
+     with `https://github.com/misty-step/spellbook/`, and that both `HEAD` and
      `origin/master` equal `source` (`:32-41`).
    - Landmark `prepare-protected` generates notes (`:42-49`), and
      `stamp-version.ts` writes the `CHANGELOG.md` version into the Codex,
@@ -379,7 +379,7 @@ deviation. None is fixed on this branch.
 6. **Proof receipts.** `SPEC.md:37`, `:40` and `:85-86` define clean-runner
    Merkle proof receipts and say the release gate consumes them. No code in
    this repository mints, stores or reads one. ADR 0029 assigns them to
-   `misty-step/conductor` (`docs/decisions/0029-agentic-verification-and-release-trains.md:36`). Mistystack's release
+   `misty-step/conductor` (`docs/decisions/0029-agentic-verification-and-release-trains.md:36`). Spellbook's release
    always takes the fallback of running checks directly.
 7. **Train pinning.** `SPEC.md:40` says newer trunk landings "wait for the next
    train". In the workflow, a landing between dispatch and `prepare` fails the

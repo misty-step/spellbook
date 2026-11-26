@@ -95,7 +95,7 @@ test("US-015 release-only checks precede publication and deploy the same checked
 	expect(merge.run).not.toMatch(/--auto|gh pr checks/);
 	const upload = ci.jobs.site.steps.find((step: { uses?: string }) => step.uses?.startsWith("actions/upload-artifact@"));
 	const download = deploy.jobs.deploy.steps.find((step: { uses?: string }) => step.uses?.startsWith("actions/download-artifact@"));
-	expect(upload.with.name).toBe("mistystack-site-${{ inputs.revision }}");
+	expect(upload.with.name).toBe("spellbook-site-${{ inputs.revision }}");
 	expect(download.with.name).toBe(upload.with.name);
 	expect(deploy.jobs.deploy.steps.some((step: { run?: string }) => step.run?.includes("npm run build"))).toBe(false);
 });

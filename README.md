@@ -1,57 +1,58 @@
-# mistystack
+# spellbook
 
-A lean, portable engineering method for coding agents built around the **Active Folio** (`PRODUCT.md`, plus `DESIGN.md` for UI projects, as living present-tense truth): **6 always-on rules**, **7 crisp skills** in open Agent Skills format (`skills/<name>/SKILL.md`), and **deterministic scripts** instead of bloated prose.
+Portable craft and philosophy for coding agents. Formerly `mistystack`.
 
-Browse the live reader at <https://stack.mistystep.io>.
+Models keep getting better; procedures rot. Spellbook keeps only what compounds as capability grows: **present-tense intent**, a few **standing invariants**, short skills that state **what and why**, and **deterministic scripts** for anything a machine can check. Everything else is left to the model.
 
-## The Active Folio
+Read it at <https://stack.mistystep.io> · the reasoning lives in [`docs/philosophy.md`](docs/philosophy.md).
 
-Code is cheap to regenerate; clear present-tense intent is the durable source of truth that prevents drift, ticket sprawl, and implementation lock-in while git owns history.
+## The idea
 
-- **Intent (`PRODUCT.md`, plus `DESIGN.md` for UI projects):** `PRODUCT.md` states observable user outcomes, domain terms, and non-goals with zero implementation details; `DESIGN.md` captures visual craft, hierarchy, and design tokens in parity with shipped assets.
-- **3-Layer Intent Stack:** Universal baselines (calm hierarchy, contrast, empty/error states, zero console/CSP errors, real-path verification) apply to every repository, and conditional Surface-Class baselines (Web App, Native/Desktop, CLI/Service, Evidence/Artifact) apply by product kind unless overridden via Folio Non-Goals — so each repository's Active Folio states **only** what is unique to that product.
-- **Effortless Folio → reconciler loop (greenfield or legacy):** Landing in a repo without an Active Folio? Bootstrap a crisp `PRODUCT.md` (and `DESIGN.md` for UI) from user intent and observed behavior where available before major changes. Update the Active Folio first whenever product-specific intent changes → drive code via reconciliation (automatic push/reconciler hooks where wired, or on demand) → periodically prove completeness with a clean-room **recompile** from the Folio alone.
-- **Non-prescriptive craft:** Exact headings and templates can flex to fit the project — what matters is present-tense truth, parity with the running artifact, and passing the *"if all code vanished, would a rebuild preserve user trust?"* test.
+- **Intent outlives code.** Each repository keeps an **Active Folio** — `PRODUCT.md` (observable outcomes, domain terms, non-goals; no implementation lock-in), plus `DESIGN.md` for UI — as living present-tense truth while git owns history. Change the Folio first, reconcile code against it, and prove it complete with a clean-room rebuild from the Folio alone.
+- **Say only what is unique.** Universal and surface-class baselines (Web App, Native/Desktop, CLI/Service, Evidence/Artifact) live in Spellbook, so a repository's Folio states only what makes that product itself.
+- **Proof beats assertion.** Done means verified on the real running artifact, reviewed by a cold critic from a different model family — never mocks, summaries, or green CI alone.
+- **Scripts beat prose.** When a check repeats, it becomes code, not another paragraph.
 
 ## What ships
 
-- [`rules/core.md`](rules/core.md): Six standing rules loaded in every session — Folio-to-reconciler default (greenfield or legacy), real evidence, strategic design with explicit state machines, real-path verification, autonomy boundaries, and cold-reader recaps.
-- [`skills/misty/SKILL.md`](skills/misty/SKILL.md): Core software-factory loop — effortless Active Folio bootstrapping and reconciliation, Change-Decision Decomposition Check, explicit state machines, Deterministic Simulation Testing (DST), subtract-and-inline craft, headed browser verification, cross-family cold critic, calm editorial evidence, and autonomous delivery.
-- [`skills/foundations/SKILL.md`](skills/foundations/SKILL.md): Universal and surface-class project-health standards (including information-hiding modules, explicit state machines, and DST) paired with [`misty-check.mjs`](skills/foundations/scripts/misty-check.mjs), a zero-dependency Node baseline auditor (`--json`, `--strict`, `--strict-layout`) with non-rigid Active Folio, advisory surface-class detection, and structural layout checks (`.misty-check.allow`).
-- [`skills/design/SKILL.md`](skills/design/SKILL.md): Visual craft, `DESIGN.md` Active Folio parity, Calm Editorial Evidence, hierarchy, accessibility, and anti-slop taste invariants.
-- [`skills/define-product/SKILL.md`](skills/define-product/SKILL.md): Bootstrap, author, and reconcile a present-tense `PRODUCT.md` Active Folio contract (greenfield or legacy) with `#depth` and zero template bureaucracy.
-- [`skills/security-audit/SKILL.md`](skills/security-audit/SKILL.md): Evidence-backed boundary and exploit verification.
-- [`skills/release-watch/SKILL.md`](skills/release-watch/SKILL.md): Merged ≠ live — verify deployed identity and a real user journey.
-- [`skills/resolve-merge-conflicts/SKILL.md`](skills/resolve-merge-conflicts/SKILL.md): Compact hunk extraction via [`extract_conflict_context.py`](skills/resolve-merge-conflicts/scripts/extract_conflict_context.py).
-- [`.githooks/`](.githooks/): TruffleHog secret-scanning `pre-commit` and `pre-push` hooks (`./scripts/bootstrap`).
-- [`docs/philosophy.md`](docs/philosophy.md): Human-readable philosophy, Folio-to-reconciler loop, explicit state machines & DST, quality multipliers, and lineage (never auto-loaded into agent prompts).
+- [`rules/core.md`](rules/core.md) — six always-on standing rules.
+- [`skills/`](skills/) — seven short skills in open Agent Skills format: [`misty`](skills/misty/SKILL.md) (the core loop), [`foundations`](skills/foundations/SKILL.md), [`design`](skills/design/SKILL.md), [`define-product`](skills/define-product/SKILL.md), [`security-audit`](skills/security-audit/SKILL.md), [`release-watch`](skills/release-watch/SKILL.md), and [`resolve-merge-conflicts`](skills/resolve-merge-conflicts/SKILL.md).
+- Deterministic scripts — [`misty-check.mjs`](skills/foundations/scripts/misty-check.mjs) (a zero-dependency baseline auditor) and [`extract_conflict_context.py`](skills/resolve-merge-conflicts/scripts/extract_conflict_context.py).
+- [`.githooks/`](.githooks/) — TruffleHog secret scanning on commit and push (`./scripts/bootstrap`).
+- [`docs/philosophy.md`](docs/philosophy.md) — the why, for humans; never auto-loaded into agent prompts.
 
 ## Install
 
-### Any Agent Skills harness (Cursor, Codex, Antigravity, pi, OpenCode, etc.)
+Any Agent Skills harness (Cursor, Codex, Antigravity, pi, OpenCode, …):
 
 ```sh
-npx skills add misty-step/mistystack -g
+npx skills add misty-step/spellbook -g
 ```
 
-Copy [`rules/core.md`](rules/core.md) into your harness's always-on instruction file or `AGENTS.md`.
+Then copy [`rules/core.md`](rules/core.md) into your harness's always-on instruction file or `AGENTS.md`.
 
-### Claude Code plugin
+Claude Code:
 
 ```sh
-claude plugin marketplace add misty-step/mistystack
+claude plugin marketplace add misty-step/spellbook
 claude plugin install mistystack@mistystack
 ```
 
-### Run `misty-check` directly
+The plugin keeps its original `mistystack@mistystack` identifier: Claude Code keys installs by that name, and renaming it would orphan every existing install.
+
+Run `misty-check` directly:
 
 ```sh
-node skills/foundations/scripts/misty-check.mjs /path/to/repo
-node skills/foundations/scripts/misty-check.mjs /path/to/repo --json
+node skills/foundations/scripts/misty-check.mjs /path/to/repo            # scorecard
+node skills/foundations/scripts/misty-check.mjs /path/to/repo --json     # machine-readable
 node skills/foundations/scripts/misty-check.mjs /path/to/repo --strict-layout
 ```
 
-Grandfather intentional legacy files or wide directories in a repo-root `.misty-check.allow` file (one relative path or glob per line, `#` comments allowed); Rust repositories can additionally run [`deslop-please`](https://github.com/deterministic-machines/deslop-please) for SCIP architectural checks.
+List intentional legacy exceptions in a repo-root `.misty-check.allow` (one path or glob per line, `#` comments allowed).
+
+## Stable names
+
+The rename changes the brand, not the contracts people already depend on: the `misty` skill, `misty-check.mjs` and its flags, `.misty-check.allow`, the `mistystack@mistystack` Claude plugin, and the `stack.mistystep.io` reader all keep working as before. `github.com/misty-step/mistystack` redirects here.
 
 ## Verify locally
 

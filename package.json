@@ -1,11 +1,11 @@
 {
-  "name": "mistystack",
+  "name": "@misty-step/spellbook",
   "version": "0.5.11",
-  "description": "Lean, portable engineering method for coding agents.",
+  "description": "Spellbook: portable agent craft and philosophy for coding agents.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/misty-step/mistystack.git"
+    "url": "https://github.com/misty-step/spellbook.git"
   },
   "keywords": [
     "pi-package"

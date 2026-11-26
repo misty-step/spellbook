@@ -1,6 +1,6 @@
 # Contributing
 
-Mistystack is a method for coding agents on any harness. Start with [AGENTS.md](AGENTS.md), use
+Spellbook is a method for coding agents on any harness. Start with [AGENTS.md](AGENTS.md), use
 [SPEC.md](SPEC.md) terms, and name the reconciled section in [SPEC.md](SPEC.md).
 Fleet machinery belongs in private `misty-step/workstation`.
 

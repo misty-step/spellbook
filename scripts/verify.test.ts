@@ -14,7 +14,7 @@ afterEach(() => {
 function run(args: string[], code = 0, syncCode = 0) {
 	const scratch = join(homedir(), ".cache/tmp");
 	mkdirSync(scratch, { recursive: true });
-	const home = mkdtempSync(join(scratch, "mistystack-gate-test-"));
+	const home = mkdtempSync(join(scratch, "spellbook-gate-test-"));
 	roots.push(home);
 	const bin = join(home, "bin");
 	const trace = join(home, "arguments");

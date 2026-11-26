@@ -1613,7 +1613,7 @@ export function parseArgs(argv) {
 const USAGE = [
   'Usage: misty-check.mjs [path] [--json] [--strict] [--strict-layout]',
   '',
-  'Audit a repository against mistystack baseline foundations.',
+  'Audit a repository against Spellbook baseline foundations.',
   '  path             Target directory (default: ".")',
   '  --json           Emit machine-readable JSON scorecard',
   '  --strict         Exit with code 1 when any baseline gap is reported',

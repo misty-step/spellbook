@@ -24,15 +24,15 @@ jobs:
         id: tools
         uses: actions/cache@v4
         with:
-          path: ${{ runner.temp }}/mistystack-release-tools
-          key: mistystack-release-tools-linux-x64-gitleaks-8.30.1-landmark-0.28.9
+          path: ${{ runner.temp }}/spellbook-release-tools
+          key: spellbook-release-tools-linux-x64-gitleaks-8.30.1-landmark-0.28.9
       - name: Install missing pinned tools
         if: steps.tools.outputs.cache-hit != 'true'
         env:
           GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
           LANDMARK_SHA256: 7a22cba7d99aa6d05ef113a8ff95ca5ca6098c6bf4a8af213f85370fa30e65d2
         run: |
-          tools="$RUNNER_TEMP/mistystack-release-tools"
+          tools="$RUNNER_TEMP/spellbook-release-tools"
           mkdir -p "$tools"
           curl --proto '=https' --tlsv1.2 --location --silent --show-error --fail \
             https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz -o "$tools/gitleaks.tar.gz"
@@ -45,14 +45,14 @@ jobs:
           chmod +x "$tools/landmark"
       - name: Check maintained contracts once
         run: |
-          export PATH="$RUNNER_TEMP/mistystack-release-tools:$PATH"
-          export LANDMARK_BIN="$RUNNER_TEMP/mistystack-release-tools/landmark"
+          export PATH="$RUNNER_TEMP/spellbook-release-tools:$PATH"
+          export LANDMARK_BIN="$RUNNER_TEMP/spellbook-release-tools/landmark"
           ./scripts/check doctor
           ./scripts/check plugin --strict --lint-only
       - name: Confirm publication candidate without writing
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          LANDMARK_BIN: ${{ runner.temp }}/mistystack-release-tools/landmark
+          LANDMARK_BIN: ${{ runner.temp }}/spellbook-release-tools/landmark
         run: bun scripts/protected-release-check.ts
   site:
     runs-on: ubuntu-latest
@@ -73,7 +73,7 @@ jobs:
         id: dependencies
         with:
           path: site/node_modules
-          key: mistystack-site-linux-node22-${{ hashFiles('site/package-lock.json') }}
+          key: spellbook-site-linux-node22-${{ hashFiles('site/package-lock.json') }}
       - name: Install pinned site dependencies on cache miss
         if: steps.dependencies.outputs.cache-hit != 'true'
         run: npm ci
@@ -83,7 +83,7 @@ jobs:
         run: npm run build && npm run check
       - uses: actions/upload-artifact@v4
         with:
-          name: mistystack-site-${{ inputs.revision }}
+          name: spellbook-site-${{ inputs.revision }}
           path: site/dist/
           include-hidden-files: true
           if-no-files-found: error

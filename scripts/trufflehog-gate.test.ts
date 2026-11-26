@@ -29,7 +29,7 @@ function run(
 	scanError = false,
 	extraFiles: Record<string, string> = {},
 ) {
-	const root = mkdtempSync(join(tmpdir(), "mistystack-trufflehog-gate-"));
+	const root = mkdtempSync(join(tmpdir(), "spellbook-trufflehog-gate-"));
 	roots.push(root);
 	const bin = join(root, "bin");
 	mkdirSync(bin);

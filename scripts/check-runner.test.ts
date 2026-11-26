@@ -30,7 +30,7 @@ afterEach(() => {
 	}
 });
 
-test("doctor passes on the current mistystack repository including new runner files", () => {
+test("doctor passes on the current spellbook repository including new runner files", () => {
 	const untrackedCheck = runDoctorChecks(repoRoot, {
 		paths: [
 			"AGENTS.md",
@@ -58,7 +58,7 @@ test("doctor rejects unmapped files in the surface closure", () => {
 });
 
 test("doctor rejects workflows triggered on pull_request or pull_request_target", () => {
-	const dir = makeTempDir("mistystack-hygiene-");
+	const dir = makeTempDir("spellbook-hygiene-");
 	mkdirSync(join(dir, ".github/workflows"), { recursive: true });
 	writeFileSync(join(dir, ".github/workflows/pr.yml"), "name: PR\non: [push, pull_request]\njobs: {}\n");
 	writeFileSync(
@@ -70,22 +70,22 @@ test("doctor rejects workflows triggered on pull_request or pull_request_target"
 	expect(errors.some((e) => e.includes('"pull_request"'))).toBe(true);
 	expect(errors.some((e) => e.includes('"pull_request_target"'))).toBe(true);
 
-	const clean = makeTempDir("mistystack-hygiene-ok-");
+	const clean = makeTempDir("spellbook-hygiene-ok-");
 	mkdirSync(join(clean, ".github/workflows"), { recursive: true });
 	writeFileSync(join(clean, ".github/workflows/release.yml"), "name: Rel\non:\n  workflow_dispatch:\njobs: {}\n");
 	expect(inspectWorkflowHygiene(clean)).toEqual([]);
 });
 
 test("doctor rejects active CodeRabbit auto_review and allows disabled auto_review", () => {
-	const activeDir = makeTempDir("mistystack-bot-active-");
+	const activeDir = makeTempDir("spellbook-bot-active-");
 	writeFileSync(join(activeDir, ".coderabbit.yaml"), "reviews:\n  auto_review:\n    enabled: true\n");
 	expect(inspectReviewBots(activeDir)).toHaveLength(1);
 
-	const implicitDir = makeTempDir("mistystack-bot-implicit-");
+	const implicitDir = makeTempDir("spellbook-bot-implicit-");
 	writeFileSync(join(implicitDir, ".coderabbit.yml"), "language: en-US\n");
 	expect(inspectReviewBots(implicitDir)).toHaveLength(1);
 
-	const disabledDir = makeTempDir("mistystack-bot-disabled-");
+	const disabledDir = makeTempDir("spellbook-bot-disabled-");
 	writeFileSync(join(disabledDir, ".coderabbit.yaml"), "reviews:\n  auto_review:\n    enabled: false\n");
 	expect(inspectReviewBots(disabledDir)).toEqual([]);
 });

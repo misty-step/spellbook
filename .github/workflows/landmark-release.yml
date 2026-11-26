@@ -11,7 +11,7 @@ on:
         required: true
         type: string
 concurrency:
-  group: mistystack-release
+  group: spellbook-release
   cancel-in-progress: false
 permissions:
   contents: read
@@ -35,7 +35,7 @@ jobs:
           REVIEW: ${{ inputs.critical-review }}
         run: |
           [[ "$SOURCE" =~ ^[a-f0-9]{40}$ ]]
-          [[ "$REVIEW" == https://github.com/misty-step/mistystack/* ]]
+          [[ "$REVIEW" == https://github.com/misty-step/spellbook/* ]]
           test "$(git rev-parse HEAD)" = "$SOURCE"
           test "$(git rev-parse origin/master)" = "$SOURCE"
           printf 'Release source: `%s`\n\nSingle critical assessment: %s\n' "$SOURCE" "$REVIEW" >> "$GITHUB_STEP_SUMMARY"
