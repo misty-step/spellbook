@@ -26,13 +26,15 @@ export function getHome(graph) {
   return page ??= build(graph);
 }
 
-function build(graph) {
+function inventory(graph) {
   const core = graph.byId.get(CORE) ?? fail(`missing ${CORE}`);
-  const lines = coreLines(core);
   const skillDocs = graph.documents.filter((doc) => doc.kind === 'Skills');
   if (skillDocs.length === 0) fail('no skills found');
+  return { core, lines: coreLines(core), skillDocs };
+}
 
-  const facts = {
+function factsOf({ lines, skillDocs }) {
+  return {
     coreCount: lines.length,
     coreRules: cardinal(lines.length, 'core rules'),
     CoreRules: Cardinal(lines.length, 'core rules'),
@@ -40,6 +42,14 @@ function build(graph) {
     skills: cardinal(skillDocs.length, 'skills'),
     Skills: Cardinal(skillDocs.length, 'skills'),
   };
+}
+
+// Counts shown anywhere on the site come from the content graph, never hand-typed copy.
+export const countFacts = (graph) => factsOf(inventory(graph));
+
+function build(graph) {
+  const { core, lines, skillDocs } = inventory(graph);
+  const facts = factsOf({ lines, skillDocs });
 
   // Run misty-check against this repository at build time for a real, honest preview.
   const audit = auditRepo(repoRoot);
@@ -82,7 +92,7 @@ function build(graph) {
         ...home.check,
         sample: checkSample,
       },
-      install: home.install,
+      install: home.install(facts),
       philosophy: home.philosophy,
     },
     footer: home.footer,

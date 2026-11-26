@@ -33,7 +33,7 @@ export const home = {
     primary: { label: 'Read misty-check.mjs', href: '/tools/misty-check/' },
     secondary: { label: 'Foundations skill', href: '/library/skills/foundations/' },
   },
-  install: {
+  install: (facts) => ({
     title: 'Works on any harness.',
     intro: 'Standard Agent Skills format with zero auto-mounted companion packs. Drop into Cursor, Codex, Antigravity, pi, OpenCode, or Claude Code.',
     copy: 'Copy',
@@ -44,7 +44,7 @@ export const home = {
         id: 'any',
         name: 'Any harness',
         lines: ['npx skills add misty-step/spellbook -g'],
-        note: 'Installs all 7 skills globally for Cursor, Codex, Antigravity, pi, and OpenCode. Copy rules/core.md into your always-on instruction file or AGENTS.md.',
+        note: `Installs all ${facts.skillCount} skills globally for Cursor, Codex, Antigravity, pi, and OpenCode. Copy rules/core.md into your always-on instruction file or AGENTS.md.`,
       },
       {
         id: 'claude',
@@ -53,7 +53,7 @@ export const home = {
           'claude plugin marketplace add misty-step/spellbook',
           'claude plugin install mistystack@mistystack',
         ],
-        note: 'Mounts the 7 lean skills and registers the SessionStart core hook with zero external companion packs. The plugin keeps its original mistystack@mistystack identifier so existing installs keep updating.',
+        note: `Mounts the ${facts.skillCount} lean skills and registers the SessionStart core hook with zero external companion packs. The plugin keeps its original mistystack@mistystack identifier so existing installs keep updating.`,
       },
       {
         id: 'local',
@@ -65,10 +65,10 @@ export const home = {
         note: 'Run the deterministic baseline auditor against any local repository with Node 20+ and zero dependencies.',
       },
     ],
-  },
+  }),
   philosophy: {
     title: 'Why, before how.',
-    body: 'Why durable intent beats ticket backlogs, why seven small skills beat forty playbooks, and why scripts beat prose: the bitter lesson applied to agent method. Kept in docs/philosophy.md for human readers and never auto-loaded into agent prompts.',
+    body: 'Why durable intent beats ticket backlogs, why a few small skills beat forty playbooks, and why scripts beat prose: the bitter lesson applied to agent method. Kept in docs/philosophy.md for human readers and never auto-loaded into agent prompts.',
     primary: { label: 'Read the philosophy', href: '/philosophy/' },
     secondary: { label: 'Browse on GitHub', href: 'https://github.com/misty-step/spellbook' },
   },

@@ -15,12 +15,12 @@ So Spellbook encodes only what capability cannot supply on its own:
 
 Everything else is left to the model, and improves when the model does.
 
-## Why seven small skills beat forty playbooks
+## Why a few small skills beat forty playbooks
 
 Long procedural playbooks, rigid templates, and hardcoded model tables burn context, contradict each other as tools evolve, and train agents to perform theater instead of thinking. Spellbook keeps:
 
 - **Six standing rules** in `rules/core.md` — always on, under twenty lines.
-- **Seven concise skills** in `skills/` — each a few paragraphs (or a terse checklist for `foundations`).
+- **Eight concise skills** in `skills/` — each a few paragraphs (or a terse checklist for `foundations`).
 - **Deterministic scripts over prose** — `misty-check.mjs` (including its structural layout thresholds and `.misty-check.allow` ratchet), `extract_conflict_context.py`, and `.githooks/trufflehog-gate.py`.
 - **Zero auto-mounted companion packs** — every repository and operator decides what loads into context.
 
@@ -81,6 +81,7 @@ Systems rarely fail because a pure helper computed the wrong integer; they fail 
 
 - **Cross-family cold critic:** before merging meaningful work, a fresh reviewer from a different model family reads only the diff, the Folio, and real run evidence; the author never grades its own homework. After two passes, a critic blocks only with a concrete failing fixture, so reviews converge.
 - **Calm editorial evidence:** proof for the human operator is visual and legible — real screenshots, short walkthroughs, concise takeaways — not metric soup or walls of terminal logs.
+- **Show, don't tell:** after a long or multi-step run, the reader's attention is the scarcest resource left. The `present` skill picks the lowest medium that carries the meaning (three lines, an inline visual, or an interactive walkthrough) and catches the reader up in five beats — *Look at this · What differs · Pay attention to · Why · Needs you* — so the result lands in seconds and the only work left for the human is the decision.
 
 ## Lineage
 
@@ -95,6 +96,7 @@ Spellbook restates well-tested engineering ideas in its own words:
 - **Present-tense product intent** — one `PRODUCT.md` of observable user stories and non-goals, reconciled against the running product instead of a drift-prone backlog.
 - **The Bitter Lesson** — methods that scale with capability win; encode intent and invariants, not procedures.
 - **Depth over breadth** (`#depth`) — start from raw data and real domain tools, set ambitious constraints, falsify assumptions against telemetry, and let an outside judge verify the outcome.
+- **Show, don't tell** (`present`) — present finished work the way a designer does: visual first, the difference made obvious, risks named, judgment calls explained, and only crisp decisions left for the reader.
 - **Subtract and inline** (PufferLib's `SKILL_ISSUES.md`) — once code works, inline single-use wrappers, flatten branches, and delete test-only shims and dead code, while keeping strict validation at trust boundaries.
 
 Named credit for each idea lives in the repository's `ATTRIBUTION.md`; published method content stays in portable voice.

@@ -24,6 +24,7 @@ const SKILL_ORDER = [
   'misty',
   'foundations',
   'design',
+  'present',
   'define-product',
   'security-audit',
   'release-watch',

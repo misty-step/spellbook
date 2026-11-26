@@ -1,13 +1,16 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
 import HeadlineText from '../components/HeadlineText.astro';
+import { getGraph } from '../lib/content.mjs';
+import { countFacts } from '../lib/home.mjs';
+const facts = countFacts(await getGraph());
 ---
 <SiteLayout title="Page not found" section="About" path="/404.html" noindex>
   <div class="frame page">
     <section class="page-head">
       <h1 class="page-title"><HeadlineText text="Page not found" stop /></h1>
       <p class="lede">This address does not identify a page in the current spellbook revision.</p>
-      <div class="actions"><a class="sp-button" href="/library/">Browse all 7 skills</a><a class="sp-secondary" href="/search/">Search the method</a></div>
+      <div class="actions"><a class="sp-button" href="/library/">Browse all {facts.skillCount} skills</a><a class="sp-secondary" href="/search/">Search the method</a></div>
       <p class="lede"><a class="sp-link" href="/">Return home</a> or <a class="sp-link" href="/philosophy/">read Philosophy &amp; Lineage</a>.</p>
     </section>
   </div>

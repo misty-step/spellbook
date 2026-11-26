@@ -45,11 +45,11 @@ function makeFixture() {
 	return { root, put };
 }
 
-test("current lean repository passes strict plugin lint with 7 skills", () => {
+test("current lean repository passes strict plugin lint with 8 skills", () => {
 	const report = lintPlugin(repoRoot, true);
 	expect(report.errors).toEqual([]);
 	expect(report.warnings).toEqual([]);
-	expect(report.skillCount).toBe(7);
+	expect(report.skillCount).toBe(8);
 });
 
 test("rejects personal names, external companion packs, oversized core, and broken links", () => {
@@ -70,6 +70,13 @@ test("rejects personal names, external companion packs, oversized core, and brok
 	expect(report.errors.some((e) => e.includes("personal names"))).toBe(true);
 	expect(report.errors.some((e) => e.includes("missing reference"))).toBe(true);
 	expect(report.errors.some((e) => e.includes("only the local mistystack plugin"))).toBe(true);
+});
+
+test("rejects the show-don't-tell credit holder's name inside a portable skill", () => {
+	const { root, put } = makeFixture();
+	put("skills/misty/SKILL.md", "---\nname: misty\ndescription: \"Core.\"\n---\nPresent the way Putri Karunia does.\n");
+	const report = lintPlugin(root, true);
+	expect(report.errors).toContain("skills/misty/SKILL.md: portable skills and rules must not contain personal names");
 });
 
 test("rejects lineage names in portable rules and renaming the stable Claude install identifier", () => {
