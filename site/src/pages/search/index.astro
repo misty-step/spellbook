@@ -2,14 +2,16 @@
 import SiteLayout from '../../layouts/SiteLayout.astro';
 import HeadlineText from '../../components/HeadlineText.astro';
 import { getGraph } from '../../lib/content.mjs';
+import { countFacts } from '../../lib/home.mjs';
 const graph = await getGraph();
+const facts = countFacts(graph);
 const sections = [...new Set([...graph.documents.map((document) => document.kind), 'Tools'])].sort();
 ---
 <SiteLayout title="Search" section="Search" noindex>
   <div class="frame tool">
     <div class="tool-panel">
       <h1 class="page-title"><HeadlineText text="Search the method" stop /></h1>
-      <p class="lede">Search across all seven skills, the always-on core, deterministic scripts, and philosophy.</p>
+      <p class="lede">Search across all {facts.skills} skills, the always-on core, deterministic scripts, and philosophy.</p>
       <form class="sp-card tool-form" action="/search/" method="get" data-search-form>
         <div class="sp-field"><label class="sp-label" for="search-q">Search</label><input class="sp-input" id="search-q" name="q" type="search" autocomplete="off" placeholder="Try misty-check or real running artifact" /></div>
         <div class="sp-field"><label class="sp-label" for="search-section">Section</label><select class="sp-input" id="search-section" name="section"><option value="">All sections</option>{sections.map((section) => <option value={section}>{section}</option>)}</select></div>

@@ -3,14 +3,16 @@ import SiteLayout from '../../layouts/SiteLayout.astro';
 import HeadlineText from '../../components/HeadlineText.astro';
 import { getGraph } from '../../lib/content.mjs';
 import { catalogKinds } from '../../lib/graph.mjs';
+import { countFacts } from '../../lib/home.mjs';
 const graph = await getGraph();
+const facts = countFacts(graph);
 const documents = graph.documents.filter((document) => catalogKinds.includes(document.kind));
 ---
 <SiteLayout title="Skills" section="Skills">
   <div class="frame tool">
     <div class="tool-panel">
       <h1 class="page-title"><HeadlineText text="Skills" stop /></h1>
-      <p class="lede">The complete lean catalog: always-on standing rules plus seven portable skills.</p>
+      <p class="lede">The complete lean catalog: always-on standing rules plus {facts.skills} portable skills.</p>
       <form class="sp-card tool-form" action="/library/" method="get" data-catalog-controls hidden>
         <div class="sp-field"><label class="sp-label" for="catalog-q">Filter entries</label><input class="sp-input" id="catalog-q" type="search" name="q" placeholder="Name or trigger" /></div>
         <div class="sp-field"><label class="sp-label" for="catalog-section">Section</label><select class="sp-input" id="catalog-section" name="section"><option value="">All sections ({documents.length})</option>{catalogKinds.map((kind) => <option value={kind}>{kind} ({documents.filter((document) => document.kind === kind).length})</option>)}</select></div>

@@ -22,6 +22,7 @@ pstack is no longer vendored ([ADR 0026](docs/decisions/0026-one-page-method.md)
 | *The Bitter Lesson* | Richard Sutton |
 | Depth over breadth (`#depth`) | Felix Rieseberg |
 | Subtract and inline (PufferLib `SKILL_ISSUES.md`) | Joseph Suarez |
+| Show, don't tell (`present`: reader-first medium, five-beat catch-up) | Putri Karunia |
 
 ## Source map
 
@@ -76,6 +77,7 @@ These source records cover each Misty-authored skill directory, including suppor
 | `principle-deeper-not-bigger` (retired; now an entry in `skills/misty/principles.md`) | misty-step/mistystack#533 Q4; Felix Rieseberg, How to be more ambitious (2026-10-13); misty-step/foundations@d96c99ce1152ab1d6ae4a0eed0b22cbac93897b7/way-of-working.md; Phaedrus t2228u (Grug lens); misty-step/hone#42 (2026-11-10 first-principles complexity rewrite) |
 | `principle-nothing-fails-silently` (retired; now an entry in `skills/misty/principles.md`) | misty-step/mistystack#533; misty-step/mistystack@5828267b657e2c9814728066a5f185b4a0f57fd5/skills/principle-nothing-fails-silently; misty-step/foundations@d96c99ce1152ab1d6ae4a0eed0b22cbac93897b7/way-of-working.md#fail-loudly |
 | `recompile` | Phaedrus, 2026-10-30: make the monthly rebuild review a Mistystack practice; https://github.com/misty-step/mistystack/issues/631; Jacob Sansbury, https://x.com/jsnnsa/status/2115671437575168084; Spawn 6 engine pinning and migration, https://www.spawn.co/about/release-6-0-0 (references, not copied procedure). |
+| `present` | Owner-directed, 2026-11-26: adopt Putri Karunia's "Show, don't tell" `present` philosophy — choose the medium the reader absorbs in seconds and catch them up in five beats (Look at this · What differs · Pay attention to · Why · Needs you). The Reader-First Medium Ladder and Execution Route Maps framing are Misty-authored; idea credited, no upstream text copied. |
 | `release-watch` | misty-step/mistystack@0ccc1a308cdeefa29e991d3b7c1dbab016cfea03/agent-config/skills/{release-watch,pokayoke}; misty-step/foundations@d96c99ce1152ab1d6ae4a0eed0b22cbac93897b7/way-of-working.md#operate |
 | `research` | Local Misty ~/.omp/agent/skills/research; mattpocock/skills@59db609eb1e18aaf59b63284d0e52255aff0c63c/skills/engineering/research; installed agents/research resolves to the same Pocock research skill; Daybook projects/mistystack.md decision 16; pstack (cursor/plugins@c742dd61706fbacc1b95f1a20b7b988cf096ce6c/pstack), skills/why |
 | `security-audit` | cloudflare/security-audit-skill@c1c8a8c1471069fb0e188eeaff69b8e8db6564a8/skills/security-audit/SKILL.md; misty-step/mistystack@0ccc1a308cdeefa29e991d3b7c1dbab016cfea03/agent-config/skills/security-audit |

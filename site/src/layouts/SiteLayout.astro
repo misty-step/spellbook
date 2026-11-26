@@ -11,6 +11,9 @@ import appIcon from '@misty-step/brand/identity/icons/app-180-ink.png?url';
 import ogCard from '../assets/og-spellbook.png?url';
 import { home } from '../copy/home.mjs';
 import { canonical, release, repositoryUrl } from '../lib/release.mjs';
+import { getGraph } from '../lib/content.mjs';
+import { countFacts } from '../lib/home.mjs';
+const facts = countFacts(await getGraph());
 const links = [
   { href: '/library/', label: 'Skills' },
   { href: '/library/core/', label: 'Core' },
@@ -20,7 +23,7 @@ const links = [
 ];
 const {
   title,
-  description = 'Active Folio method: six always-on rules, seven lean skills, and deterministic scripts for coding agents.',
+  description = `Active Folio method: ${facts.coreRules} always-on rules, ${facts.skills} lean skills, and deterministic scripts for coding agents.`,
   section = 'About',
   path = Astro.url.pathname,
   noindex = false,

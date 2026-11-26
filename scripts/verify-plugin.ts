@@ -11,7 +11,7 @@ export const CLAUDE_PLUGIN_ID = "mistystack";
 
 // Portable voice: mirrors site/src/lib/portable-voice.mjs (credit lives in ATTRIBUTION.md).
 export const PERSONAL_NAMES =
-	/\b(?:phaedrus|parnas|ousterhout|lauren tan|kent c\.? dodds|zach lloyd|torvalds|carmack|berkopec|richard sutton|rieseberg|joseph suarez|pocock)\b/i;
+	/\b(?:phaedrus|parnas|ousterhout|lauren tan|kent c\.? dodds|zach lloyd|torvalds|carmack|berkopec|richard sutton|rieseberg|joseph suarez|pocock|putri karunia|karunia)\b/i;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
