@@ -212,6 +212,7 @@ async function main() {
     if (/\.(html|svg)$/.test(file)) {
       const text = bytes.toString('utf8');
       expect(!PERSONAL_NAMES.test(text), `${file}: rendered site must not contain personal names`);
+      if (file.endsWith('.html')) expect(!/<[^>]+\sstyle=/i.test(text), `${file}: inline style attributes are blocked by the style-src 'self' CSP`);
       pages.set(file, parseHTML(file, text));
     }
   }

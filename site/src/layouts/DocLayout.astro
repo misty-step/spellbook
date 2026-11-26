@@ -36,7 +36,7 @@ const hasToc = document.headings.some((heading) => heading.depth > 1);
         <section class="related-content" data-pagefind-ignore>
           <h2>Deterministic script</h2>
           <p class="entry-body">{document.skill.script.summary}</p>
-          <div class="actions" style="margin-block-start: var(--space-md);">
+          <div class="actions script-actions">
             <a class="sp-button" href={document.skill.script.url}>Inspect {document.skill.script.name}</a>
             <a class="sp-secondary" href={`/source/${encodePath(document.skill.script.path)}`}>Raw script</a>
           </div>
