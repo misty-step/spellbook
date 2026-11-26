@@ -33,9 +33,7 @@ function inventory(graph) {
   return { core, lines: coreLines(core), skillDocs };
 }
 
-// Counts shown anywhere on the site come from the content graph, never hand-typed copy.
-export function countFacts(graph) {
-  const { lines, skillDocs } = inventory(graph);
+function factsOf({ lines, skillDocs }) {
   return {
     coreCount: lines.length,
     coreRules: cardinal(lines.length, 'core rules'),
@@ -46,9 +44,12 @@ export function countFacts(graph) {
   };
 }
 
+// Counts shown anywhere on the site come from the content graph, never hand-typed copy.
+export const countFacts = (graph) => factsOf(inventory(graph));
+
 function build(graph) {
   const { core, lines, skillDocs } = inventory(graph);
-  const facts = countFacts(graph);
+  const facts = factsOf({ lines, skillDocs });
 
   // Run misty-check against this repository at build time for a real, honest preview.
   const audit = auditRepo(repoRoot);
