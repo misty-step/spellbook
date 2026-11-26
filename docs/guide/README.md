@@ -1,4 +1,4 @@
-# Mistystack guide
+# Spellbook guide
 
 Misty Step's harness-neutral method: one content tree in Agent Skills format
 (`skills/<name>/SKILL.md`), installed on any harness that reads Agent Skills and an

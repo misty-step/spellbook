@@ -1,15 +1,17 @@
-# Mistystack specification
+# Spellbook specification
 
-Mistystack is Misty Step's harness-neutral engineering method for humans and coding agents, paired with a public handbook and skill-finder site. One canonical content tree in open Agent Skills format serves every supported harness through universal instructions and thin native adapters, while a small always-on core stands alone for small work and routes nontrivial work to one self-contained mode page and on-demand task skills.
+Spellbook is Misty Step's harness-neutral engineering method for humans and coding agents, paired with a public handbook and skill-finder site. One canonical content tree in open Agent Skills format serves every supported harness through universal instructions and thin native adapters, while a small always-on core stands alone for small work and routes nontrivial work to one self-contained mode page and on-demand task skills.
 
-Maintained executable agent guidance, skills and harness primitives belong to Mistystack.
+Maintained executable agent guidance, skills and harness primitives belong to Spellbook.
 Supercortex is the primary context system for agents. Its authorized collections hold
 curated context and point to authoritative projects and source archives. The owner's
 designation routes agent-intended material, including personal reflections, to its
 authorized Supercortex destination. Daybook retains legacy personal records. Portable procedures discover authorized
 destinations from local context. Public packages contain no private source material.
 
-Private fleet runtime setup, credentials, host automation and operator scheduling belong outside Mistystack in `misty-step/workstation`, never copied into the public method.
+Private fleet runtime setup, credentials, host automation and operator scheduling belong outside Spellbook in `misty-step/workstation`, never copied into the public method.
+
+Spellbook was published as Mistystack until the November 2026 rename; `github.com/misty-step/mistystack` redirects to `github.com/misty-step/spellbook`. Stable identifiers outlive the brand: the `misty` skill, `misty-check.mjs` with its flags and `.misty-check.allow`, the `mistystack@mistystack` Claude plugin and marketplace name, the `mistystack-site` worker serving `stack.mistystep.io`, and retired-route redirects. Renaming any of them requires a planned consumer migration, never a silent cutover.
 
 ## Terms
 
@@ -25,9 +27,9 @@ Private fleet runtime setup, credentials, host automation and operator schedulin
 - **Skill:** a focused procedure directory with a `SKILL.md` entry point and optional supporting files; references resolve within the shared tree while native adapters handle host loading mechanics.
 - **Vendored skill:** an upstream skill retained byte-for-byte under a hash-verified lock so local adaptations live in companion shaping facts rather than hand edits to upstream prose.
 - **Recompile review:** the monthly desk review, and the rebuild round that a model jump, a spec amendment or structural friction triggers, considering a blank-sheet rebuild from `SPEC.md` (explicitly choosing whether to keep or regenerate UI craft in `DESIGN.md`, and protecting live user data at cutover). Keeping the current system is a valid conclusion.
-- **Exemplar:** a person, codebase, piece of writing or product whose perspective Mistystack deliberately channels ([Exemplars](docs/exemplars.md)).
+- **Exemplar:** a person, codebase, piece of writing or product whose perspective Spellbook deliberately channels ([Exemplars](docs/exemplars.md)).
 - **Rigor role:** `rigor-light`, `rigor-standard` or `rigor-critical`, classifying changed-path risk independently of any specific model; model and reasoning assignments live solely in harness-native configuration.
-- **Provisioning:** choosing an agent's harness, model tier (frontier or workhorse) and effort from its role and work, with each vendor's models run in that vendor's own harness, from the dated routing reference (`skills/misty/routing.md`); live quota and accounts stay outside Mistystack.
+- **Provisioning:** choosing an agent's harness, model tier (frontier or workhorse) and effort from its role and work, with each vendor's models run in that vendor's own harness, from the dated routing reference (`skills/misty/routing.md`); live quota and accounts stay outside Spellbook.
 - **Task agent:** an independent worker briefed with outcome, terms, raw material, Oracle, owned scope, preserved behavior, rigor and return expectations.
 - **Oracle:** a check outside the agent that can disprove completion, stated as a concrete command or real user path.
 - **Local development environment:** the environment where the agent executes; each harness note owns its environment constraints.
@@ -39,7 +41,7 @@ Private fleet runtime setup, credentials, host automation and operator schedulin
 - **Coordinator role:** Chief of Staff, project owner, understanding lane or task agent, held only when the user invokes `coordinator` or a parent's launch brief assigns it; hc labels (`misty.role`, `misty.project`) carry logical ownership while native hc parentage records only the launcher.
 - **Watchdog:** the active supervisor that periodically compares observed agent work against its brief, steers drift and recovers stalls until acceptance and worker cleanup finish, with no wall-clock deadline on completion.
 - **Release gate:** the pre-publication and pre-deployment gate pinning one candidate revision so newer trunk landings wait for the next train, consuming valid clean-runner proof receipts or running fast checks directly alongside one critical-correctness/security assessment, then advancing `verified` (where no sweep daemon runs) and proving live release identity and a critical user journey.
-- **Workstation plugin:** the private `misty-step/workstation` plugin owning host runtime setup, credentials and fleet bots; it consumes Mistystack without duplicating it.
+- **Workstation plugin:** the private `misty-step/workstation` plugin owning host runtime setup, credentials and fleet bots; it consumes Spellbook without duplicating it.
 
 ## Invariants
 
@@ -92,7 +94,7 @@ Private fleet runtime setup, credentials, host automation and operator schedulin
 
 ### Understand and adopt
 
-- A visitor can understand what Mistystack is, which observed failures it addresses, how `core → misty → relevant method → outside proof` fits together, and how native adapters connect to that same tree without prior repository knowledge.
+- A visitor can understand what Spellbook is, which observed failures it addresses, how `core → misty → relevant method → outside proof` fits together, and how native adapters connect to that same tree without prior repository knowledge.
 - The visitor can choose a destination harness and reach its canonical install, refresh, core-loading, rigor and proof instructions; commands come strictly from that harness's maintained reference.
 - Integration status distinguishes an available native adapter, a universal-install runtime brief, existing private consumption and missing public setup/loading evidence instead of inventing commands or borrowing another harness's pass.
 

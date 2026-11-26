@@ -78,7 +78,7 @@ async function runLandmark(options: CheckOptions, repoRoot: string): Promise<Run
 			if (!pathname.startsWith(scope)) return Response.json({ message: "Not Found" }, { status: 404 });
 			const headers: Record<string, string> = {
 				Accept: "application/vnd.github+json",
-				"User-Agent": "mistystack-protected-release-check",
+				"User-Agent": "spellbook-protected-release-check",
 			};
 			if (options.token) headers.Authorization = `Bearer ${options.token}`;
 			const read = `${request.method} ${pathname}`;
@@ -220,7 +220,7 @@ if (import.meta.main) {
 	const result = await checkProtectedRelease({
 		landmark,
 		repoRoot,
-		repository: process.env.GITHUB_REPOSITORY ?? "misty-step/mistystack",
+		repository: process.env.GITHUB_REPOSITORY ?? "misty-step/spellbook",
 		upstream: process.env.GITHUB_API_URL ?? "https://api.github.com",
 		token: process.env.GITHUB_TOKEN || undefined,
 		base: process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : undefined,

@@ -37,7 +37,7 @@ for tool in git bun python3; do
   command -v "$tool" >/dev/null 2>&1 || { echo "$tool is required" >&2; exit 1; }
 done
 mkdir -p "$HOME/.cache/tmp"
-work=$(mktemp -d "$HOME/.cache/tmp/mistystack-verify.XXXXXX")
+work=$(mktemp -d "$HOME/.cache/tmp/spellbook-verify.XXXXXX")
 trap 'rm -rf -- "$work"' 0
 trap 'exit 130' 2
 trap 'exit 143' 15

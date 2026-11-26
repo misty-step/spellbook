@@ -90,7 +90,7 @@ test('indexes repository and pinned catalog skills with provenance and invocatio
   });
   assert.deepEqual(entry('catalog-b:epsilon').source, { pack: 'catalog-b', pin: SUBDIR_SHA, repository: 'https://github.com/acme/mono', path: 'plugins/b/extra/epsilon/SKILL.md' });
   assert.deepEqual(entry('mistystack:alpha').invoke, { skill: '/skill:alpha', install: null });
-  assert.equal(entry('mistystack:alpha').url, `https://github.com/misty-step/mistystack/blob/${REVISION}/skills/alpha/SKILL.md`);
+  assert.equal(entry('mistystack:alpha').url, `https://github.com/misty-step/spellbook/blob/${REVISION}/skills/alpha/SKILL.md`);
   assert.deepEqual(remote.requests.filter((url) => /REFERENCE\.md|nested|unrelated/.test(url)), []);
 });
 

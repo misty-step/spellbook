@@ -14,7 +14,7 @@ const tool = TOOL_SCRIPTS.find((item) => item.id === 'misty-check');
 const source = readFileSync(path.join(repoRoot, tool.path), 'utf8');
 const lineCount = source.split('\n').length - (source.endsWith('\n') ? 1 : 0);
 const audit = auditRepo(repoRoot);
-const sampleOutput = formatScorecard({ ...audit, target: './mistystack' });
+const sampleOutput = formatScorecard({ ...audit, target: './spellbook' });
 ---
 <SiteLayout title="misty-check.mjs" description={tool.summary} section="Tools" path={tool.url}>
   <div class="frame docs-shell">

@@ -70,9 +70,9 @@ from the deployed revision's canonical generated notes; no separate release-note
 service or browser credential is needed. Report the semantic version beside the
 full source revision wherever the product reports release identity.
 
-## Mistystack's native path
+## Spellbook's native path
 
-Landmark remains Mistystack's generator. The `Verify and Release` workflow is
+Landmark remains Spellbook's generator. The `Verify and Release` workflow is
 explicitly dispatched after source changes have merged and the single critical
 assessment is recorded on GitHub:
 

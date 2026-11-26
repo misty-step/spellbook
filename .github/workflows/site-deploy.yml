@@ -31,14 +31,14 @@ jobs:
         id: dependencies
         with:
           path: site/node_modules
-          key: mistystack-site-linux-node22-${{ hashFiles('site/package-lock.json') }}
+          key: spellbook-site-linux-node22-${{ hashFiles('site/package-lock.json') }}
       - name: Install pinned deployment tools on cache miss
         if: steps.dependencies.outputs.cache-hit != 'true'
         run: npm ci
       - name: Download the artifact already checked by release CI
         uses: actions/download-artifact@v4
         with:
-          name: mistystack-site-${{ inputs.revision }}
+          name: spellbook-site-${{ inputs.revision }}
           path: site/dist/
       - name: Deploy the checked bytes
         env:

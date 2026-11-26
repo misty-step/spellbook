@@ -4,6 +4,15 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync,
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
+// Spellbook was published as `mistystack`. Claude Code keys installs by plugin@marketplace,
+// so renaming either orphans every existing `mistystack@mistystack` install ("Plugin
+// mistystack not found"). The machine identifier stays until a deliberate migration.
+export const CLAUDE_PLUGIN_ID = "mistystack";
+
+// Portable voice: mirrors site/src/lib/portable-voice.mjs (credit lives in ATTRIBUTION.md).
+export const PERSONAL_NAMES =
+	/\b(?:phaedrus|parnas|ousterhout|lauren tan|kent c\.? dodds|zach lloyd|torvalds|carmack|berkopec|richard sutton|rieseberg|joseph suarez|pocock)\b/i;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
 }
@@ -83,7 +92,7 @@ function lintManifests(root: string, errors: string[]) {
 	// .claude-plugin/plugin.json
 	const claudePlugin = load(".claude-plugin/plugin.json");
 	if (claudePlugin) {
-		if (claudePlugin.name !== "mistystack") errors.push(".claude-plugin/plugin.json: name must be mistystack");
+		if (claudePlugin.name !== CLAUDE_PLUGIN_ID) errors.push(`.claude-plugin/plugin.json: name must stay ${CLAUDE_PLUGIN_ID} (stable install identifier)`);
 		const skillsVal = claudePlugin.skills === undefined ? "./skills" : claudePlugin.skills;
 		if (checkPath(".claude-plugin/plugin.json: skills", skillsVal, "directory") !== resolve(root, "skills")) {
 			errors.push(".claude-plugin/plugin.json: skills must reference ./skills");
@@ -104,16 +113,18 @@ function lintManifests(root: string, errors: string[]) {
 		}
 	}
 
-	// .claude-plugin/marketplace.json (lean: only mistystack, zero auto-mounted companion packs)
+	// .claude-plugin/marketplace.json (lean: only the local plugin, zero auto-mounted companion packs)
 	const marketplace = load(".claude-plugin/marketplace.json");
 	if (marketplace) {
-		if (!nonempty(marketplace.name)) errors.push(".claude-plugin/marketplace.json: name must be non-empty");
+		if (marketplace.name !== CLAUDE_PLUGIN_ID) {
+			errors.push(`.claude-plugin/marketplace.json: name must stay ${CLAUDE_PLUGIN_ID} (stable install identifier)`);
+		}
 		if (!isRecord(marketplace.owner) || !nonempty(marketplace.owner.name)) {
 			errors.push(".claude-plugin/marketplace.json: owner.name must be non-empty");
 		}
 		const plugins = Array.isArray(marketplace.plugins) ? marketplace.plugins : [];
-		if (plugins.length !== 1 || !isRecord(plugins[0]) || plugins[0].name !== "mistystack" || plugins[0].source !== "./") {
-			errors.push(".claude-plugin/marketplace.json: must list only the local mistystack plugin (source: \"./\")");
+		if (plugins.length !== 1 || !isRecord(plugins[0]) || plugins[0].name !== CLAUDE_PLUGIN_ID || plugins[0].source !== "./") {
+			errors.push(`.claude-plugin/marketplace.json: must list only the local ${CLAUDE_PLUGIN_ID} plugin (source: "./")`);
 		}
 	}
 
@@ -184,7 +195,7 @@ export function lintPlugin(root: string, strict = false) {
 		const bytes = readFileSync(join(root, file));
 		if (bytes.includes(0)) continue;
 		const text = bytes.toString("utf8");
-		if (/\bphaedrus\b/i.test(text)) {
+		if (PERSONAL_NAMES.test(text)) {
 			errors.push(`${file}: portable skills and rules must not contain personal names`);
 		}
 		const links = /\.md$/i.test(file) ? markdownLinks(text) : [];
@@ -234,7 +245,7 @@ function checked(command: string[], cwd: string, env: NodeJS.ProcessEnv) {
 export async function verifyClaudeInstall(root: string, executable: string) {
 	const scratchRoot = process.env.TMPDIR ?? join(homedir(), ".cache/tmp");
 	mkdirSync(scratchRoot, { recursive: true });
-	const scratch = realpathSync(mkdtempSync(join(scratchRoot, "mistystack-claude-")));
+	const scratch = realpathSync(mkdtempSync(join(scratchRoot, "spellbook-claude-")));
 	try {
 		const home = join(scratch, "home");
 		const project = join(home, "project");
@@ -253,7 +264,7 @@ export async function verifyClaudeInstall(root: string, executable: string) {
 		for (const dir of [home, project, env.CLAUDE_CONFIG_DIR!, env.CLAUDE_CODE_PLUGIN_CACHE_DIR!, env.TMPDIR!]) {
 			mkdirSync(dir, { recursive: true });
 		}
-		const id = "mistystack@mistystack";
+		const id = `${CLAUDE_PLUGIN_ID}@${CLAUDE_PLUGIN_ID}`;
 		checked([executable, "plugin", "marketplace", "add", root, "--scope", "user"], project, env);
 		checked([executable, "plugin", "install", id, "--scope", "user"], project, env);
 		const details = checked([executable, "plugin", "details", id], project, env);

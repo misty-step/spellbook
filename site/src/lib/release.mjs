@@ -14,6 +14,6 @@ export const release = Object.freeze({
   builtAt: new Date().toISOString(),
   canonical,
 });
-export const repositoryUrl = 'https://github.com/misty-step/mistystack';
+export const repositoryUrl = 'https://github.com/misty-step/spellbook';
 export const encodePath = (path) => path.split('/').map(encodeURIComponent).join('/');
 export const blobUrl = (path) => `${repositoryUrl}/blob/${commit}/${encodePath(path)}`;

@@ -45,7 +45,7 @@ function build(graph) {
   const audit = auditRepo(repoRoot);
   const sampleReport = {
     ...audit,
-    target: './mistystack',
+    target: './spellbook',
   };
   const checkSample = [
     '$ node skills/foundations/scripts/misty-check.mjs .',

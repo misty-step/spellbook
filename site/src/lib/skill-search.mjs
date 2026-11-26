@@ -81,7 +81,7 @@ export async function rankSkills({ query, skills, apiKey, fetcher = fetch, versi
       try {
         const response = await fetcher(endpoint, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${apiKey.trim()}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://stack.mistystep.io', 'X-Title': 'Mistystack skill finder' },
+          headers: { Authorization: `Bearer ${apiKey.trim()}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://stack.mistystep.io', 'X-Title': 'Spellbook skill finder' },
           body: JSON.stringify(batch),
           signal: AbortSignal.timeout(timeoutMs),
           redirect: 'manual',

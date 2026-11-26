@@ -2,7 +2,7 @@
 trigger: always_on
 alwaysApply: true
 ---
-# Misty Step core
+# Spellbook core
 
 - Drive every change — greenfield or legacy — through the Active Folio (`PRODUCT.md`, plus `DESIGN.md` for UI): bootstrap a missing Folio from user intent and observed behavior where available before major changes, update it first whenever product-specific intent changes (omitting universal and surface-class baselines), reconcile code against it, and let git own history.
 - Inspect the real code, Active Folio, and failing run before editing or asking the user; prefer running a check over guessing.

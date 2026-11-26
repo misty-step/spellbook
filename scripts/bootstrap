@@ -6,7 +6,7 @@ for tool in git gitleaks trufflehog python3; do
   command -v "$tool" >/dev/null 2>&1 || { echo "$tool is required" >&2; exit 1; }
 done
 [ "$(git -C "$root" rev-parse --show-toplevel)" = "$root" ] || {
-  echo 'Run bootstrap from a complete mistystack checkout' >&2; exit 1;
+  echo 'Run bootstrap from a complete spellbook checkout' >&2; exit 1;
 }
 old=$(git -C "$root" config --local --get core.hooksPath || :)
 case "$old" in ''|.githooks) ;; *) echo "Preserving foreign core.hooksPath: $old" >&2; exit 1 ;; esac

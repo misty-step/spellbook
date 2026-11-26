@@ -2,7 +2,7 @@
 // Dynamic counts, verbatim core rules, and skill listings are read from the repository by src/lib/home.mjs.
 
 export const home = {
-  title: 'mistystack',
+  title: 'spellbook',
   nav: [
     { label: 'Skills', href: '#skills' },
     { label: 'Core', href: '#core' },
@@ -12,8 +12,8 @@ export const home = {
   ],
   navCta: { label: 'Install', href: '#install' },
   hero: (facts) => ({
-    headline: 'A lean method for coding agents.',
-    sub: `mistystack codifies the Active Folio-to-reconciler loop — bootstrap or update present-tense PRODUCT.md (plus DESIGN.md for UI) first in any greenfield or legacy repo, then reconcile code against it — in ${facts.coreRules} always-on rules, ${facts.skills} crisp skills, and zero-dependency scripts. Portable across harnesses, free of template bureaucracy.`,
+    headline: 'Craft and philosophy for coding agents.',
+    sub: `Models keep getting better; procedures rot. Spellbook keeps only what compounds: present-tense intent in an Active Folio (PRODUCT.md, plus DESIGN.md for UI), ${facts.coreRules} always-on rules, ${facts.skills} short skills that say what and why, and scripts for anything a machine can check. Portable across harnesses. Formerly mistystack.`,
     primary: { label: `Browse all ${facts.skillCount} skills`, href: '#skills' },
     secondary: { label: 'Install', href: '#install' },
     proof: `Active Folio · ${facts.skillCount} skills · ${facts.coreCount} standing rules · 0 external companion packs · MIT licensed`,
@@ -43,36 +43,36 @@ export const home = {
       {
         id: 'any',
         name: 'Any harness',
-        lines: ['npx skills add misty-step/mistystack -g'],
+        lines: ['npx skills add misty-step/spellbook -g'],
         note: 'Installs all 7 skills globally for Cursor, Codex, Antigravity, pi, and OpenCode. Copy rules/core.md into your always-on instruction file or AGENTS.md.',
       },
       {
         id: 'claude',
         name: 'Claude Code',
         lines: [
-          'claude plugin marketplace add misty-step/mistystack',
+          'claude plugin marketplace add misty-step/spellbook',
           'claude plugin install mistystack@mistystack',
         ],
-        note: 'Mounts the 7 lean skills and registers the SessionStart core hook with zero external companion packs.',
+        note: 'Mounts the 7 lean skills and registers the SessionStart core hook with zero external companion packs. The plugin keeps its original mistystack@mistystack identifier so existing installs keep updating.',
       },
       {
         id: 'local',
         name: 'Run misty-check',
         lines: [
-          'git clone --depth 1 https://github.com/misty-step/mistystack.git /tmp/mistystack',
-          'node /tmp/mistystack/skills/foundations/scripts/misty-check.mjs .',
+          'git clone --depth 1 https://github.com/misty-step/spellbook.git /tmp/spellbook',
+          'node /tmp/spellbook/skills/foundations/scripts/misty-check.mjs .',
         ],
         note: 'Run the deterministic baseline auditor against any local repository with Node 20+ and zero dependencies.',
       },
     ],
   },
   philosophy: {
-    title: 'Active Folio, Philosophy & Lineage.',
-    body: 'Why effortless Active Folio bootstrapping and reconciliation (greenfield or legacy), the 3-Layer Intent Stack, clean-room recompile, information-hiding decomposition, explicit state machines with Deterministic Simulation Testing (DST), seven small skills, cross-family cold critics, and calm editorial evidence beat forty rigid playbooks. Kept in docs/philosophy.md for human readers and never auto-loaded into agent prompts.',
-    primary: { label: 'Read Philosophy & Lineage', href: '/philosophy/' },
-    secondary: { label: 'Browse on GitHub', href: 'https://github.com/misty-step/mistystack' },
+    title: 'Why, before how.',
+    body: 'Why durable intent beats ticket backlogs, why seven small skills beat forty playbooks, and why scripts beat prose: the bitter lesson applied to agent method. Kept in docs/philosophy.md for human readers and never auto-loaded into agent prompts.',
+    primary: { label: 'Read the philosophy', href: '/philosophy/' },
+    secondary: { label: 'Browse on GitHub', href: 'https://github.com/misty-step/spellbook' },
   },
   footer: {
-    line: 'mistystack is a lean, portable engineering method for coding agents, MIT licensed.',
+    line: 'Spellbook (formerly mistystack) is portable agent craft and philosophy for coding agents, MIT licensed.',
   },
 };

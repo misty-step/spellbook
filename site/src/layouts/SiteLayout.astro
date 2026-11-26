@@ -3,12 +3,12 @@ import '@misty-step/brand/brand.css';
 import '@misty-step/brand/spine.css';
 import '../styles/site.css';
 import { HTML_ATTRS } from '@misty-step/brand/attrs';
-import { lockup } from '@misty-step/brand/mark';
+import { MARK_SVG } from '@misty-step/brand/mark';
 import { icon } from '@misty-step/brand/spine';
 import faviconSvg from '@misty-step/brand/identity/icons/favicon.svg?url';
 import favicon32 from '@misty-step/brand/identity/icons/favicon-32.png?url';
 import appIcon from '@misty-step/brand/identity/icons/app-180-ink.png?url';
-import ogCard from '@misty-step/brand/identity/og/stack.png?url';
+import ogCard from '../assets/og-spellbook.png?url';
 import { home } from '../copy/home.mjs';
 import { canonical, release, repositoryUrl } from '../lib/release.mjs';
 const links = [
@@ -39,7 +39,10 @@ const footer = [
   { href: '/find/', label: 'Find a skill' },
 ];
 const selected = (href) => (href !== '/' && !href.startsWith('/#') && path.startsWith(href) ? 'page' : undefined);
-const fullTitle = title === 'mistystack' ? title : `${title} | mistystack`;
+const fullTitle = title === 'spellbook' ? title : `${title} | spellbook`;
+// @misty-step/brand 0.3.0 locks lockup() to "Misty Step" and "mistystack"; compose the same
+// .ms-lockup markup from its mark until the brand package names spellbook.
+const masthead = `<a class="ms-lockup" href="/" aria-label="spellbook home">${MARK_SVG}<span class="ms-name">spellbook</span></a>`;
 const url = new URL(path, canonical);
 ---
 <!doctype html>
@@ -59,7 +62,7 @@ const url = new URL(path, canonical);
     <link rel="icon" href={favicon32} type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href={appIcon} />
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="mistystack" />
+    <meta property="og:site_name" content="spellbook" />
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={url} />
@@ -73,7 +76,7 @@ const url = new URL(path, canonical);
     <a class="sp-skip" href="#main">Skip to content</a>
     <header class="masthead" data-pagefind-ignore>
       <div class="frame masthead-bar">
-        <Fragment set:html={lockup('mistystack', { href: '/', label: 'mistystack home' })} />
+        <Fragment set:html={masthead} />
         <nav class="masthead-links" aria-label="Primary">
           {nav.map((link) => <a href={link.href} aria-current={selected(link.href)}>{link.label}</a>)}
         </nav>

@@ -10,6 +10,7 @@ import { visit } from 'unist-util-visit';
 import GithubSlugger from 'github-slugger';
 import { parseDocument } from 'yaml';
 import { blobUrl, encodePath, release, repoRoot, repositoryUrl } from './release.mjs';
+import { PERSONAL_NAMES } from './portable-voice.mjs';
 
 const markdown = unified().use(remarkParse).use(remarkGfm);
 const toHtml = unified().use(remarkRehype, { allowDangerousHtml: true }).use(rehypeRaw);
@@ -93,7 +94,7 @@ function parseSource(id, raw) {
 }
 
 function validateMetadata(doc) {
-  if (/\bphaedrus\b/i.test(doc.raw)) {
+  if (PERSONAL_NAMES.test(doc.raw)) {
     throw new Error(`${doc.id}: site content must use portable voice without personal names`);
   }
   if (doc.id.endsWith('/SKILL.md')) {
@@ -197,7 +198,7 @@ function resolveTarget(doc, href, node, graph, image = false) {
     targetDoc = graph.byId.get(target);
     if (!targetDoc) {
       return image
-        ? `https://raw.githubusercontent.com/misty-step/mistystack/${release.commit}/${encodePath(target)}`
+        ? `https://raw.githubusercontent.com/misty-step/spellbook/${release.commit}/${encodePath(target)}`
         : `${blobUrl(target)}${query}${fragment ? `#${fragment}` : ''}`;
     }
   }
