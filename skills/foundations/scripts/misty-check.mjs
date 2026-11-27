@@ -4,7 +4,7 @@
  * Zero external dependencies — Node built-ins only.
  *
  * Usage:
- *   node skills/foundations/scripts/misty-check.mjs [path] [--json] [--strict] [--strict-layout]
+ *   node skills/foundations/scripts/misty-check.mjs [path] [--json] [--strict] [--strict-layout] [--strict-observability]
  */
 
 import { spawnSync } from 'node:child_process';
@@ -12,6 +12,7 @@ import { closeSync, constants as fsConstants, existsSync, fstatSync, lstatSync, 
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { formatObservability, inspectObservability } from './misty-check-observability.mjs';
 
 const SKIP_DIRS = new Set([
   '.git',
@@ -1155,8 +1156,9 @@ function readSafeAllowlistText(rootReal) {
 
 function parseAllowlist(rootReal) {
   const text = readSafeAllowlistText(rootReal);
-  if (text === null) return { file: null, entries: [] };
+  if (text === null) return { file: null, entries: [], observability: [] };
   const entries = [];
+  const observability = [];
   for (const rawLine of text.split(/\r?\n/)) {
     let line = rawLine.trim();
     if (!line || line.startsWith('#')) continue;
@@ -1164,6 +1166,12 @@ function parseAllowlist(rootReal) {
     if (!line) continue;
 
     const rawPattern = line;
+    const observabilityMatch = /^observability:(.*)$/i.exec(line);
+    if (observabilityMatch) {
+      const token = observabilityMatch[1].trim().toLowerCase();
+      if (token) observability.push({ rawPattern, token });
+      continue;
+    }
     let rule = null;
     const prefixMatch = /^(wide-directory|long-file):(.*)$/.exec(line);
     if (prefixMatch) {
@@ -1198,7 +1206,7 @@ function parseAllowlist(rootReal) {
       segments,
     });
   }
-  return { file: LAYOUT_ALLOW_FILENAME, entries };
+  return { file: LAYOUT_ALLOW_FILENAME, entries, observability };
 }
 
 function matchGlobSegment(pat, str) {
@@ -1270,8 +1278,7 @@ function compareLayoutItems(a, b) {
   return a.path.localeCompare(b.path);
 }
 
-function checkStructuralLayout(rootReal) {
-  const allowlist = parseAllowlist(rootReal);
+function checkStructuralLayout(rootReal, allowlist) {
   const candidates = [];
   const buf = Buffer.allocUnsafe(LAYOUT_LINE_CHUNK_BYTES);
   let scannedDirs = 0;
@@ -1523,7 +1530,13 @@ export function auditRepo(targetPath = '.') {
     checkHealthzEndpoint(rootReal),
   ];
   const surfaceClass = inspectSurfaceClass(rootReal);
-  const layout = checkStructuralLayout(rootReal);
+  const allowlist = parseAllowlist(rootReal);
+  const layout = checkStructuralLayout(rootReal, allowlist);
+  const observability = inspectObservability(rootReal, {
+    webApp: surfaceClass.detected.includes('web-app'),
+    allowFile: allowlist.file,
+    allowRules: allowlist.observability,
+  });
   const elapsedMs = Math.round(performance.now() - startedAt);
   const passed = checks.filter((c) => c.status === 'pass').length;
   const gaps = checks.length - passed;
@@ -1533,6 +1546,7 @@ export function auditRepo(targetPath = '.') {
     activeFolio: summarizeActiveFolio(productCheck, designCheck),
     surfaceClass,
     layout,
+    observability,
     summary: {
       passed,
       gaps,
@@ -1583,6 +1597,7 @@ export function formatScorecard(report) {
       }
     }
   }
+  lines.push(...formatObservability(report.observability));
   return lines.join('\n');
 }
 
@@ -1591,6 +1606,7 @@ export function parseArgs(argv) {
   let json = false;
   let strict = false;
   let strictLayout = false;
+  let strictObservability = false;
   let help = false;
   let positionalSeen = false;
 
@@ -1598,6 +1614,7 @@ export function parseArgs(argv) {
     if (arg === '--json') json = true;
     else if (arg === '--strict') strict = true;
     else if (arg === '--strict-layout') strictLayout = true;
+    else if (arg === '--strict-observability') strictObservability = true;
     else if (arg === '-h' || arg === '--help') help = true;
     else if (arg.startsWith('-')) throw new Error(`Unknown flag: ${arg}`);
     else if (!positionalSeen) {
@@ -1607,21 +1624,26 @@ export function parseArgs(argv) {
       throw new Error(`Unexpected extra positional argument: ${arg}`);
     }
   }
-  return { target, json, strict, strictLayout, help };
+  return { target, json, strict, strictLayout, strictObservability, help };
 }
 
 const USAGE = [
-  'Usage: misty-check.mjs [path] [--json] [--strict] [--strict-layout]',
+  'Usage: misty-check.mjs [path] [--json] [--strict] [--strict-layout] [--strict-observability]',
   '',
   'Audit a repository against Spellbook baseline foundations.',
   '  path             Target directory (default: ".")',
   '  --json           Emit machine-readable JSON scorecard',
   '  --strict         Exit with code 1 when any baseline gap is reported',
   '  --strict-layout  Exit with code 1 when unallowed layout sprawl (>15 files/dir, >2,000 LOC/file) or scan truncation is reported',
+  '  --strict-observability',
+  '                   Exit with code 1 when a web app, worker, or service has an unallowed observability gap',
+  '                   (truthful health endpoint, production telemetry config, client error + CSP capture)',
   '  -h,--help        Show this help text',
   '',
   'Grandfather legacy layout exceptions in a repo-root .misty-check.allow file',
   '(one relative path or glob per line, # comments allowed, optional wide-directory: or long-file: prefix).',
+  'Opt out of an observability rule that does not fit (CLI-only or static library repos) with',
+  'observability:health, observability:config, observability:client-errors, or observability:* lines.',
 ].join('\n');
 
 function isDirectInvocation() {
@@ -1641,7 +1663,11 @@ if (isDirectInvocation()) {
     } else {
       const report = auditRepo(opts.target);
       console.log(opts.json ? JSON.stringify(report, null, 2) : formatScorecard(report));
-      if ((opts.strict && report.summary.gaps > 0) || (opts.strictLayout && (report.layout.findings.length > 0 || report.layout.truncated))) {
+      if (
+        (opts.strict && report.summary.gaps > 0) ||
+        (opts.strictLayout && (report.layout.findings.length > 0 || report.layout.truncated)) ||
+        (opts.strictObservability && report.observability.findings.length > 0)
+      ) {
         process.exitCode = 1;
       }
     }

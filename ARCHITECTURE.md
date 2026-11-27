@@ -230,12 +230,15 @@ The closure classes are listed below (`scripts/check-runner.ts:73-109`):
   (`site/src/lib/release.mjs:8-16`).
 - **Runtime.** Cloudflare Workers Static Assets serves the files. Only `/api/*`
   runs the Worker first (`site/wrangler.jsonc:4-12`). The Worker routes
-  `/api/find` to the skill finder, returns a JSON 404 for other `/api/*`
-  paths, and serves assets for everything else (`site/worker/index.mjs:4-10`).
+  `/api/find` to the skill finder, `/api/client-error` to the browser error
+  beacon (`site/src/lib/client-error.mjs`), returns a JSON 404 for other `/api/*`
+  paths, and serves assets for everything else (`site/worker/index.mjs:7-23`).
+  A fault is logged once with the release identity and rethrown; Workers
+  observability is enabled (`site/wrangler.jsonc:13`).
   `/api/find` enforces these limits (`site/src/lib/find-api.mjs:39-55`):
   - POST only, same-origin only, JSON body of at most 8 KiB.
   - It needs `OPENROUTER_API_KEY` and the `SKILL_SEARCH_LIMITER` binding.
-  - 8 requests per 60 s per IP (`site/wrangler.jsonc:13-19`).
+  - 8 requests per 60 s per IP (`site/wrangler.jsonc:14-25`).
   - Every failure is an explicit degraded JSON response.
 - **Headers.** Strict CSP and frame denial. `noindex` on `/source/*` and on
   `workers.dev` preview hosts (`site/public/_headers:1-15`). Retired URLs

@@ -260,6 +260,11 @@ async function main() {
 
   const worker = required('.worker/index.js')?.toString('utf8') ?? '';
   expect(worker.includes('/api/find') && worker.includes('/healthz'), '.worker/index.js: missing bundled finder or /healthz route');
+  expect(worker.includes('/api/client-error') && required('error-beacon.js')?.includes('/api/client-error'), 'browser error beacon: Worker route and /error-beacon.js must both exist');
+  for (const [file, page] of pages) {
+    if (!file.endsWith('.html') || !page.tags.some(({ name }) => name === 'main')) continue;
+    expect(page.tags.some(({ name, attributes }) => name === 'script' && attributes.get('src') === '/error-beacon.js'), `${file}: page does not load /error-beacon.js`);
+  }
   expect(files.get('.assetsignore')?.toString('utf8').split('\n').includes('.worker/'), '.assetsignore: Worker code and index must not be public assets');
 
   const notFound = required('404.html')?.toString('utf8');
