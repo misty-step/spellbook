@@ -1136,6 +1136,11 @@ test('--strict-observability fails closed when the 2,000-file scan cap is hit, e
   assert.match(formatScorecard(overflowReport), /\[OK {2}\] Health endpoint[^\n]*\n[^]*\[ADV \] Observability scan incomplete \(max files 2,000\)/);
   assert.equal(runCli([overflow, '--strict-observability']).status, 1);
 
+  // An opt-out silences rules, not the scan: the report still says it is incomplete and the gate still fails.
+  const optedOut = makeFixture({ ...OBSERVABLE_WORKER, ...fillerFiles('zzz', 1997), '.misty-check.allow': 'observability:*  # audited elsewhere\n' });
+  assert.equal(auditRepo(optedOut).observability.truncated, true);
+  assert.equal(runCli([optedOut, '--strict-observability']).status, 1);
+
   // 4. A gap found in a capped scan says the scan was incomplete instead of presenting itself as settled.
   const cappedGap = makeFixture({ 'app/server.mjs': "import { createServer } from 'node:http';\ncreateServer((req, res) => res.end('ok')).listen(8080);\n", ...fillerFiles('data', 2000) });
   const cappedGapReport = auditRepo(cappedGap);
