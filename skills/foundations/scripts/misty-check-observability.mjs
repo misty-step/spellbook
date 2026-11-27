@@ -68,10 +68,15 @@ const SERVER_REPORTING_DEP_RE = /^(?:@sentry\/(?:node|cloudflare|bun|deno|server
 const SERVER_REPORTING_CODE_RE = /\bSENTRY_DSN\b|\bSentry\.init\s*\(|\bsentry_sdk\.init\s*\(|\bsentry\.Init\s*\(|\bsentry::init\s*\(|\/api\/[^\s"'`]*\/envelope\/|ingest\.[\w.-]*sentry\.io/;
 const SENTRY_CLIENT_CODE_RE = /["'`]@sentry\/(?:browser|react|vue|svelte|angular|solid|nextjs|nuxt|sveltekit|astro|remix)["'`]|(?:browser|js)\.sentry-cdn\.com/;
 
-const CSP_LISTENER_RE = /addEventListener\s*\(\s*["'`]securitypolicyviolation["'`]|\bonsecuritypolicyviolation\s*=/;
-const REJECTION_LISTENER_RE = /addEventListener\s*\(\s*["'`]unhandledrejection["'`]|\bonunhandledrejection\s*=/;
-const ERROR_LISTENER_RE = /addEventListener\s*\(\s*["'`]error["'`]|\b(?:window|self|globalThis)\.onerror\s*=/;
-const FORWARD_RE = /\bsendBeacon\s*\(|\bfetch\s*\(|\bXMLHttpRequest\b|\bcapture(?:Exception|Message|Event)\s*\(|\breport[A-Za-z]*\s*\(/;
+const CSP_LISTENER_RE = /addEventListener\s*\(\s*["'`]securitypolicyviolation["'`]|\bonsecuritypolicyviolation\s*=/g;
+// Global listeners only: `img.addEventListener('error', …)` handles one element, not the page.
+const ERROR_LISTENER_RE = /(?:(?<![\w$.)\]])|\b(?:window|self|globalThis)\.)addEventListener\s*\(\s*["'`](?:unhandledrejection|error)["'`]|\bonunhandledrejection\s*=|\b(?:window|self|globalThis)\.onerror\s*=/g;
+const FORWARD_RE = /\bsendBeacon\s*\(|\bfetch\s*\(|\bXMLHttpRequest\b|\bcapture(?:Exception|Message|Event)\s*\(/;
+const REPORTER_NAME_RE = /report|beacon|capture|sentry|telemetry/i;
+const HANDLER_SCAN_CHARS = 4000;
+const HELPER_DEPTH = 3;
+const MAX_LISTENERS_PER_FILE = 20;
+const MINIFIED_FILE_RE = /\.(?:min|bundle)\.[cm]?js$/i;
 const CSP_REPORT_DIRECTIVE_RE = /\breport-(?:uri|to)\s+[^;\s"'`]/i;
 
 function stripHashComments(text) {
@@ -183,6 +188,79 @@ function healthRouteVerdict(rel, code) {
   return seen ? 'stub' : null;
 }
 
+/** Text from `start` through the bracket that closes the first `open` found there (bounded). */
+function balancedSpan(code, start, open, close) {
+  const from = code.indexOf(open, start);
+  if (from === -1 || from - start > 200) return code.slice(start, start + 300);
+  let depth = 0;
+  const limit = Math.min(code.length, from + HANDLER_SCAN_CHARS);
+  for (let i = from; i < limit; i += 1) {
+    if (code[i] === open) depth += 1;
+    else if (code[i] === close && (depth -= 1) === 0) return code.slice(start, i + 1);
+  }
+  return code.slice(start, limit);
+}
+
+function helperBody(code, name) {
+  const escaped = name.replace(/\$/g, '\\$');
+  const definition = new RegExp(`\\bfunction\\s+${escaped}\\b|\\b(?:const|let|var)\\s+${escaped}\\s*=|(?:^|[\\s,{])${escaped}\\s*\\([^)]*\\)\\s*\\{`, 'm').exec(code);
+  if (!definition) return null;
+  const head = code.slice(definition.index, definition.index + 300);
+  const arrow = /=>\s*(?!\{)/.exec(head);
+  const brace = head.indexOf('{');
+  if (arrow && (brace === -1 || arrow.index < brace)) return expressionSpan(code, definition.index + arrow.index + arrow[0].length);
+  return balancedSpan(code, definition.index, '{', '}');
+}
+
+/** An expression-bodied arrow ends at the first `;` or newline outside any bracket. */
+function expressionSpan(code, start) {
+  let depth = 0;
+  const limit = Math.min(code.length, start + HANDLER_SCAN_CHARS);
+  for (let i = start; i < limit; i += 1) {
+    const ch = code[i];
+    if (ch === '(' || ch === '[' || ch === '{') depth += 1;
+    else if (ch === ')' || ch === ']' || ch === '}') depth -= 1;
+    if (depth < 0 || (depth === 0 && (ch === ';' || ch === '\n'))) return code.slice(start, i);
+  }
+  return code.slice(start, limit);
+}
+
+/**
+ * True when a handler actually sends the event somewhere: a direct sendBeacon/fetch/XHR/capture
+ * call, a same-file helper that does (followed a few levels), or an imported reporter.
+ * An unrelated network call elsewhere in the file does not count.
+ */
+function forwards(code, body, depth = 0, seen = new Set()) {
+  if (FORWARD_RE.test(body)) return true;
+  if (depth >= HELPER_DEPTH) return false;
+  for (const [name] of body.matchAll(/[A-Za-z_$][\w$]*/g)) {
+    if (seen.has(name)) continue;
+    seen.add(name);
+    const helper = helperBody(code, name);
+    if (helper === null) {
+      if (REPORTER_NAME_RE.test(name) && new RegExp(`\\b${name.replace(/\$/g, '\\$')}\\s*\\(`).test(body)) return true;
+    } else if (forwards(code, helper, depth + 1, seen)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** 'forwarded' when any matching listener forwards its event, 'silent' when listeners exist but none do. */
+function listenerVerdict(code, listenerRe) {
+  let verdict = null;
+  let inspected = 0;
+  for (const match of code.matchAll(listenerRe)) {
+    if ((inspected += 1) > MAX_LISTENERS_PER_FILE) break;
+    const body = match[0].includes('(')
+      ? balancedSpan(code, match.index, '(', ')')
+      : code.slice(match.index, match.index + 600).split(/;\s*(?:\r?\n|$)/, 1)[0];
+    if (forwards(code, body)) return 'forwarded';
+    verdict = 'silent';
+  }
+  return verdict;
+}
+
 function collectSignals(rootReal) {
   const signals = {
     worker: [], service: [], healthReal: [], healthStub: [], telemetryOn: [], telemetryOff: [],
@@ -240,17 +318,13 @@ function collectSignals(rootReal) {
       if (verdict === 'real') record(signals.healthReal, rel);
       else if (verdict === 'stub') record(signals.healthStub, rel);
     }
-    if (CLIENT_CODE_EXTENSIONS.has(ext)) {
+    if (CLIENT_CODE_EXTENSIONS.has(ext) && !MINIFIED_FILE_RE.test(lowerBase)) {
       if (SENTRY_CLIENT_CODE_RE.test(code)) record(signals.sentryClient, rel);
-      const csp = CSP_LISTENER_RE.test(code);
-      const errors = REJECTION_LISTENER_RE.test(code) || ERROR_LISTENER_RE.test(code);
-      if (csp || errors) {
-        if (!FORWARD_RE.test(code)) record(signals.listenOnly, rel);
-        else {
-          if (csp) record(signals.cspCapture, rel);
-          if (errors) record(signals.errorCapture, rel);
-        }
-      }
+      const csp = listenerVerdict(code, CSP_LISTENER_RE);
+      const errors = listenerVerdict(code, ERROR_LISTENER_RE);
+      if (csp === 'forwarded') record(signals.cspCapture, rel);
+      if (errors === 'forwarded') record(signals.errorCapture, rel);
+      if (csp === 'silent' || errors === 'silent') record(signals.listenOnly, rel);
     }
   }
 
@@ -348,7 +422,7 @@ function evaluateRules(signals, surfaces) {
       const evidence = [...new Set([...signals.cspCapture, ...signals.errorCapture])].slice(0, EVIDENCE_LIMIT);
       checks.push({ rule: 'client-errors', label: 'Client error + CSP capture', ok: true, evidence, detail: `Browser errors and CSP violations are forwarded from ${evidence.join(', ')}` });
     } else {
-      const listenOnly = signals.listenOnly.length > 0 ? `; ${signals.listenOnly.join(', ')} listens but never forwards (no sendBeacon/fetch/reporter call)` : '';
+      const listenOnly = signals.listenOnly.length > 0 ? `; ${signals.listenOnly.join(', ')} listens but never forwards (no sendBeacon/fetch/reporter call in the handler)` : '';
       checks.push({
         rule: 'client-errors', label: 'Client error + CSP capture', ok: false, evidence: signals.listenOnly,
         detail: `Missing forwarded ${missing.join(' and ')}${listenOnly}`,

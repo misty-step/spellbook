@@ -891,6 +891,26 @@ test('observability audit reports actionable gaps for missing CSP/error capture,
   assert.match(silentText, /\[ADV \] Production telemetry/);
   assert.match(silentText, /\n {2}fix: Forward securitypolicyviolation, unhandledrejection, and error events/);
 
+  // A handler must forward its own event: an unrelated fetch elsewhere in the file, or a same-file
+  // helper that only logs, is not capture. Helpers that reach sendBeacon and imported reporters are.
+  const handlerCases = [
+    ["const tides = await fetch('/api/tides');\ndocument.addEventListener('securitypolicyviolation', (event) => console.warn(event.blockedURI));\naddEventListener('unhandledrejection', (event) => console.warn(event.reason));\n", 'advisory'],
+    ["const report = (kind, detail) => console.log(kind, detail);\ndocument.addEventListener('securitypolicyviolation', (event) => report('csp', event));\naddEventListener('error', (event) => report('error', event));\nfetch('/api/tides');\n", 'advisory'],
+    ["function send(payload) {\n  navigator.sendBeacon('/api/client-error', JSON.stringify(payload));\n}\nfunction note(kind, event) {\n  send({ kind, message: String(event.reason ?? event.message) });\n}\nfunction onCsp(event) { note('csp', event); }\ndocument.addEventListener('securitypolicyviolation', onCsp);\nwindow.onunhandledrejection = (event) => note('rejection', event);\n", 'pass'],
+    ["import { reportClientError } from './telemetry.js';\ndocument.addEventListener('securitypolicyviolation', (event) => reportClientError('csp', event));\naddEventListener('unhandledrejection', (event) => reportClientError('rejection', event));\n", 'pass'],
+  ];
+  for (const [beacon, expected] of handlerCases) {
+    const rule = observabilityById(auditRepo(makeFixture({ ...OBSERVABLE_WORKER, 'public/error-beacon.js': beacon })))['client-errors'];
+    assert.equal(rule.status, expected, `expected ${expected} for beacon: ${JSON.stringify(beacon)}`);
+  }
+
+  // An element-level error listener (image fallback) is not page-level error capture.
+  const elementOnly = makeFixture({
+    ...OBSERVABLE_WORKER,
+    'public/error-beacon.js': "img.addEventListener('error', () => fetch('/fallback.png'));\ndocument.addEventListener('securitypolicyviolation', (event) => navigator.sendBeacon('/api/client-error', event.blockedURI));\n",
+  });
+  assert.match(observabilityById(auditRepo(elementOnly))['client-errors'].detail, /^Missing forwarded unhandledrejection\/error capture$/);
+
   // Errors captured but CSP violations are not: the finding names exactly what is missing.
   const noCsp = makeFixture({
     ...OBSERVABLE_WORKER,
