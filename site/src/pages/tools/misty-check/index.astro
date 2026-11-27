@@ -25,7 +25,7 @@ const sampleOutput = formatScorecard({ ...audit, target: './spellbook' });
       <header class="doc-header">
         <h1 class="page-title"><HeadlineText text="misty-check.mjs" stop /></h1>
         <p class="doc-lede">{tool.summary}</p>
-        <p class="doc-note">{tool.language} · {lineCount} lines · Zero npm dependencies.</p>
+        <p class="doc-note">{tool.language} · {lineCount} lines plus one sibling module · Zero npm dependencies.</p>
       </header>
       <div class="source-provenance" data-pagefind-ignore>
         <p><code class="sp-code-inline">{tool.path}</code></p>
@@ -36,7 +36,9 @@ const sampleOutput = formatScorecard({ ...audit, target: './spellbook' });
         <pre class="sp-code" tabindex="0"><code>{`node ${tool.path} .
 node ${tool.path} /path/to/repo --json
 node ${tool.path} /path/to/repo --strict
-node ${tool.path} /path/to/repo --strict-layout`}</code></pre>
+node ${tool.path} /path/to/repo --strict-layout
+node ${tool.path} /path/to/repo --strict-observability`}</code></pre>
+        <p>The script imports one sibling module, so copy both files together: {tool.modules.map((file) => <a class="sp-link" href={`/source/${encodePath(file)}`}><code class="sp-code-inline">{file.split('/').at(-1)}</code></a>)} holds the observability audit.</p>
         <h2 id="sample-output">Sample output</h2>
         <pre class="sp-code" tabindex="0"><code>{sampleOutput}</code></pre>
         <h2 id="source">Full source</h2>

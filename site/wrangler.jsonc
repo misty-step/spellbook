@@ -10,11 +10,17 @@
     "html_handling": "force-trailing-slash",
     "not_found_handling": "404-page"
   },
+  "observability": { "enabled": true },
   "ratelimits": [
     {
       "name": "SKILL_SEARCH_LIMITER",
       "namespace_id": "1867001",
       "simple": { "limit": 8, "period": 60 }
+    },
+    {
+      "name": "CLIENT_ERROR_LIMITER",
+      "namespace_id": "1867002",
+      "simple": { "limit": 30, "period": 60 }
     }
   ],
   "routes": [
