@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
@@ -562,6 +562,19 @@ test('layout guard fails closed on truncation, rejects absolute allowlist paths,
   );
 });
 
+function modeBitsAreEnforced() {
+  const probe = path.join(makeFixture({ 'probe.txt': 'x\n' }), 'probe.txt');
+  chmodSync(probe, 0o000);
+  try {
+    readFileSync(probe);
+    return false;
+  } catch {
+    return true;
+  } finally {
+    chmodSync(probe, 0o600);
+  }
+}
+
 function execStrictLayoutFailure(repo) {
   let status = 0;
   let stdout = '';
@@ -578,8 +591,9 @@ function execStrictLayoutFailure(repo) {
 test('layout guard fails closed on unreadable files/dirs and 64 MiB allowlisted caps, and classifies SQL and shebang scripts', () => {
   const overLimit = 'x = 1\n'.repeat(2001);
 
-  // 1. Unreadable directory or unreadable source file fails closed under --strict-layout (skip if running as root).
-  if (typeof process.getuid === 'function' && process.getuid() !== 0) {
+  // 1. Unreadable directory or unreadable source file fails closed under --strict-layout
+  //    (skip when mode bits are not enforced: root, or a sandbox holding CAP_DAC_READ_SEARCH).
+  if (modeBitsAreEnforced()) {
     const permDirRepo = makeFixture({ 'private/long.py': overLimit });
     const privateDir = path.join(permDirRepo, 'private');
     chmodSync(privateDir, 0o000);
@@ -752,4 +766,286 @@ test('layout guard supports UTF-16LE and UTF-16BE BOM source files and allowlist
     beOut.layout.findings.map((f) => [f.rule, f.path, f.lines]),
     [['long-file', 'be-script.ps1', 2001]],
   );
+});
+
+const OBSERVABLE_WORKER = {
+  // Zero-SDK same-origin beacon: the browser posts to its own origin, the Worker relays to the error sink.
+  'wrangler.jsonc': '{\n  // Workers Logs capture every structured line.\n  "name": "demo",\n  "main": "./src/worker.mjs",\n  "observability": { "enabled": true, },\n}\n',
+  'src/worker.mjs': [
+    "const revision = 'abc1234';",
+    'export default {',
+    '  async fetch(request, env) {',
+    '    const { pathname } = new URL(request.url);',
+    "    if (pathname === '/healthz') return Response.json({ ok: true, revision });",
+    "    if (pathname === '/api/client-error') { console.error(JSON.stringify({ event: 'client_error', release: revision, report: await request.json() })); return new Response(null, { status: 204 }); }",
+    '    return env.ASSETS.fetch(request);',
+    '  },',
+    '};',
+    '',
+  ].join('\n'),
+  'public/index.html': '<!doctype html>\n<html><head><meta name="viewport" content="width=device-width"><script src="/error-beacon.js"></script></head><body></body></html>\n',
+  'public/error-beacon.js': [
+    "const report = (kind, detail) => navigator.sendBeacon('/api/client-error', JSON.stringify({ kind, path: location.pathname, ...detail }));",
+    "addEventListener('error', (event) => report('error', { message: event.message }));",
+    "addEventListener('unhandledrejection', (event) => report('unhandledrejection', { message: String(event.reason) }));",
+    "document.addEventListener('securitypolicyviolation', (event) => report('securitypolicyviolation', { directive: event.effectiveDirective }));",
+    '',
+  ].join('\n'),
+};
+
+function runCli(args) {
+  const result = spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8' });
+  return { status: result.status, stdout: result.stdout, stderr: result.stderr };
+}
+
+function observabilityById(report) {
+  return Object.fromEntries(report.observability.checks.map((c) => [c.rule, c]));
+}
+
+test('observability audit passes Worker, service, and web repos that report health, telemetry, and client errors', () => {
+  const worker = makeFixture(OBSERVABLE_WORKER);
+  const report = auditRepo(worker);
+  assert.deepEqual(report.observability.surfaces, ['web-app', 'worker']);
+  assert.equal(report.observability.status, 'pass');
+  assert.equal(report.observability.advisoryOnly, true);
+  assert.deepEqual(report.observability.findings, []);
+  assert.deepEqual(report.observability.checks.map((c) => [c.id, c.status]), [
+    ['observability-health', 'pass'],
+    ['observability-config', 'pass'],
+    ['observability-client-errors', 'pass'],
+  ]);
+  const byRule = observabilityById(report);
+  assert.deepEqual(byRule.health.evidence, ['src/worker.mjs']);
+  assert.deepEqual(byRule.config.evidence, ['wrangler.jsonc']);
+  assert.deepEqual(byRule['client-errors'].evidence, ['public/error-beacon.js']);
+  const text = formatScorecard(report);
+  assert.match(text, /Observability & auto-triage \(web-app, worker; advisory, enforce with --strict-observability\):/);
+  assert.match(text, /\[OK {2}\] Client error \+ CSP capture {2}Browser errors and CSP violations are forwarded from public\/error-beacon\.js/);
+  assert.equal(runCli([worker, '--strict-observability']).status, 0);
+
+  // wrangler.toml tables, per-environment config, and log forwarding all count as production telemetry.
+  for (const toml of [
+    'name = "demo"\n\n[observability]\nenabled = true\n',
+    'name = "demo"\n[env.production.observability.logs]\nenabled = true # production only\n',
+    'name = "demo"\nobservability = { enabled = true }\n',
+    'name = "demo"\nlogpush = true\n',
+    'name = "demo"\n[[tail_consumers]]\nservice = "log-drain"\n',
+  ]) {
+    const { 'wrangler.jsonc': _unused, ...rest } = OBSERVABLE_WORKER;
+    const tomlReport = auditRepo(makeFixture({ ...rest, 'wrangler.toml': toml }));
+    assert.equal(observabilityById(tomlReport).config.status, 'pass', `expected telemetry pass for wrangler.toml: ${JSON.stringify(toml)}`);
+  }
+
+  // Node service: file-based /api/health route with release identity, plus server-side Sentry DSN wiring.
+  const service = makeFixture({
+    'package.json': '{"name":"api","dependencies":{"express":"5.0.0","@sentry/node":"9.0.0"}}\n',
+    'src/routes/api/health.ts': 'export const GET = () => Response.json({ status: "ok", commit: process.env.GIT_SHA, uptime: process.uptime() });\n',
+    'src/server.ts': 'import * as Sentry from "@sentry/node";\nSentry.init({ dsn: process.env.SENTRY_DSN, release: process.env.GIT_SHA });\n',
+  });
+  const serviceReport = auditRepo(service);
+  assert.deepEqual(serviceReport.observability.surfaces, ['service']);
+  assert.deepEqual(serviceReport.observability.surfaceEvidence.service, ['package.json']);
+  assert.equal(serviceReport.observability.status, 'pass');
+  assert.deepEqual(serviceReport.observability.checks.map((c) => c.rule), ['health', 'config']);
+
+  // Web app using a Sentry client SDK satisfies client capture and telemetry without a hand-rolled beacon.
+  const sentryWeb = makeFixture({
+    'package.json': '{"name":"web","dependencies":{"next":"16.0.0","react":"19.0.0","@sentry/nextjs":"9.0.0"}}\n',
+    'app/api/health/route.ts': 'export const GET = () => Response.json({ ok: true, version: process.env.VERCEL_GIT_COMMIT_SHA });\n',
+  });
+  const sentryReport = auditRepo(sentryWeb);
+  assert.deepEqual(sentryReport.observability.surfaces, ['web-app']);
+  assert.equal(sentryReport.observability.status, 'pass');
+  assert.match(observabilityById(sentryReport)['client-errors'].detail, /Sentry client SDK in package\.json/);
+
+  // A CSP report-uri/report-to directive is CSP capture when paired with a forwarded error listener.
+  const reportUri = makeFixture({
+    ...OBSERVABLE_WORKER,
+    'public/error-beacon.js': "addEventListener('unhandledrejection', (event) => fetch('/api/client-error', { method: 'POST', body: String(event.reason) }));\n",
+    'public/_headers': "/*\n  Content-Security-Policy: default-src 'self'; report-uri /api/csp-report\n",
+  });
+  assert.equal(observabilityById(auditRepo(reportUri))['client-errors'].status, 'pass');
+});
+
+test('observability audit reports actionable gaps for missing CSP/error capture, telemetry, and stub or absent health routes', () => {
+  // Worker + UI whose only listeners are commented out or log to the console instead of forwarding.
+  const silent = makeFixture({
+    ...OBSERVABLE_WORKER,
+    'wrangler.jsonc': '{\n  "name": "demo",\n  // "observability": { "enabled": true }\n  "main": "./src/worker.mjs"\n}\n',
+    'public/error-beacon.js': [
+      "// addEventListener('unhandledrejection', (event) => navigator.sendBeacon('/api/client-error', String(event.reason)));",
+      "document.addEventListener('securitypolicyviolation', (event) => console.warn(event.blockedURI));",
+      '',
+    ].join('\n'),
+  });
+  const silentReport = auditRepo(silent);
+  const silentRules = observabilityById(silentReport);
+  assert.equal(silentReport.observability.status, 'advisory');
+  assert.deepEqual(silentReport.observability.findings.map((f) => f.rule), ['config', 'client-errors']);
+  assert.equal(silentRules.health.status, 'pass');
+  assert.match(silentRules.config.detail, /wrangler\.jsonc does not enable Workers observability/);
+  assert.match(silentRules.config.fix, /"observability": \{ "enabled": true \}/);
+  assert.match(silentRules['client-errors'].detail, /Missing forwarded securitypolicyviolation \(CSP\) capture and unhandledrejection\/error capture; public\/error-beacon\.js listens but never forwards/);
+  assert.match(silentRules['client-errors'].fix, /same-origin beacon/);
+  const silentText = formatScorecard(silentReport);
+  assert.match(silentText, /\[ADV \] Production telemetry/);
+  assert.match(silentText, /\n {2}fix: Forward securitypolicyviolation, unhandledrejection, and error events/);
+
+  // Errors captured but CSP violations are not: the finding names exactly what is missing.
+  const noCsp = makeFixture({
+    ...OBSERVABLE_WORKER,
+    'public/error-beacon.js': "window.onerror = (message) => navigator.sendBeacon('/api/client-error', String(message));\n",
+  });
+  const noCspRule = observabilityById(auditRepo(noCsp))['client-errors'];
+  assert.equal(noCspRule.status, 'advisory');
+  assert.match(noCspRule.detail, /^Missing forwarded securitypolicyviolation \(CSP\) capture$/);
+
+  // Hardcoded stub health route and explicitly disabled or zero-sampled telemetry.
+  for (const wrangler of ['{ "observability": { "enabled": false } }', '{ "observability": { "enabled": true, "head_sampling_rate": 0 } }']) {
+    const stub = makeFixture({
+      ...OBSERVABLE_WORKER,
+      'wrangler.jsonc': wrangler,
+      'src/worker.mjs': "export default { fetch(request) { return new URL(request.url).pathname === '/healthz' ? new Response('ok') : new Response('hi'); } };\n",
+    });
+    const stubRules = observabilityById(auditRepo(stub));
+    assert.equal(stubRules.health.status, 'advisory');
+    assert.match(stubRules.health.detail, /src\/worker\.mjs returns no release or runtime identity \(looks like a hardcoded stub\)/);
+    assert.equal(stubRules.config.status, 'advisory', `expected telemetry gap for ${wrangler}`);
+  }
+
+  // No health route at all; a wrangler config string, a comment, and tests or tooling that mention /healthz do not count.
+  const noHealth = makeFixture({
+    'wrangler.jsonc': '{ "name": "demo", "assets": { "run_worker_first": ["/healthz"] }, "observability": { "enabled": true } }\n',
+    'src/worker.mjs': '// TODO: serve /healthz with the revision\nexport default { fetch() { return new Response("hi"); } };\n',
+    'scripts/smoke.mjs': "const res = await fetch(`${base}/healthz`); if ((await res.json()).revision !== expected) process.exit(1);\n",
+    'tests/health.test.mjs': "assert.equal((await get('/healthz')).version, '1.0.0');\n",
+  });
+  const noHealthReport = auditRepo(noHealth);
+  assert.deepEqual(noHealthReport.observability.surfaces, ['worker']);
+  assert.deepEqual(noHealthReport.observability.findings.map((f) => [f.id, f.detail]), [
+    ['observability-health', 'No /healthz or /api/health route found in source'],
+  ]);
+
+  // Service with no telemetry at all gets the generic telemetry finding.
+  const bareService = makeFixture({
+    'server.mjs': "import { createServer } from 'node:http';\ncreateServer((req, res) => res.end('ok')).listen(8080);\n",
+  });
+  const bareReport = auditRepo(bareService);
+  assert.deepEqual(bareReport.observability.surfaces, ['service']);
+  assert.deepEqual(bareReport.observability.surfaceEvidence.service, ['server.mjs']);
+  assert.deepEqual(bareReport.observability.findings.map((f) => f.rule), ['health', 'config']);
+  assert.match(observabilityById(bareReport).config.detail, /No production observability config or server-side error reporting found/);
+});
+
+test('observability gaps stay advisory by default and --strict-observability exits 1 with complete output', () => {
+  const failing = makeFixture({
+    'PRODUCT.md': '# Product\n',
+    'DESIGN.md': '# Design\n',
+    'AGENTS.md': '# Guide\n',
+    'README.md': '# Demo\n\n```sh\nnpm run dev\n```\n',
+    'Makefile': 'test:\n\tnode --test\n',
+    '.gitignore': '.env\n',
+    '.githooks/pre-commit': '#!/bin/sh\nexec gitleaks protect --staged\n',
+    'wrangler.toml': 'name = "demo"\nmain = "src/worker.mjs"\n',
+    'src/worker.mjs': "export default { fetch(request) { return new URL(request.url).pathname === '/healthz' ? new Response('ok') : new Response('hi'); } };\n",
+    'public/index.html': '<!doctype html>\n<html><head></head><body></body></html>\n',
+  });
+
+  // The 8-check baseline score and --strict are untouched by observability findings.
+  const report = auditRepo(failing);
+  assert.equal(report.summary.score, '8/8');
+  assert.equal(report.observability.findings.length, 3);
+  assert.equal(runCli([failing]).status, 0);
+  assert.equal(runCli([failing, '--strict']).status, 0);
+  assert.equal(runCli([failing, '--strict', '--strict-layout']).status, 0);
+
+  const strictText = runCli([failing, '--strict-observability']);
+  assert.equal(strictText.status, 1);
+  assert.match(strictText.stdout, /\[ADV \] Health endpoint/);
+  assert.match(strictText.stdout, /\[ADV \] Production telemetry/);
+  assert.match(strictText.stdout, /\[ADV \] Client error \+ CSP capture/);
+
+  const strictJson = runCli([failing, '--json', '--strict-observability']);
+  assert.equal(strictJson.status, 1);
+  const parsed = JSON.parse(strictJson.stdout);
+  assert.equal(parsed.observability.status, 'advisory');
+  assert.deepEqual(parsed.observability.findings.map((f) => f.id), ['observability-health', 'observability-config', 'observability-client-errors']);
+  assert.ok(parsed.observability.findings.every((f) => typeof f.fix === 'string' && f.fix.length > 0));
+
+  assert.equal(parseArgs(['--strict-observability']).strictObservability, true);
+  assert.equal(parseArgs(['.']).strictObservability, false);
+  assert.match(runCli(['--help']).stdout, /--strict-observability/);
+});
+
+test('.misty-check.allow observability: rules opt out per rule or wholesale without touching layout rules', () => {
+  // CLI-only repo that ships a local preview server and an HTML report: detected as a service + web app, opted out wholesale.
+  const cliFiles = {
+    'package.json': '{"name":"report-cli","bin":{"report":"./bin/report.mjs"}}\n',
+    'bin/report.mjs': "#!/usr/bin/env node\nimport { createServer } from 'node:http';\ncreateServer((req, res) => res.end('preview')).listen(0);\n",
+    'templates/report.html': '<!doctype html>\n<html><body>report</body></html>\n',
+  };
+  const unallowed = auditRepo(makeFixture(cliFiles));
+  assert.deepEqual(unallowed.observability.surfaces, ['web-app', 'service']);
+  assert.equal(unallowed.observability.findings.length, 3);
+
+  const cli = makeFixture({
+    ...cliFiles,
+    '.misty-check.allow': '# CLI-only: the preview server is local and never deployed.\nobservability:*  # no production runtime\n',
+  });
+  const cliReport = auditRepo(cli);
+  assert.equal(cliReport.observability.status, 'pass');
+  assert.deepEqual(cliReport.observability.findings, []);
+  assert.deepEqual(cliReport.observability.suppressed.map((s) => [s.rule, s.matchedPattern]), [
+    ['health', 'observability:*'],
+    ['config', 'observability:*'],
+    ['client-errors', 'observability:*'],
+  ]);
+  assert.ok(cliReport.observability.checks.every((c) => c.status === 'allowed'));
+  assert.equal(cliReport.observability.allowFile, '.misty-check.allow');
+  assert.equal(cliReport.layout.allowRuleCount, 0, 'observability lines are not layout path rules');
+  assert.match(formatScorecard(cliReport), /\[SKIP\] Health endpoint\s+Opted out via \.misty-check\.allow \(observability:\*\)/);
+  assert.equal(runCli([cli, '--strict-observability']).status, 0);
+
+  // Per-rule opt-out suppresses only that rule; the rest still fail --strict-observability.
+  const staticSite = makeFixture({
+    'index.html': '<!doctype html>\n<html><body>static docs</body></html>\n',
+    '.misty-check.allow': 'observability: health  # static pages, no runtime\nObservability:CONFIG\nwide-directory: legacy/\n',
+  });
+  const staticReport = auditRepo(staticSite);
+  assert.deepEqual(staticReport.observability.surfaces, ['web-app']);
+  assert.deepEqual(staticReport.observability.suppressed.map((s) => s.rule), ['health', 'config']);
+  assert.deepEqual(staticReport.observability.findings.map((f) => f.rule), ['client-errors']);
+  assert.equal(staticReport.layout.allowRuleCount, 1);
+  assert.equal(runCli([staticSite, '--strict-observability']).status, 1);
+
+  // An unknown rule never silently opts out: it is surfaced and the findings stay.
+  const typo = makeFixture({
+    'index.html': '<!doctype html>\n<html><body>static docs</body></html>\n',
+    '.misty-check.allow': 'observability:client-error\nobservability:\n',
+  });
+  const typoReport = auditRepo(typo);
+  assert.deepEqual(typoReport.observability.unknownAllowRules, ['observability:client-error']);
+  assert.equal(typoReport.observability.findings.length, 3);
+  assert.match(formatScorecard(typoReport), /\[WARN\] Unknown observability allow rule "observability:client-error"/);
+  assert.equal(runCli([typo, '--strict-observability']).status, 1);
+});
+
+test('observability audit does not apply to repos with no web app, worker, or service surface', () => {
+  const cliOnly = makeFixture({
+    'package.json': '{"name":"tool","bin":{"tool":"./bin/tool.mjs"}}\n',
+    'bin/tool.mjs': '#!/usr/bin/env node\nconsole.log("hi");\n',
+    // Tooling, tests, and fixtures that start throwaway servers or ship sample configs are not a deployed runtime.
+    'scripts/preview.mjs': "import { createServer } from 'node:http';\ncreateServer(() => {}).listen(0);\n",
+    'tests/server.test.mjs': "import { createServer } from 'node:http';\ncreateServer(() => {}).listen(0);\n",
+    'fixtures/worker/wrangler.toml': 'name = "sample"\n',
+    'node_modules/express/package.json': '{"name":"express","dependencies":{"express":"5.0.0"}}\n',
+  });
+  const report = auditRepo(cliOnly);
+  assert.equal(report.observability.applicable, false);
+  assert.equal(report.observability.status, 'not-applicable');
+  assert.deepEqual(report.observability.surfaces, []);
+  assert.deepEqual(report.observability.checks, []);
+  assert.match(formatScorecard(report), /Observability & auto-triage: not applicable \(no web app, worker, or service surface detected\)/);
+  assert.equal(runCli([cliOnly, '--strict-observability']).status, 0);
+  assert.equal(JSON.parse(runCli([cliOnly, '--json']).stdout).observability.status, 'not-applicable');
 });

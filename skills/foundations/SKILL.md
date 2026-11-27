@@ -1,6 +1,6 @@
 ---
 name: foundations
-description: "Baseline project-health standards and deterministic repo audit (misty-check.mjs) for every repository."
+description: "Baseline project-health standards and deterministic repo audit (misty-check.mjs) for every repository, with production observability, error and CSP capture, and auto-triage readiness as a default on anything deployed."
 ---
 
 # Foundations
@@ -15,7 +15,7 @@ Run `node skills/foundations/scripts/misty-check.mjs [path]` for a fast baseline
 - **Deterministic fast gate:** Reproducible lint, typecheck, and test checks that fail closed without external flakiness.
 - **Secret and env hygiene:** `.gitignore` excludes `.env*` and credentials; pre-commit/pre-push secret scanning gates commits; `.env.example` documents required variables.
 - **Truthful health endpoint (`/healthz`):** Live runtime exposes `/healthz` checking real service readiness and returning deployed commit or version identity — never a hardcoded stub.
-- **Loud errors, production monitoring, and automated incident triage:** Fail loudly with structured diagnostics, wire real production monitoring from day one, forward client-side `securitypolicyviolation` events and unhandled browser errors/rejections to Sentry so silent UI or CSP regressions scream immediately in production, and route production anomalies into automated incident triage with release and environment context for the human operator.
+- **Observability and auto-triage by default:** Non-negotiable on every deployed web app, worker, or service, from the first deploy and without anyone asking per project. Fail loudly with structured diagnostics; send server errors to a real error sink (Sentry, or platform observability such as Cloudflare Workers `observability.enabled`) tagged with release and environment; forward browser `error`, `unhandledrejection`, and `securitypolicyviolation` events so silent UI or CSP regressions scream immediately in production; and route production anomalies into automated incident triage for the human operator. Under a strict `connect-src 'self'` CSP, prefer a zero-SDK same-origin error beacon that the server forwards to Sentry or the error sink over loosening the policy for a vendor SDK.
 - **Explicit state machines & formal verification:** Surface implicit lifecycle, protocol, billing, queue, retry, lock, and multiplayer states as explicit, small, total transition tables/machines with clear invariants — backed by formal specs (e.g., Quint or TLA+) where state-space bugs are costly — instead of scattering boolean flags across handlers.
 - **Information-hiding modules & acyclic `uses` structure:** Hide each difficult or likely-to-change design decision behind one minimal-interface boundary rather than splitting by sequential flowchart steps sharing raw data structures; keep `uses` dependencies acyclic so lower levels never depend upward.
 - **Deterministic Simulation Testing (DST) over unit-test sprawl:** For stateful, concurrent, multiplayer, billing, or queue-driven domains, prefer seeded deterministic simulators driving thousands of randomized valid and adversarial action sequences against explicit invariants over brittle piles of mocked unit tests.
@@ -32,7 +32,17 @@ These conditional baselines apply by product kind without repeating them in repo
 - **Web App:** Brand mark + multi-size favicon and Apple touch icon, mobile/desktop ergonomics (`390px` + `1440px`), light/dark parity, installable PWA basics (`manifest.webmanifest` + standalone viewport), and clean OG/meta tags.
 - **Native / Desktop App:** OS-native conventions, system theme parity, clean permissions/clipboard hygiene, and a packaged/runnable artifact.
 - **CLI / Service:** Crisp `--help`, non-interactive `--json`, and deterministic exit codes.
-- **Evidence / Artifact / Retro:** Calm editorial layout, one focal idea per screen or beat, scannable tables (`<= 4` columns), and zero dark-HUD pill soup.
+- **Evidence / Artifact / Retro:** A self-contained interactive HTML briefing (never a narrated slideshow video; see the `present` skill) with calm editorial layout, one focal idea per screen or beat, scannable tables (`<= 4` columns), and zero dark-HUD pill soup.
+
+## Observability and auto-triage guard
+
+`misty-check.mjs` audits every detected web app, worker, or service, because a deployed product that cannot report its own failures leaves the human operator to learn of them from users. Each gap carries an actionable fix in text and `--json` output (`observability`):
+
+- **Health endpoint:** a real `/healthz` or `/api/health` route returning release or runtime identity, not a hardcoded stub.
+- **Production telemetry:** Cloudflare Workers `observability.enabled` (or log forwarding) in `wrangler.*`, or server-side error reporting such as Sentry DSN wiring or OpenTelemetry.
+- **Client error and CSP capture (web apps):** forwarded `securitypolicyviolation` plus `unhandledrejection` or `error` listeners (the zero-SDK same-origin beacon), or a Sentry client SDK.
+
+Advisory by default (never changes the baseline score or `--strict`); pass `--strict-observability` to fail with exit code `1` on unallowed gaps. Opt out of a rule that does not fit, such as a CLI-only tool with a local preview server or a static library page, with an `observability:health`, `observability:config`, `observability:client-errors`, or `observability:*` line in `.misty-check.allow`, each carrying its justification as a comment.
 
 ## Structural layout guard (deep modules)
 

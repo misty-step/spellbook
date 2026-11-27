@@ -46,9 +46,10 @@ Run `misty-check` directly:
 node skills/foundations/scripts/misty-check.mjs /path/to/repo            # scorecard
 node skills/foundations/scripts/misty-check.mjs /path/to/repo --json     # machine-readable
 node skills/foundations/scripts/misty-check.mjs /path/to/repo --strict-layout
+node skills/foundations/scripts/misty-check.mjs /path/to/repo --strict-observability
 ```
 
-List intentional legacy exceptions in a repo-root `.misty-check.allow` (one path or glob per line, `#` comments allowed).
+List intentional legacy exceptions in a repo-root `.misty-check.allow` (one path or glob per line, `#` comments allowed). The observability audit applies to web apps, workers, and services; opt a repository out of a rule that does not fit with an `observability:` line such as `observability:client-errors` or `observability:*`.
 
 ## Stable names
 
