@@ -1,6 +1,6 @@
 ---
 name: present
-description: "Show, don't tell: hand back multi-step, long-running, or overnight work as a reader-first visual catch-up — Reader-First Medium Ladder, 5-Beat Catch-Up Frame (Look at this · What differs · Pay attention to · Why · Needs you), and Execution Route Maps for agent behavior."
+description: "Show, don't tell: hand back multi-step, long-running, or overnight work as a reader-first visual catch-up — Reader-First Medium Ladder, self-contained interactive HTML briefings (replacing narrated retro videos) for catch-ups, night-shift summaries, and release briefings, 5-Beat Catch-Up Frame (Look at this · What differs · Pay attention to · Why · Needs you), and Execution Route Maps for agent behavior."
 ---
 
 # Present
@@ -13,7 +13,16 @@ Choose the lowest rung that carries the meaning without loss — never climb for
 
 1. **Three lines of text** — a simple answer, a single fact, a pass/fail outcome. No headings, no decoration.
 2. **Inline visual** — a diagram, side-by-side, small table, or chart whenever the substance is architecture, routing, sequence, comparison, or trend.
-3. **Interactive comparison or walkthrough** — a live preview, variant picker, stepped screenshot sequence, or short recorded walkthrough for multi-variant prototypes, UI changes, and long shifts that touched many threads.
+3. **Interactive HTML briefing** — one self-contained page with a live comparison, variant picker, real charts, and embedded proof for multi-variant prototypes, UI changes, releases, and long shifts that touched many threads.
+
+## Interactive HTML Briefings
+
+Narrated slideshow retro videos are retired. A narrated video holds the reader to the author's pace, cannot be skimmed, searched, or questioned, and shows slides about the work instead of the work. Deliver every catch-up, night-shift summary, and release briefing that outgrows an inline visual as one self-contained, interactive HTML artifact the reader scans in seconds and drills into where it matters:
+
+- **Real data, drawn live** — interactive SVG or Canvas charts, timelines, sparklines, pass/fail matrices, and architecture or state diagrams built from the run's actual numbers, with detail on hover and focus; never a decorative or invented figure.
+- **Real verification evidence** — embedded playable `.mp4` or `.webm` walkthroughs of what actually shipped and side-by-side before/after screenshots, each beside the claim it proves. Video survives as evidence inside the briefing, never as the briefing.
+- **Calm Editorial craft** — type-led hierarchy, one focal idea per screen, light/dark parity, and comfortable reading at `390px` and `1440px`.
+- **Opens anywhere, breaks nowhere** — zero external CDN dependencies (styles, scripts, fonts, and media travel with the page), and safe on an opaque origin such as a `sandbox="allow-scripts"` frame or a local file: `<button type="button">` handlers instead of `<form>` submits, no reliance on storage, cookies, or cross-origin requests, and `0` CSP violations or console errors when opened in a headed browser.
 
 ## 5-Beat Catch-Up Frame
 
