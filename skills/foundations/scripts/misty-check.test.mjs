@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
@@ -1068,4 +1068,247 @@ test('observability audit does not apply to repos with no web app, worker, or se
   assert.match(formatScorecard(report), /Observability & auto-triage: not applicable \(no web app, worker, or service surface detected\)/);
   assert.equal(runCli([cliOnly, '--strict-observability']).status, 0);
   assert.equal(JSON.parse(runCli([cliOnly, '--json']).stdout).observability.status, 'not-applicable');
+});
+
+const OBSERVABILITY_SCRIPT = fileURLToPath(new URL('./misty-check-observability.mjs', import.meta.url));
+
+function fillerFiles(dir, count) {
+  return Object.fromEntries(Array.from({ length: count }, (_, i) => [`${dir}/f${String(i).padStart(4, '0')}.json`, '{}\n']));
+}
+
+// A Worker with a truthful health route and telemetry on: nothing for the audit to report once it is seen.
+const HEALTHY_WORKER = {
+  'src/worker.mjs': "const revision = 'abc1234';\nexport default { fetch(request) { return new URL(request.url).pathname === '/healthz' ? Response.json({ ok: true, revision }) : new Response('hi'); } };\n",
+  'wrangler.toml': 'name = "demo"\nmain = "src/worker.mjs"\n\n[observability]\nenabled = true\n',
+};
+
+test('--strict-observability fails closed when the 2,000-file scan cap is hit, even with no findings', () => {
+  // 1. Under the cap the Worker is reached and passes: the fixture has nothing to report.
+  const reached = makeFixture({ ...fillerFiles('data', 1998), ...HEALTHY_WORKER });
+  const reachedReport = auditRepo(reached);
+  assert.deepEqual(reachedReport.observability.surfaces, ['worker']);
+  assert.equal(reachedReport.observability.truncated, false);
+  assert.deepEqual(reachedReport.observability.truncationReasons, []);
+  assert.equal(reachedReport.observability.status, 'pass');
+  assert.equal(runCli([reached, '--strict-observability']).status, 0);
+
+  // 2. More than 2,000 scannable files sort before the Worker config: no surface is ever seen, so there are
+  //    no findings, and an unconfirmed "not applicable" must not pass the strict gate.
+  const capped = makeFixture({ ...fillerFiles('data', 2000), ...HEALTHY_WORKER });
+  const cappedReport = auditRepo(capped);
+  assert.deepEqual(cappedReport.observability.surfaces, []);
+  assert.equal(cappedReport.observability.applicable, false);
+  assert.deepEqual(cappedReport.observability.findings, []);
+  assert.equal(cappedReport.observability.truncated, true);
+  assert.deepEqual(cappedReport.observability.truncationReasons, ['max files 2,000']);
+  assert.equal(cappedReport.observability.status, 'advisory');
+  const cappedText = formatScorecard(cappedReport);
+  assert.match(cappedText, /Observability & auto-triage: no web app, worker, or service surface detected before the scan stopped/);
+  assert.match(cappedText, /\[ADV \] Observability scan incomplete \(max files 2,000\): .*--strict-observability fails closed/);
+  assert.doesNotMatch(cappedText, /not applicable/);
+
+  // Truncation stays advisory without the flag and never touches --strict-layout.
+  assert.equal(runCli([capped]).status, 0);
+  assert.equal(runCli([capped, '--strict-layout']).status, 0);
+  const cappedStrict = runCli([capped, '--strict-observability']);
+  assert.equal(cappedStrict.status, 1);
+  assert.match(cappedStrict.stdout, /Observability scan incomplete \(max files 2,000\)/);
+  const cappedJson = runCli([capped, '--json', '--strict-observability']);
+  assert.equal(cappedJson.status, 1);
+  const parsed = JSON.parse(cappedJson.stdout);
+  assert.equal(parsed.observability.truncated, true);
+  assert.deepEqual(parsed.observability.findings, []);
+  assert.equal(parsed.observability.status, 'advisory');
+
+  // 3. Every rule passes on what was scanned, but the cap is hit afterwards: still incomplete, still exit 1.
+  const exact = makeFixture({ ...OBSERVABLE_WORKER, ...fillerFiles('zzz', 1996) });
+  const exactReport = auditRepo(exact);
+  assert.equal(exactReport.observability.truncated, false, 'exactly 2,000 scanned files is a complete scan');
+  assert.equal(exactReport.observability.status, 'pass');
+  assert.equal(runCli([exact, '--strict-observability']).status, 0);
+
+  const overflow = makeFixture({ ...OBSERVABLE_WORKER, ...fillerFiles('zzz', 1997) });
+  const overflowReport = auditRepo(overflow);
+  assert.deepEqual(overflowReport.observability.checks.map((c) => c.status), ['pass', 'pass', 'pass']);
+  assert.deepEqual(overflowReport.observability.findings, []);
+  assert.equal(overflowReport.observability.truncated, true);
+  assert.equal(overflowReport.observability.status, 'advisory');
+  assert.match(formatScorecard(overflowReport), /\[OK {2}\] Health endpoint[^\n]*\n[^]*\[ADV \] Observability scan incomplete \(max files 2,000\)/);
+  assert.equal(runCli([overflow, '--strict-observability']).status, 1);
+
+  // An opt-out silences rules, not the scan: the report still says it is incomplete and the gate still fails.
+  const optedOut = makeFixture({ ...OBSERVABLE_WORKER, ...fillerFiles('zzz', 1997), '.misty-check.allow': 'observability:*  # audited elsewhere\n' });
+  assert.equal(auditRepo(optedOut).observability.truncated, true);
+  assert.equal(runCli([optedOut, '--strict-observability']).status, 1);
+
+  // 4. A gap found in a capped scan says the scan was incomplete instead of presenting itself as settled.
+  const cappedGap = makeFixture({ 'app/server.mjs': "import { createServer } from 'node:http';\ncreateServer((req, res) => res.end('ok')).listen(8080);\n", ...fillerFiles('data', 2000) });
+  const cappedGapReport = auditRepo(cappedGap);
+  assert.deepEqual(cappedGapReport.observability.findings.map((f) => f.detail), [
+    'No /healthz or /api/health route found in source (scan incomplete: max files 2,000)',
+    'No production observability config or server-side error reporting found (scan incomplete: max files 2,000)',
+  ]);
+});
+
+test(
+  '--strict-observability fails closed on unreadable directories and files',
+  // Mode bits are not enforced for root or a process holding CAP_DAC_READ_SEARCH; run under
+  // `setpriv --inh-caps=-all --ambient-caps=-all` (or as a normal user) to exercise this.
+  { skip: modeBitsAreEnforced() ? false : 'file mode bits are not enforced for this process' },
+  () => {
+    const strict = (repo) => {
+      const result = runCli([repo, '--json', '--strict-observability']);
+      return { status: result.status, observability: JSON.parse(result.stdout).observability };
+    };
+    const assertFailsClosed = (repo, reason) => {
+      const out = strict(repo);
+      assert.equal(out.status, 1, `expected --strict-observability to exit 1 for ${reason}`);
+      assert.equal(out.observability.truncated, true);
+      assert.deepEqual(out.observability.truncationReasons, [reason]);
+      assert.deepEqual(out.observability.findings, [], 'the unreadable path hid the surface, so there is nothing to find');
+      assert.equal(out.observability.status, 'advisory');
+      assert.equal(runCli([repo]).status, 0, 'an incomplete scan stays advisory without the flag');
+      assert.match(runCli([repo]).stdout, new RegExp(`\\[ADV \\] Observability scan incomplete \\(${reason}\\)`));
+    };
+    const assertRestored = (repo) => {
+      const out = strict(repo);
+      assert.equal(out.status, 0);
+      assert.equal(out.observability.truncated, false);
+      assert.deepEqual(out.observability.surfaces, ['worker']);
+      assert.equal(out.observability.status, 'pass');
+    };
+    const nested = Object.fromEntries(Object.entries(HEALTHY_WORKER).map(([rel, content]) => [`deploy/${rel}`, content]));
+
+    // 1. The Worker lives in a directory the scan cannot list.
+    const dirRepo = makeFixture(nested);
+    const privateDir = path.join(dirRepo, 'deploy');
+    chmodSync(privateDir, 0o000);
+    try {
+      assertFailsClosed(dirRepo, 'unreadable directory');
+    } finally {
+      chmodSync(privateDir, 0o700);
+    }
+    assertRestored(dirRepo);
+
+    // 2. The Worker config itself cannot be read.
+    const fileRepo = makeFixture(HEALTHY_WORKER);
+    const privateFile = path.join(fileRepo, 'wrangler.toml');
+    chmodSync(privateFile, 0o000);
+    try {
+      assertFailsClosed(fileRepo, 'unreadable file');
+    } finally {
+      chmodSync(privateFile, 0o600);
+    }
+    assertRestored(fileRepo);
+
+    // 3. A directory that can be listed but not entered: its entries are named yet unreadable.
+    const listOnlyRepo = makeFixture(nested);
+    const listOnlyDir = path.join(listOnlyRepo, 'deploy');
+    chmodSync(listOnlyDir, 0o400);
+    try {
+      const out = strict(listOnlyRepo);
+      assert.equal(out.status, 1);
+      assert.equal(out.observability.truncated, true);
+      assert.ok(out.observability.truncationReasons.every((reason) => /^unreadable (?:directory|file)$/.test(reason)));
+    } finally {
+      chmodSync(listOnlyDir, 0o700);
+    }
+    assertRestored(listOnlyRepo);
+
+    // 4. Unreadable paths the audit never needs (skipped directories, non-source files) do not mark it incomplete.
+    const irrelevantRepo = makeFixture({ ...HEALTHY_WORKER, 'node_modules/dep/index.js': 'module.exports = 1;\n', 'assets/logo.png': 'png' });
+    const skippedDir = path.join(irrelevantRepo, 'node_modules');
+    const skippedFile = path.join(irrelevantRepo, 'assets/logo.png');
+    chmodSync(skippedDir, 0o000);
+    chmodSync(skippedFile, 0o000);
+    try {
+      assertRestored(irrelevantRepo);
+    } finally {
+      chmodSync(skippedDir, 0o700);
+      chmodSync(skippedFile, 0o600);
+    }
+  },
+);
+
+test('baseline health check accepts /api/health wherever the observability audit does', () => {
+  const baseline = {
+    'PRODUCT.md': '# Product\n\nPresent-tense user stories.\n',
+    'DESIGN.md': '# Design\n\nTypography and color tokens.\n',
+    'AGENTS.md': '# Repo\n\nConcise agent guide.\n',
+    'README.md': '# Demo\n\nRun locally:\n\n```sh\nnpm run dev\n```\n',
+    'Makefile': 'test:\n\n\tnode --test\n',
+    '.gitignore': 'node_modules/\n.env\n.env.*\n!.env.example\n',
+    '.githooks/pre-commit': '#!/bin/sh\nexec trufflehog filesystem .\n',
+  };
+  const healthOf = (report) => report.checks.find((c) => c.id === 'healthz');
+
+  // 1. File-routed /api/health (Next.js App Router): the path never appears as a string in the source.
+  const fileRouted = makeFixture({
+    ...baseline,
+    'package.json': '{"name":"web","dependencies":{"next":"16.0.0","react":"19.0.0","@sentry/nextjs":"9.0.0"}}\n',
+    'app/api/health/route.ts': 'export const GET = () => Response.json({ ok: true, version: process.env.VERCEL_GIT_COMMIT_SHA });\n',
+  });
+  const fileReport = auditRepo(fileRouted);
+  assert.equal(fileReport.summary.score, '8/8');
+  assert.equal(healthOf(fileReport).status, 'pass');
+  assert.equal(healthOf(fileReport).detail, 'Referenced in app/api/health/route.ts');
+  assert.equal(observabilityById(fileReport).health.status, 'pass');
+  assert.deepEqual(observabilityById(fileReport).health.evidence, ['app/api/health/route.ts']);
+  assert.equal(fileReport.observability.status, 'pass');
+  const fileText = formatScorecard(fileReport);
+  assert.match(fileText, /\[PASS\] \/healthz endpoint {3}Referenced in app\/api\/health\/route\.ts/);
+  assert.match(fileText, /\[OK {2}\] Health endpoint\s+Health route reports release\/runtime identity in app\/api\/health\/route\.ts/);
+  assert.doesNotMatch(fileText, /\[GAP \]/);
+  assert.doesNotMatch(fileText, /\[ADV \] Health endpoint/);
+  assert.equal(runCli([fileRouted, '--strict', '--strict-observability']).status, 0);
+
+  // 2. /api/health registered as a route string on a service.
+  const inline = makeFixture({
+    ...baseline,
+    'package.json': '{"name":"api","dependencies":{"express":"5.0.0","@sentry/node":"9.0.0"}}\n',
+    'src/server.ts': "import express from 'express';\nconst app = express();\napp.get('/api/health', (req, res) => res.json({ status: 'ok', commit: process.env.GIT_SHA }));\napp.listen(8080);\n",
+  });
+  const inlineReport = auditRepo(inline);
+  assert.equal(healthOf(inlineReport).status, 'pass');
+  assert.equal(healthOf(inlineReport).detail, 'Referenced in src/server.ts');
+  assert.equal(observabilityById(inlineReport).health.status, 'pass');
+  assert.equal(runCli([inline, '--strict', '--strict-observability']).status, 0);
+
+  // 3. /healthz keeps passing both, and both checks agree on what is not a health route.
+  assert.equal(healthOf(auditRepo(makeFixture({ ...baseline, ...HEALTHY_WORKER }))).status, 'pass');
+  for (const source of [
+    "app.get('/api/healthcheck', (req, res) => res.json({ commit: process.env.GIT_SHA }));\n",
+    "app.get('/health', (req, res) => res.json({ commit: process.env.GIT_SHA }));\n",
+    "// TODO: serve /api/health with the commit\napp.get('/', (req, res) => res.send('hi'));\n",
+  ]) {
+    const report = auditRepo(makeFixture({
+      ...baseline,
+      'package.json': '{"name":"api","dependencies":{"express":"5.0.0"}}\n',
+      'src/server.ts': `import express from 'express';\nconst app = express();\n${source}app.listen(8080);\n`,
+    }));
+    assert.equal(healthOf(report).status, 'gap', `expected baseline health gap for ${JSON.stringify(source)}`);
+    assert.equal(healthOf(report).detail, 'No /healthz or /api/health route or reference found in code/config');
+    assert.equal(observabilityById(report).health.status, 'advisory', `expected observability health gap for ${JSON.stringify(source)}`);
+  }
+});
+
+test('a standalone copy needs its sibling module, and the copied auditor is not health evidence', () => {
+  // Both files copied together: the script runs, and its own rule text (which names /healthz) does not
+  // satisfy the health check of the repository it was copied into.
+  const both = makeFixture({ 'tools/.keep': '' });
+  copyFileSync(SCRIPT, path.join(both, 'tools/misty-check.mjs'));
+  copyFileSync(OBSERVABILITY_SCRIPT, path.join(both, 'tools/misty-check-observability.mjs'));
+  const copied = spawnSync(process.execPath, [path.join(both, 'tools/misty-check.mjs'), both, '--json'], { encoding: 'utf8' });
+  assert.equal(copied.status, 0, copied.stderr);
+  const copiedReport = JSON.parse(copied.stdout);
+  assert.equal(copiedReport.checks.find((c) => c.id === 'healthz').status, 'gap');
+  assert.equal(copiedReport.observability.status, 'not-applicable');
+
+  // The main script alone cannot start: the import of the sibling module fails before any audit runs.
+  const alone = makeFixture({ 'tools/.keep': '' });
+  copyFileSync(SCRIPT, path.join(alone, 'tools/misty-check.mjs'));
+  const missing = spawnSync(process.execPath, [path.join(alone, 'tools/misty-check.mjs'), alone], { encoding: 'utf8' });
+  assert.notEqual(missing.status, 0);
+  assert.match(missing.stderr, /ERR_MODULE_NOT_FOUND/);
+  assert.match(missing.stderr, /misty-check-observability\.mjs/);
 });
