@@ -43,7 +43,7 @@ export const TOOL_SCRIPTS = [
     language: 'JavaScript (Node built-ins only)',
     modules: ['skills/foundations/scripts/misty-check-observability.mjs'],
     command: 'node skills/foundations/scripts/misty-check.mjs [path] [--json] [--strict] [--strict-layout] [--strict-observability]',
-    summary: 'Deterministic ~1-second repository baseline auditor checking PRODUCT.md and DESIGN.md presence (with advisory Active Folio and surface-class summaries that never reject custom structures or non-web repos), structural layout thresholds (<=15 source files/dir, <=2,000 LOC/file, .misty-check.allow), production observability on web apps, workers, and services (truthful health endpoint, telemetry config, client error and CSP capture), agent guide, local run docs, test/lint scripts, secret hygiene, and /healthz.',
+    summary: 'Deterministic ~1-second repository baseline auditor checking PRODUCT.md and DESIGN.md presence (with advisory Active Folio and surface-class summaries that never reject custom structures or non-web repos), structural layout thresholds (<=15 source files/dir, <=2,000 LOC/file, .misty-check.allow), production observability on web apps, workers, and services (truthful health endpoint, telemetry config, client error and CSP capture), agent guide, local run docs, test/lint scripts, secret hygiene, and a /healthz or /api/health endpoint.',
   },
   {
     id: 'extract-conflict-context',

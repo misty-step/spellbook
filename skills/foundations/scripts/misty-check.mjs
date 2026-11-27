@@ -12,7 +12,7 @@ import { closeSync, constants as fsConstants, existsSync, fstatSync, lstatSync, 
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { formatObservability, inspectObservability } from './misty-check-observability.mjs';
+import { formatObservability, inspectObservability, referencesHealthRoute, SELF_RE } from './misty-check-observability.mjs';
 
 const SKIP_DIRS = new Set([
   '.git',
@@ -47,7 +47,6 @@ const HASH_COMMENT_EXTENSIONS = new Set(['.py', '.sh', '.rb', '.yaml', '.yml', '
 const MAX_SCAN_DEPTH = 6;
 const MAX_FILE_BYTES = 256 * 1024;
 const MAX_FILES_SCANNED = 2000;
-const HEALTHZ_RE = /\/healthz(?![a-z0-9_-])/i;
 const SHELL_FENCE_LANGS = new Set(['', 'sh', 'shell', 'bash', 'zsh', 'console', 'cmd', 'powershell', 'pwsh']);
 const RUN_COMMAND_RE = /^\s*(?:\$\s*)?(?:[A-Z_][A-Z0-9_]*=\S+\s+)*(?:npm|pnpm|yarn|bun|node|deno|python3?|pytest|uv|cargo|go|make|just|docker|podman|npx|tsx|\.\.?\/[\w./-]+)(?:\s|$)/m;
 const SCANNER_NAMES = '(?:trufflehog|gitleaks|detect-secrets|git-secrets|secretlint)';
@@ -734,7 +733,7 @@ function checkHealthzEndpoint(rootReal) {
       }
       if (!entry.isFile()) continue;
       const rel = path.relative(rootReal, full).replaceAll(path.sep, '/');
-      if (/(^|\/)misty-check(\.test)?\.mjs$/.test(rel)) continue;
+      if (SELF_RE.test(rel)) continue;
       const ext = path.extname(entry.name).toLowerCase();
       if (!CODE_EXTENSIONS.has(ext) && !CODE_BASENAMES.has(entry.name)) continue;
       scanned += 1;
@@ -744,7 +743,7 @@ function checkHealthzEndpoint(rootReal) {
         const text = readFileSync(full, 'utf8');
         if (text.includes('\0')) continue;
         const codeOnly = stripComments(text, ext);
-        if (HEALTHZ_RE.test(codeOnly)) matches.push(rel);
+        if (referencesHealthRoute(rel, codeOnly)) matches.push(rel);
       } catch {
         // Ignore unreadable files.
       }
@@ -765,7 +764,7 @@ function checkHealthzEndpoint(rootReal) {
     id: 'healthz',
     label: '/healthz endpoint',
     status: 'gap',
-    detail: `No /healthz route or reference found in code/config${suffix}`,
+    detail: `No /healthz or /api/health route or reference found in code/config${suffix}`,
   };
 }
 
@@ -1638,6 +1637,7 @@ const USAGE = [
   '  --strict-observability',
   '                   Exit with code 1 when a web app, worker, or service has an unallowed observability gap',
   '                   (truthful health endpoint, production telemetry config, client error + CSP capture)',
+  '                   or the observability scan is incomplete (file cap, unreadable directory or file)',
   '  -h,--help        Show this help text',
   '',
   'Grandfather legacy layout exceptions in a repo-root .misty-check.allow file',
@@ -1666,7 +1666,7 @@ if (isDirectInvocation()) {
       if (
         (opts.strict && report.summary.gaps > 0) ||
         (opts.strictLayout && (report.layout.findings.length > 0 || report.layout.truncated)) ||
-        (opts.strictObservability && report.observability.findings.length > 0)
+        (opts.strictObservability && (report.observability.findings.length > 0 || report.observability.truncated))
       ) {
         process.exitCode = 1;
       }

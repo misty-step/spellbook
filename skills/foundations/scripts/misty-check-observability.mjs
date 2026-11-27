@@ -6,7 +6,9 @@
  * (truthful health endpoint, production telemetry, client error + CSP capture).
  * Detection is heuristic and bounded; findings are advisory unless the caller
  * enforces them (`--strict-observability`) and can be opted out per rule via
- * `observability:` lines in `.misty-check.allow`.
+ * `observability:` lines in `.misty-check.allow`. A scan that could not see the
+ * whole repository (file cap, unreadable paths) reports `truncated` so strict
+ * callers fail closed instead of trusting a partial answer.
  */
 
 import { lstatSync, readdirSync, readFileSync } from 'node:fs';
@@ -24,7 +26,8 @@ const SKIP_DIRS = new Set([
   '__tests__', 'test', 'tests', 'fixtures', '__fixtures__', 'testdata',
 ]);
 const TEST_FILE_RE = /\.(?:test|spec)\.[^/]+$/i;
-const SELF_RE = /(?:^|\/)misty-check[\w-]*\.mjs$/;
+/** The auditor's own files (script, sibling modules, tests): their rule text is not the audited repo's evidence. */
+export const SELF_RE = /(?:^|\/)misty-check[\w-]*(?:\.test)?\.mjs$/;
 // Build, release, and check tooling may start throwaway servers or probe health; it is not the deployed runtime.
 const TOOLING_PATH_RE = /(?:^|\/)(?:scripts|tools|tooling|\.github)\//i;
 
@@ -175,6 +178,11 @@ function hasIdentitySignal(text) {
   return false;
 }
 
+/** True when a file names a health route (`/healthz` or `/api/health`) or is itself a file-based one. */
+export function referencesHealthRoute(rel, code) {
+  return HEALTH_FILE_ROUTE_RE.test(rel) || HEALTH_ROUTE_RE.test(code);
+}
+
 function healthRouteVerdict(rel, code) {
   if (HEALTH_FILE_ROUTE_RE.test(rel)) return hasIdentitySignal(code) ? 'real' : 'stub';
   const lines = code.split(/\r?\n/);
@@ -267,7 +275,7 @@ function collectSignals(rootReal) {
     serverReporting: [], sentryClient: [], cspCapture: [], errorCapture: [], listenOnly: [],
   };
   let scanned = 0;
-  let truncated = false;
+  const truncationReasons = new Set();
   const record = (list, rel) => {
     if (list.length < EVIDENCE_LIMIT && !list.includes(rel)) list.push(rel);
   };
@@ -334,6 +342,7 @@ function collectSignals(rootReal) {
     try {
       entries = readdirSync(dir, { withFileTypes: true });
     } catch {
+      truncationReasons.add('unreadable directory');
       return;
     }
     entries.sort((a, b) => a.name.localeCompare(b.name));
@@ -352,7 +361,7 @@ function collectSignals(rootReal) {
         CONFIG_BASENAMES.has(entry.name) || /^requirements[\w.-]*\.txt$/i.test(entry.name);
       if (!wanted) continue;
       if (scanned >= MAX_FILES) {
-        truncated = true;
+        truncationReasons.add(`max files ${MAX_FILES.toLocaleString('en-US')}`);
         return;
       }
       scanned += 1;
@@ -362,13 +371,14 @@ function collectSignals(rootReal) {
         const text = readFileSync(full, 'utf8');
         if (!text.includes('\0')) inspectFile(rel, entry.name, text);
       } catch {
-        // Ignore unreadable files.
+        // A file the scan could not read may be the one holding the surface or the gap: fail closed.
+        truncationReasons.add('unreadable file');
       }
     }
   }
 
   walk(rootReal, 0);
-  return { signals, truncated };
+  return { signals, truncationReasons: [...truncationReasons] };
 }
 
 function evaluateRules(signals, surfaces) {
@@ -439,7 +449,8 @@ function evaluateRules(signals, surfaces) {
  * @param {{ webApp?: boolean, allowFile?: string | null, allowRules?: Array<{ token: string, rawPattern: string }> }} options
  */
 export function inspectObservability(rootReal, { webApp = false, allowFile = null, allowRules = [] } = {}) {
-  const { signals, truncated } = collectSignals(rootReal);
+  const { signals, truncationReasons } = collectSignals(rootReal);
+  const truncated = truncationReasons.length > 0;
   const surfaces = [
     webApp ? 'web-app' : null,
     signals.worker.length > 0 ? 'worker' : null,
@@ -448,9 +459,10 @@ export function inspectObservability(rootReal, { webApp = false, allowFile = nul
   const known = allowRules.filter(({ token }) => token === '*' || token === 'all' || OBSERVABILITY_RULES.includes(token));
   const unknownAllowRules = allowRules.filter((entry) => !known.includes(entry)).map(({ rawPattern }) => rawPattern);
   const surfaceEvidence = { worker: signals.worker, service: signals.service };
-  const base = { advisoryOnly: true, applicable: surfaces.length > 0, surfaces, surfaceEvidence, truncated, allowFile, unknownAllowRules };
+  const base = { advisoryOnly: true, applicable: surfaces.length > 0, surfaces, surfaceEvidence, truncated, truncationReasons, allowFile, unknownAllowRules };
   if (surfaces.length === 0) {
-    return { ...base, status: 'not-applicable', findings: [], suppressed: [], checks: [] };
+    // An incomplete scan cannot prove there is no surface, so it never reports a clean 'not-applicable'.
+    return { ...base, status: truncated ? 'advisory' : 'not-applicable', findings: [], suppressed: [], checks: [] };
   }
 
   const findings = [];
@@ -458,7 +470,7 @@ export function inspectObservability(rootReal, { webApp = false, allowFile = nul
   const checks = evaluateRules(signals, surfaces).map(({ rule, label, ok, evidence, detail, fix }) => {
     const id = `observability-${rule}`;
     if (ok) return { id, rule, label, status: 'pass', detail, evidence };
-    const scanNote = truncated ? ` (scan capped at ${MAX_FILES} files)` : '';
+    const scanNote = truncated ? ` (scan incomplete: ${truncationReasons.join(', ')})` : '';
     const allow = known.find(({ token }) => token === rule || token === '*' || token === 'all');
     if (allow) {
       suppressed.push({ id, rule, label, detail: `${detail}${scanNote}`, matchedPattern: allow.rawPattern });
@@ -467,14 +479,20 @@ export function inspectObservability(rootReal, { webApp = false, allowFile = nul
     findings.push({ id, rule, label, detail: `${detail}${scanNote}`, fix });
     return { id, rule, label, status: 'advisory', detail: `${detail}${scanNote}`, fix, evidence };
   });
-  return { ...base, status: findings.length === 0 ? 'pass' : 'advisory', findings, suppressed, checks };
+  return { ...base, status: findings.length === 0 && !truncated ? 'pass' : 'advisory', findings, suppressed, checks };
 }
 
 export function formatObservability(observability) {
   if (!observability) return [];
   const warnings = observability.unknownAllowRules.map((raw) => `[WARN] Unknown observability allow rule "${raw}" (use observability:health, observability:config, observability:client-errors, or observability:*)`);
+  const incomplete = observability.truncated
+    ? [`[ADV ] Observability scan incomplete (${observability.truncationReasons.join(', ')}): unscanned paths may hold a surface or evidence this audit missed; --strict-observability fails closed`]
+    : [];
   if (!observability.applicable) {
-    return ['', 'Observability & auto-triage: not applicable (no web app, worker, or service surface detected)', ...warnings];
+    const headline = observability.truncated
+      ? 'Observability & auto-triage: no web app, worker, or service surface detected before the scan stopped'
+      : 'Observability & auto-triage: not applicable (no web app, worker, or service surface detected)';
+    return ['', headline, ...incomplete, ...warnings];
   }
   const lines = ['', `Observability & auto-triage (${observability.surfaces.join(', ')}; advisory, enforce with --strict-observability):`];
   const width = Math.max(...observability.checks.map((c) => c.label.length));
@@ -483,5 +501,5 @@ export function formatObservability(observability) {
     lines.push(`${tag} ${check.label.padEnd(width)}  ${check.detail}`);
     if (check.status === 'advisory' && check.fix) lines.push(`  fix: ${check.fix}`);
   }
-  return [...lines, ...warnings];
+  return [...lines, ...incomplete, ...warnings];
 }
