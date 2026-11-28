@@ -50,6 +50,26 @@ export const TOOL_SCRIPTS = [
     summary: 'Deterministic ~1-second repository baseline auditor checking PRODUCT.md and DESIGN.md presence (with advisory Active Folio and surface-class summaries that never reject custom structures or non-web repos), structural layout thresholds (<=15 source files/dir, <=2,000 LOC/file, .misty-check.allow), production observability on web apps, workers, and services (truthful health endpoint, telemetry config, client error and CSP capture), agent guide, local run docs, test/lint scripts, secret hygiene, and a /healthz or /api/health endpoint.',
   },
   {
+    id: 'slop-check',
+    skillName: 'design',
+    name: 'slop-check.mjs',
+    path: 'skills/design/scripts/slop-check.mjs',
+    url: '/tools/slop-check/',
+    language: 'JavaScript (Node built-ins only)',
+    command: 'node skills/design/scripts/slop-check.mjs [path ...] [--json]',
+    summary: 'Deterministic zero-model anti-slop gate for CSS and HTML-like markup: flags decorative side stripes, nested cards, violet gradients and gradient text, neon glows, hard shadows, eyebrow labels, raw metadata dumps, transition: all, ease-in, scale(0), UI motion over 300ms, missing reduced-motion, removed focus outlines, incomplete button states, unsized images and uncalibrated spacing, and exits 1 on any finding.',
+  },
+  {
+    id: 'arena',
+    skillName: 'design-exploration',
+    name: 'arena.mjs',
+    path: 'skills/design-exploration/scripts/arena.mjs',
+    url: '/tools/arena/',
+    language: 'JavaScript (Node built-ins only)',
+    command: 'node skills/design-exploration/scripts/arena.mjs <open|verdict|reveal|tally> [flags]',
+    summary: 'Blind Design Arena and harness-ablation ledger: shuffles configurations into numbered slots, appends judge verdicts durably before the key is revealed, and tallies wins and mean rank per configuration and per model or skill pack.',
+  },
+  {
     id: 'extract-conflict-context',
     skillName: 'resolve-merge-conflicts',
     name: 'extract_conflict_context.py',
@@ -304,8 +324,7 @@ export async function createGraph(entries) {
     specialRoutes: new Map([
       ['/', new Set(['skills', 'core', 'check', 'install', 'philosophy'])],
       ['/library/', new Set()],
-      ['/tools/misty-check/', new Set()],
-      ['/tools/extract-conflict-context/', new Set()],
+      ...TOOL_SCRIPTS.map((tool) => [tool.url, new Set()]),
       ['/search/', new Set()],
       ['/find/', new Set()],
     ]),
@@ -335,8 +354,7 @@ export const catalogKinds = ['Skills', 'Core'];
 export const publicRoutes = (graph) => [
   '/',
   '/library/',
-  '/tools/misty-check/',
-  '/tools/extract-conflict-context/',
+  ...TOOL_SCRIPTS.map((tool) => tool.url),
   '/search/',
   ...graph.documents.map((doc) => doc.url),
 ];

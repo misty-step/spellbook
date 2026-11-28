@@ -1,4 +1,5 @@
 ---
+import { TOOL_SCRIPTS } from '../lib/graph.mjs';
 const { document, graph, toc = false, activeUrl } = Astro.props;
 const headings = document ? document.headings.filter((heading) => heading.depth > 1 && heading.depth < 4) : [];
 const skills = graph.documents.filter((item) => item.kind === 'Skills');
@@ -15,8 +16,9 @@ const currentUrl = activeUrl ?? document?.url;
     <ul class="doc-nav-list" role="list">
       <li><a href="/library/" aria-current={currentUrl === '/library/' ? 'page' : undefined}>All skills ({skills.length})</a></li>
       <li><a href="/library/core/" aria-current={currentUrl === '/library/core/' ? 'page' : undefined}>Always-on core</a></li>
-      <li><a href="/tools/misty-check/" aria-current={currentUrl === '/tools/misty-check/' ? 'page' : undefined}>misty-check.mjs</a></li>
-      <li><a href="/tools/extract-conflict-context/" aria-current={currentUrl === '/tools/extract-conflict-context/' ? 'page' : undefined}>extract_conflict_context.py</a></li>
+      {TOOL_SCRIPTS.map((tool) => (
+        <li><a href={tool.url} aria-current={currentUrl === tool.url ? 'page' : undefined}>{tool.name}</a></li>
+      ))}
       <li><a href="/philosophy/" aria-current={currentUrl === '/philosophy/' ? 'page' : undefined}>Philosophy &amp; Lineage</a></li>
     </ul>
     <p class="doc-nav-heading">Skills</p>

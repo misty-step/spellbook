@@ -19,6 +19,7 @@
 
 body { display: flex; flex-direction: column; min-block-size: 100svh; margin: 0; overflow-wrap: break-word; }
 main { flex: auto; }
+/* slop-check-allow: focus-outline -- programmatic skip-link targets only; the visible :focus-visible ring comes from the brand package. */
 main:focus, [tabindex="-1"]:focus { outline: none; }
 :where(h1, h2, h3, h4, h5, h6, p, ul, ol, dl, dd, figure, blockquote, pre) { margin: 0; }
 :where(ul, ol)[role="list"] { padding: 0; list-style: none; }
@@ -169,7 +170,7 @@ html:not([data-js]) :is([data-theme-toggle], .copy) { display: none; }
   display: flex; align-items: center; min-block-size: 36px; padding: var(--space-xs) var(--space-sm); border-radius: var(--radius-sm);
   color: var(--muted); font: var(--type-label); font-weight: var(--body-weight); letter-spacing: var(--label-tracking); text-decoration: none; overflow-wrap: anywhere;
 }
-.doc-nav-list a[aria-current="page"] { background: var(--canvas); color: var(--ink); font-weight: var(--label-weight); box-shadow: inset 2px 0 0 var(--primary); }
+.doc-nav-list a[aria-current="page"] { background: var(--canvas); color: var(--ink); font-weight: var(--label-weight); box-shadow: inset 0 0 0 1px var(--border); }
 .doc-nav-list li[data-depth="3"] > a { padding-inline-start: calc(var(--space-sm) + var(--space-md)); }
 
 /* Narrow screens fold the sidebar and the page contents into disclosures. */

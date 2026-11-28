@@ -1,11 +1,21 @@
 ---
 name: verify
-description: "Two-Axis Proof & Simplicity Verifier for cross-family review: blocking real-path functional and safety proof, a non-blocking simplicity and anti-bloat counter-pressure, a failure model scoped to the system's real operating contract, a hard two-pass convergence cap, and a fixed PASS / PASS_WITH_MINOR_FINDINGS / FAIL verdict format."
+description: "Principle-first verification: one independent Verifier proves on the real running path that a change achieves its stated intent, with blocking real-path functional and safety proof, a non-blocking simplicity and anti-bloat counter-pressure, a failure model scoped to the system's real operating contract, a hard two-pass convergence cap, a fixed PASS / PASS_WITH_MINOR_FINDINGS / FAIL verdict format, and refactoring, redesign and recompilation routed to their own scheduled passes."
 ---
 
 # Verify
 
-Review answers two questions, not one: **does the change do what its intent says on the real running path**, and **did it leave the code deeper or more tangled**. A reviewer asked only "can you break it?" is rewarded for every defect it finds and never charged for the code its findings add, so with no stated failure model and no memory of earlier passes it keeps inventing narrower hypotheticals, and the builder keeps bolting on guards and tests that mirror the implementation. This skill keeps the independence — a verifier from a different model family than the builder, reading the intent, the diff and the evidence, never the builder's rationale, and reproducing the proof itself — and removes the gradient that turns review into armor.
+## The primitive
+
+Verification is one principle: **independent proof, on the real running path, that the change achieves its stated intent.** Everything below serves it. *Independent* means someone other than the builder — a reviewer from a different model family that reads the intent, the diff and the evidence, never the builder's rationale, and reproduces the proof itself. *Real running path* means the artifact users meet: a headed browser for UI, the real CLI, worker or service for systems — never mocks, summaries or green CI alone. *Stated intent* bounds the review: the acceptance criteria and Active Folio lines this change claims, inside a failure model proportional to how the system actually runs.
+
+The role that does this is the **Verifier**. The name is only the current label for the principle; earlier harnesses called it a cold critic, and a later one may rename it again. When a name and the principle disagree, the principle wins.
+
+What verification is not: refactoring, tidying, redesign, dependency upgrades and full-project recompilation. Those are real work with their own cadence, and folding them into a slice's review turns proof into an open-ended rewrite. The Verifier grades simplicity and names deletions (Axis 2), but larger structural work routes to a separately scheduled or triggered pass — the `reflect` loops, a recompile, a design arena — never into the blocking gate of the change under review.
+
+## Why two axes
+
+Review answers two questions, not one: **does the change do what its intent says on the real running path**, and **did it leave the code deeper or more tangled**. A reviewer asked only "can you break it?" is rewarded for every defect it finds and never charged for the code its findings add, so with no stated failure model and no memory of earlier passes it keeps inventing narrower hypotheticals, and the builder keeps bolting on guards and tests that mirror the implementation. This skill keeps the independence and removes the gradient that turns review into armor.
 
 ## Before reviewing
 
@@ -17,7 +27,7 @@ Write down three things; a verdict without them is not a verdict.
 
 ## Axis 1 — Real-path proof (blocking)
 
-Run the change the way its users meet it: a headed browser for UI, the real CLI, worker or service for systems — never mocks, summaries or green CI alone. `FAIL` is reserved for four things:
+Run the change the way its users meet it, as the primitive requires. `FAIL` is reserved for four things:
 
 1. An acceptance criterion is not met.
 2. A regression on a normal path, or on a failure mode inside the stated failure model.
@@ -28,7 +38,7 @@ Every blocking finding carries its reproduction — exact command or steps, expe
 
 ## Axis 2 — Simplicity (counter-pressure)
 
-Grade the diff's effect on design: **deeper**, **neutral** or **shallower**, with file references. Look for defensive code against failures outside the failure model, shallow layers that only forward calls, speculative compatibility shims and flags with no caller, tests that mirror the implementation (asserting mocks were called, snapshotting source, restating constants) instead of observable behavior, duplicated logic, and growth out of proportion to the behavior added. Recommend deletions as readily as additions.
+Grade the diff's effect on design: **deeper**, **neutral** or **shallower**, with file references. Scope it to what this diff touched; structural debt elsewhere becomes a Spark for the next scheduled `reflect` pass, not a request to rewrite it here. Look for defensive code against failures outside the failure model, shallow layers that only forward calls, speculative compatibility shims and flags with no caller, tests that mirror the implementation (asserting mocks were called, snapshotting source, restating constants) instead of observable behavior, duplicated logic, and growth out of proportion to the behavior added. Recommend deletions as readily as additions.
 
 Apply the axis to the review itself: before asking for a guard or a test, name the failure-model line it defends and the smallest change that would satisfy it. If neither exists, it is not a finding. Axis 2 never blocks alone — taste as an open-ended gate rebuilds the gradient this skill removes — but it is always graded and always visible.
 

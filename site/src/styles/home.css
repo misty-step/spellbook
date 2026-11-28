@@ -114,3 +114,7 @@
   .hero, .home-section { padding-block-start: var(--space-xl); }
   .home-close { margin-block-start: var(--space-xl); }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .skill-card { transition: none; }
+}
