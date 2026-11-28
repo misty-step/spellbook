@@ -38,7 +38,7 @@ export const RULES = {
   'slow-motion': `UI motion longer than ${MAX_UI_MS}ms. Keep feedback under ${MAX_UI_MS}ms; allow justified modal or drawer exceptions.`,
   'reduced-motion': 'Motion ships without a `prefers-reduced-motion` alternative.',
   'focus-outline': 'Focus outline removed with no `:focus-visible` replacement anywhere.',
-  'button-states': 'Buttons are styled without every interaction state: hover, active (press), disabled, pending and focus-visible.',
+  'button-states': 'A button selector is styled without every interaction state of its own: hover, active (press), disabled, pending and focus-visible. Variants inherit their base class; unrelated buttons never share states.',
   'raw-dump': 'Raw JSON or ISO timestamps shown as prose. Render the few fields a reader needs as labelled, formatted values.',
   'img-size': '`<img>` without width and height shifts layout as it loads.',
   'spacing-scale': `More than ${SPACING_LIMIT} distinct raw px or rem spacing values. Calibrate a spacing scale in tokens (type-relative em offsets are exempt).`,
@@ -46,6 +46,13 @@ export const RULES = {
 
 const VIOLET_NAMES = /\b(?:purple|violet|indigo|fuchsia|magenta|orchid|blueviolet|darkviolet|mediumpurple|rebeccapurple|plum)\b/i;
 const BUTTON_SELECTOR = /(?:^|[\s,>+~(])(?:button|\.btn\b|\.button\b|\[type=["']?(?:submit|button)|\[role=["']?button)/i;
+const BUTTON_STATES = [
+  [':hover', /:hover/],
+  [':active', /:active/],
+  ['disabled', /:disabled|\[disabled|\[aria-disabled/],
+  ['pending', /\[aria-busy|\[data-(?:pending|loading)|\[data-state=["']?(?:pending|loading)|\.is-(?:pending|loading)|:has\([^)]*(?:spinner|loading)/],
+];
+const VISIBLE_FOCUS = (d) => /^(outline|box-shadow|border)/.test(d.prop) && !/^(none|0)$/.test(d.value);
 const MOTION_PROPS = new Set(['transition', 'transition-duration', 'animation', 'animation-duration']);
 
 const lineAt = (text, offset) => text.slice(0, offset).split('\n').length;
@@ -164,13 +171,57 @@ const heavySide = (d, sides) => new RegExp(`^border-(?:${sides})(?:-width)?$`).t
 const sideStripe = (d) => heavySide(d, 'left|right|inline-start|inline-end');
 const crossSide = (d) => heavySide(d, 'top|bottom|block-start|block-end');
 
+/** Split a selector into compound selectors at top-level descendant and child/sibling combinators. */
+function compounds(selector) {
+  const out = [];
+  let depth = 0;
+  let cur = '';
+  for (const c of selector.replace(/\s+&/g, '')) {
+    if (c === '(' || c === '[') depth++;
+    if (c === ')' || c === ']') depth--;
+    if (depth === 0 && /[\s>+~]/.test(c)) { if (cur) out.push(cur); cur = ''; } else cur += c;
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+
+/**
+ * The one button a compound selector styles, by priority: a `.btn`/`.button` class family,
+ * then the `button` element, then a submit/button type or role attribute. Contents of
+ * `:not()` and `:has()` never name the subject.
+ */
+function buttonKey(compound) {
+  const subject = compound.replace(/:(?:not|has)\((?:[^()]|\([^()]*\))*\)/gi, '');
+  const cls = /\.((?:btn|button)(?:[-_][\w-]*)?)(?![\w-])/i.exec(subject);
+  if (cls) return `.${cls[1].toLowerCase()}`;
+  if (/(?:^|[(,])button(?![\w-])/i.test(subject)) return 'button';
+  const attr = /\[(type|role)\s*=\s*["']?(submit|button)["']?\s*\]/i.exec(subject);
+  return attr ? `[${attr[1].toLowerCase()}=${attr[2].toLowerCase()}]` : null;
+}
+
 function cssFindings(file, rules, out, project) {
   for (const rule of rules) {
     const sel = rule.selector;
     const props = new Map(rule.decls.map((d) => [d.prop, d]));
     let textClipped = false;
-    if (BUTTON_SELECTOR.test(` ${sel}`)) project.buttons.push({ file, line: rule.line, selector: sel });
-    if (/:focus-visible/.test(sel) && rule.decls.some((d) => /^(outline|box-shadow|border)/.test(d.prop) && !/^(none|0)$/.test(d.value))) project.focusVisible = true;
+    const visibleFocus = /:focus-visible/.test(sel) && rule.decls.some(VISIBLE_FOCUS);
+    if (visibleFocus) project.focusVisible = true;
+    if (rule.atRules.some((a) => /^@media\b[\s\S]*prefers-reduced-motion/i.test(a))) project.reducedMotion = true;
+    if (BUTTON_SELECTOR.test(` ${sel}`) || /:focus-visible/.test(sel)) {
+      for (const part of splitTop(sel)) {
+        const parts = compounds(part);
+        const last = parts.at(-1) ?? '';
+        if (visibleFocus && /^\*?(?::focus-visible|:not\([^)]*\))+$/.test(last)) project.focusVisibleAll = true;
+        for (const compound of parts) {
+          const key = buttonKey(compound);
+          if (!key) continue;
+          const entry = project.buttons.get(key) ?? { key, file, line: rule.line, states: new Set() };
+          project.buttons.set(key, entry);
+          for (const [state, re] of BUTTON_STATES) if (re.test(compound)) entry.states.add(state);
+          if (visibleFocus && /:focus-visible/.test(compound)) entry.states.add(':focus-visible');
+        }
+      }
+    }
     for (const d of rule.decls) {
       const v = d.value.toLowerCase();
       if (sideStripe(d) && !/blockquote/i.test(sel) && !rule.decls.some((o) => crossSide(o))) out.push(finding('side-stripe', file, d.line, `${d.prop}: ${d.value}`));
@@ -283,7 +334,7 @@ function walk(target, files) {
 export function scan(targets, { cwd = process.cwd() } = {}) {
   const files = [];
   for (const t of targets) walk(path.resolve(cwd, t), files);
-  const project = { buttons: [], focusVisible: false, motion: null, outlineRemoved: [], spacing: new Set(), spacingAt: null, reducedMotion: false };
+  const project = { buttons: new Map(), focusVisible: false, focusVisibleAll: false, motion: null, outlineRemoved: [], spacing: new Set(), spacingAt: null, reducedMotion: false };
   const raw = [];
   const allow = new Map();
   for (const full of files) {
@@ -293,26 +344,27 @@ export function scan(targets, { cwd = process.cwd() } = {}) {
     const file = path.relative(cwd, full) || path.basename(full);
     const allowed = new Set([...text.matchAll(/slop-check-allow:\s*([a-z-]+)\s+--\s*\S/g)].map((m) => m[1]));
     allow.set(file, allowed);
-    if (/prefers-reduced-motion/.test(text)) project.reducedMotion = true;
     const ext = path.extname(full).toLowerCase();
     if (CSS_EXT.has(ext)) cssFindings(file, parseCss(text), raw, project);
     else {
       markupFindings(file, text, raw);
+      if (/\smedia\s*=\s*["'][^"']*prefers-reduced-motion/i.test(text.replace(/<!--[\s\S]*?-->/g, ''))) project.reducedMotion = true;
       for (const b of blocks(text)) cssFindings(file, parseCss(b.css, b.line), raw, project);
     }
   }
   if (project.motion && !project.reducedMotion) raw.push(finding('reduced-motion', project.motion.file, project.motion.line));
   if (!project.focusVisible) for (const o of project.outlineRemoved) raw.push(finding('focus-outline', o.file, o.line));
-  if (project.buttons.length) {
-    const sels = project.buttons.map((b) => b.selector).join('\n');
-    const missing = [
-      [':hover', /:hover/],
-      [':active', /:active/],
-      ['disabled', /:disabled|\[disabled|\[aria-disabled/],
-      ['pending', /\[aria-busy|\[data-(?:pending|loading)|\[data-state=["']?(?:pending|loading)|\.is-(?:pending|loading)|:has\([^)]*(?:spinner|loading)/],
-    ].filter(([, re]) => !re.test(sels)).map(([n]) => n);
-    if (!project.focusVisible) missing.push(':focus-visible');
-    if (missing.length) raw.push(finding('button-states', project.buttons[0].file, project.buttons[0].line, `missing ${missing.join(', ')}`));
+  // Variants (`.btn-primary`, `.button--quiet`) inherit their base class's states; unrelated buttons never pool.
+  for (const [key, entry] of project.buttons) {
+    const base = /^\.(btn|button)[-_]/.exec(key);
+    const parent = base && project.buttons.get(`.${base[1]}`);
+    if (!parent) continue;
+    for (const state of entry.states) parent.states.add(state);
+    project.buttons.delete(key);
+  }
+  for (const entry of project.buttons.values()) {
+    const missing = [...BUTTON_STATES.map(([n]) => n), ':focus-visible'].filter((n) => !entry.states.has(n) && !(n === ':focus-visible' && project.focusVisibleAll));
+    if (missing.length) raw.push(finding('button-states', entry.file, entry.line, `${entry.key} missing ${missing.join(', ')}`));
   }
   if (project.spacing.size > SPACING_LIMIT) raw.push(finding('spacing-scale', project.spacingAt.file, project.spacingAt.line, `${project.spacing.size} values: ${[...project.spacing].sort().join(' ')}`));
   const findings = [];

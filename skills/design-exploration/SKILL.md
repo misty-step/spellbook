@@ -1,6 +1,6 @@
 ---
 name: design-exploration
-description: "Run high-signal design explorations: problem-first framing, genuinely distinct structural and typographic directions instead of costume themes, zero narrator copy, locked canonical assets, a headed visual pre-critique gate before human eyes, a three-config blind Design Arena on every UI pass with durable owner verdicts fed back into taste and skills, and compact Bitter-Lesson briefs and rubrics."
+description: "Run high-signal design explorations: problem-first framing, genuinely distinct structural and typographic directions instead of costume themes, zero narrator copy, locked canonical assets, a headed visual pre-critique gate before human eyes, a three-config blind Design Arena on every new UI surface, redesign and visual-system change with durable owner verdicts fed back into taste and skills, and compact Bitter-Lesson briefs and rubrics."
 ---
 
 # Design exploration
@@ -38,16 +38,21 @@ No candidate reaches the decision-maker unseen. Render every direction in a head
 
 Fix or drop what fails. Present the survivors side by side as the `present` skill describes.
 
-## Design Arena on every UI pass
+## Design Arena on new surfaces, redesigns and visual-system changes
 
-Taste is learned from verdicts, not asserted, so every UI or design pass — new surface, redesign or meaningful polish — runs as an arena rather than a single attempt:
+Taste is learned from verdicts, not asserted. One rule decides when that costs three builds:
+
+- **Required:** every new product UI surface, every redesign, and every visual-system change — tokens, type scale, color, layout grid, shared component styling or motion language. These run as an arena of three distinct `model+pack` candidates and a blind owner pick, never as a single attempt.
+- **Not required:** a documentation or tool-reference page that inherits an existing locked site layout and adds no new component or token, and a fix or copy edit on a settled surface. Say so in the hand-off; the `design` skill's `slop-check` gate and headed-browser proof still apply. A page that needs a new component or bends the locked layout is a visual-system change and runs the arena.
+
+An arena runs in four steps:
 
 1. **Three configurations.** Dispatch the same brief, fixtures and locked assets to three arms that differ in model, design-skill pack, or both, each labelled `model+pack` (for example the current house pack against a challenger pack, and a second model family on the house pack). Keep everything else identical, so the difference is the configuration.
 2. **Blind slots.** Open the arena with `node skills/design-exploration/scripts/arena.mjs open --brief <id> --config <arm> --config <arm> --config <arm>`; it shuffles the arms into numbered slots and keeps the key in the ledger. Each arm passes the pre-critique gate above. The owner sees slots `1`, `2`, `3` side by side — never model, pack or maker names.
 3. **Durable verdicts.** Record the owner's pick, optional full ranking and one-line reason with `arena.mjs verdict --arena <id> --winner <slot> --ranking 2,1,3 --reason "..."` before anyone reveals the key (`arena.mjs reveal`). Verdicts append to `verdicts.jsonl` in a ledger kept somewhere that outlives the session — the product repository or the operator's durable store, never a scratch directory. A verdict recorded after the reveal is kept but marked not blind and never counted.
 4. **Feed it back.** `arena.mjs tally` joins blind verdicts with revealed keys and reports wins and mean rank per arm and per part, so a skill pack's record shows across the models it ran with. Ship the winner. Turn recurring loss reasons into taste invariants in the `design` skill or new `slop-check` rules; route future passes toward the arms that keep winning; and when an arm or pack keeps losing, test its removal as the `reflect` skill's ablation loop describes.
 
-An arena costs three builds. When the pass is a one-line fix on a settled surface, say so and skip it; anything a user will see as new runs the arena.
+**Composing with harness ablation.** The `reflect` skill's ablation is a two-arm, single-variable delta (control against one treatment) that runs on routine work whether or not that work needs an arena; when the delta touches UI it is recorded as a two-arm arena (`--config control --config minus:<rule>`) in the same ledger. A two-arm ablation never satisfies the three-arm requirement above. When a pass that requires an arena also carries an ablation, fold the delta into the arena instead of running both: the house configuration is the control arm, the single-variable treatment is the second arm and a distinct challenger is the third — one blind pick ships the winner, and the control-against-treatment ranking is the ablation result.
 
 ## Compact briefs and rubrics
 

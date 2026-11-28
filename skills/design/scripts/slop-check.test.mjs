@@ -100,3 +100,57 @@ test('CLI exits 1 with findings, 0 when clean, 2 on bad usage, and emits parseab
     assert.equal(named.status, 0, 'an explicitly named non-CSS, non-markup file is not scanned');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+const FULL_BTN = `
+.btn { transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1); }
+.btn:hover { background: #222; }
+.btn:active { transform: scale(0.97); }
+.btn:focus-visible { outline: 2px solid #222; }
+.btn:disabled { opacity: 0.5; }
+.btn[aria-busy="true"] { cursor: progress; }
+@media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+`;
+
+test('button states are checked per button selector: an incomplete second button class fails', () => {
+  const { report, done } = scratch({ 'b.css': `${FULL_BTN}.button { background: #222; color: white; }\n` });
+  try {
+    assert.deepEqual(report.findings.map((f) => [f.rule, f.line, f.detail]), [
+      ['button-states', 9, '.button missing :hover, :active, disabled, pending, :focus-visible'],
+    ]);
+  } finally { done(); }
+});
+
+test('button states: complete per-selector states pass, variants inherit their base, the button element stands alone', () => {
+  const complete = scratch({ 'b.css': `${FULL_BTN}.btn-quiet { background: transparent; }\n.btn .icon { width: 1em; }\n` });
+  const sameSelectorList = scratch({
+    'b.css': `
+.btn, .button { color: white; }
+.btn:hover, .button:hover { color: #eee; }
+.btn:active, .button:active { transform: scale(0.97); }
+.btn:focus-visible, .button:focus-visible { outline: 2px solid #222; }
+.btn:disabled, .button[aria-disabled="true"] { opacity: 0.5; }
+.btn[aria-busy], .button.is-loading { cursor: progress; }
+`,
+  });
+  const strayElement = scratch({ 'b.css': `${FULL_BTN}form button { margin: 0; }\n.btn-group:hover { color: red; }\n:focus-visible { outline: 2px solid #222; }\n` });
+  try {
+    assert.deepEqual(complete.report.findings, []);
+    assert.deepEqual(sameSelectorList.report.findings, []);
+    assert.deepEqual(strayElement.report.findings.map((f) => f.detail), ['button missing :hover, :active, disabled, pending'],
+      'a global :focus-visible ring covers every button, but `.btn` states never cover the `button` element');
+  } finally { complete.done(); sameSelectorList.done(); strayElement.done(); }
+});
+
+test('reduced motion needs a real @media rule: a commented-out prefers-reduced-motion fails', () => {
+  const motion = '.fade { transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1); }\n';
+  const commented = scratch({ 'm.css': `/* TODO: add prefers-reduced-motion */\n${motion}` });
+  const htmlComment = scratch({ 'm.html': `<!-- prefers-reduced-motion later --><style>${motion}</style>` });
+  const real = scratch({ 'm.css': `${motion}@media (prefers-reduced-motion: reduce) { .fade { transition: none; } }\n` });
+  const inStyleBlock = scratch({ 'm.css': motion, 'm.html': '<style>@media (prefers-reduced-motion: reduce) { .fade { transition: none; } }</style>' });
+  try {
+    assert.deepEqual(commented.report.findings.map((f) => [f.rule, f.line]), [['reduced-motion', 2]]);
+    assert.deepEqual(htmlComment.report.findings.map((f) => f.rule), ['reduced-motion']);
+    assert.deepEqual(real.report.findings, []);
+    assert.deepEqual(inStyleBlock.report.findings, []);
+  } finally { commented.done(); htmlComment.done(); real.done(); inStyleBlock.done(); }
+});
