@@ -1,0 +1,46 @@
+/* A synthetic page built from the usual generated-UI defaults. */
+.page { padding: 13px 27px; margin: 0 auto; }
+
+.hero {
+  background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
+  padding: 72px 18px;
+}
+
+.hero-title {
+  background: linear-gradient(90deg, #a855f7, #22d3ee);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.eyebrow { letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 7px; }
+
+.grid { display: grid; gap: 22px; padding: 31px; }
+
+.feature-card {
+  border: 1px solid #e5e7eb;
+  border-left: 4px solid #7c3aed;
+  border-radius: 12px;
+  padding: 19px;
+  box-shadow: 0 0 24px rgba(124, 58, 237, 0.6);
+  transition: all 400ms ease-in;
+}
+
+.card {
+  border-radius: 10px;
+  padding: 14px 21px;
+  margin: 9px 11px;
+  animation: pop 450ms ease-in;
+}
+
+@keyframes pop {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+
+.btn-primary {
+  padding: 10px 26px;
+  border: 0;
+  outline: none;
+  box-shadow: 4px 4px 0 #111;
+}
