@@ -241,7 +241,7 @@ The closure classes are listed below (`scripts/check-runner.ts:73-109`):
   - 8 requests per 60 s per IP (`site/wrangler.jsonc:14-25`).
   - Every failure is an explicit degraded JSON response.
 - **Headers.** Strict CSP and frame denial. `noindex` on `/source/*` and on
-  `workers.dev` preview hosts (`site/public/_headers:1-15`). Retired URLs
+  `workers.dev` preview hosts (`site/public/_headers:1-18`). Retired URLs
   redirect through `site/astro.config.mjs:54-100`.
 
 ## The release path
@@ -396,7 +396,7 @@ deviation. None is fixed on this branch.
 9. **Review previews.** `SPEC.md:113` says review previews identify their
    commit, link affected pages and carry `noindex`. No workflow creates a
    preview. Only `preview_urls: true` (`site/wrangler.jsonc:23`) and a
-   `workers.dev` `noindex` header (`site/public/_headers:14-15`) exist.
+   `workers.dev` `noindex` header (`site/public/_headers:17-18`) exist.
 10. **Telemetry.** `SPEC.md:114` describes protected, non-blocking telemetry.
     The site sends none that this trace found, and the decision index still
     lists telemetry as open (`docs/decisions/index.md:61`).
