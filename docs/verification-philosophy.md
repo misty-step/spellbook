@@ -24,9 +24,9 @@ The [`verify`](../skills/verify/SKILL.md) skill keeps what works — an independ
 | Asymmetric incentive | `FAIL` is reserved for four classes (broken acceptance, in-model regression, leak, missing or dishonest proof), and every blocker needs a reproduction. Before asking for a guard or test, the verifier must name the failure-model line it defends. |
 | Unbounded scope | A written failure model, proportional to the real operating contract, precedes the review. Edge cases outside it are never blocking. |
 | No counter-pressure | Axis 2 grades every diff deeper, neutral or shallower, and names defensive over-engineering, forwarding layers, speculative shims and tautological tests. It never blocks alone, so taste does not become a new open-ended gate, but it is always visible. |
-| Pass-count amnesia | The verifier receives the pass number and earlier verdicts. Pass 2 only confirms closure and checks the fixes; from pass 3 only a reproduced catastrophe blocks, and everything else becomes `PASS_WITH_MINOR_FINDINGS` or a follow-up Spark. |
+| Pass-count amnesia | The verifier receives the pass number and earlier verdicts. Pass 2 only confirms closure and checks the fixes, plus any leak; from pass 3 only a reproduced catastrophe blocks — a real security, secret, data or isolation leak, loss or corruption of real data, or core user behavior completely broken or unusable — and everything else, cosmetic mismatches included, becomes `PASS_WITH_MINOR_FINDINGS` or a follow-up Spark. |
 
-Three things deliberately do not change: security, secret and isolation leaks block at every pass; proof still runs on the real path, never on mocks or green CI; and a wrong failure model is escalated to the human operator as a question about intent rather than patched around.
+Three things deliberately do not change: real security, secret, data and isolation leaks block at every pass — pass 1, pass 2 and pass 3 onward, even when the leak predates the change — and the cap never overrides that; proof still runs on the real path, never on mocks or green CI; and a wrong failure model is escalated to the human operator as a question about intent rather than patched around.
 
 ## Why this is a bitter-lesson design
 

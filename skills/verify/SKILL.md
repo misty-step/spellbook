@@ -34,9 +34,11 @@ Apply the axis to the review itself: before asking for a guard or a test, name t
 
 ## Convergence cap
 
+Safety takes precedence over the cap: a real security, secret, data or isolation leak blocks at every pass — pass 1, pass 2 and pass 3 onward — whether the change introduced it or it was already there. Nothing below narrows that rule.
+
 - **Pass 1** — full review on both axes; any of the four `FAIL` classes may block.
-- **Pass 2** — confirms the pass-1 blockers are closed and that the fixes neither regressed nor bloated. New blockers only where a fix itself introduced one.
-- **Pass 3 onward** — blocks only on a reproduced catastrophe: a broken acceptance criterion, a leak, or loss or corruption of real data. Everything else goes to `PASS_WITH_MINOR_FINDINGS` or a follow-up Spark.
+- **Pass 2** — confirms the pass-1 blockers are closed and that the fixes neither regressed nor bloated. New blockers only for a leak, or where a fix itself introduced one.
+- **Pass 3 onward** — blocks only on a reproduced catastrophe: a real security, secret, data or isolation leak; loss or corruption of real data; or core user behavior completely broken or unusable. A minor or cosmetic mismatch — label punctuation, wording, a narrower edge case — goes to `PASS_WITH_MINOR_FINDINGS` or a follow-up Spark, never another blocking pass.
 
 At every pass, an edge case outside the failure model is never blocking. If the failure model itself looks wrong, that is a question about intent for the human operator, raised as a Spark — not a patch loop.
 
@@ -46,6 +48,7 @@ The first line is exactly one of three values; the rest follows this shape.
 
 ```
 VERDICT: PASS | PASS_WITH_MINOR_FINDINGS | FAIL
+Intent: <one-line stated intent>
 Pass: <n> · Failure model: <one line>
 
 ## Axis 1 — Observed on the real path
