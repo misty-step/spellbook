@@ -255,6 +255,8 @@ async function main() {
   required('library/misty/index.html');
   required('tools/misty-check/index.html');
   required('tools/extract-conflict-context/index.html');
+  required('tools/slop-check/index.html');
+  required('tools/arena/index.html');
   required('philosophy/index.html');
   required('find/index.html');
 

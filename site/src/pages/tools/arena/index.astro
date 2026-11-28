@@ -1,0 +1,44 @@
+---
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import SiteLayout from '../../../layouts/SiteLayout.astro';
+import DocNavigation from '../../../components/DocNavigation.astro';
+import HeadlineText from '../../../components/HeadlineText.astro';
+import { getGraph } from '../../../lib/content.mjs';
+import { TOOL_SCRIPTS } from '../../../lib/graph.mjs';
+import { blobUrl, encodePath, release, repoRoot } from '../../../lib/release.mjs';
+
+const graph = await getGraph();
+const tool = TOOL_SCRIPTS.find((item) => item.id === 'arena');
+const source = readFileSync(path.join(repoRoot, tool.path), 'utf8');
+const lineCount = source.split('\n').length - (source.endsWith('\n') ? 1 : 0);
+---
+<SiteLayout title="arena.mjs" description={tool.summary} section="Tools" path={tool.url}>
+  <div class="frame docs-shell">
+    <aside class="docs-sidebar" data-pagefind-ignore><DocNavigation {graph} activeUrl={tool.url} /></aside>
+    <article class="docs-content">
+      <nav class="breadcrumb" aria-label="Breadcrumb" data-pagefind-ignore><a class="sp-link" href="/">Home</a> / <a class="sp-link" href="/library/skills/design-exploration/">Design exploration</a> / <span>arena.mjs</span></nav>
+      <details class="docs-disclosure browse-mobile" data-pagefind-ignore><summary>Browse method</summary><DocNavigation {graph} activeUrl={tool.url} /></details>
+      <header class="doc-header">
+        <h1 class="page-title"><HeadlineText text="arena.mjs" stop /></h1>
+        <p class="doc-lede">{tool.summary}</p>
+        <p class="doc-note">{tool.language} · {lineCount} lines · Zero npm dependencies.</p>
+      </header>
+      <div class="source-provenance" data-pagefind-ignore>
+        <p><code class="sp-code-inline">{tool.path}</code></p>
+        <a class="sp-link" href={blobUrl(tool.path)}>Source at <code class="sp-code-inline">{release.commit.slice(0, 7)}</code></a> · <a class="sp-link" href={`/source/${encodePath(tool.path)}`}>Raw script</a> · <a class="sp-link" href="/library/skills/design-exploration/">Design exploration skill</a> · <a class="sp-link" href="/library/skills/reflect/">Reflect skill</a>
+      </div>
+      <div class="doc-body prose">
+        <h2 id="usage">Usage</h2>
+        <pre class="sp-code" tabindex="0"><code>{`node ${tool.path} open --brief checkout-v2 \\
+  --config model-a+house --config model-a+challenger --config model-b+house
+node ${tool.path} verdict --arena <id> --winner 2 --ranking 2,3,1 --reason "calmer hierarchy"
+node ${tool.path} reveal --arena <id>
+node ${tool.path} tally`}</code></pre>
+        <p>The ledger defaults to <code class="sp-code-inline">./design-arena</code> (or <code class="sp-code-inline">$DESIGN_ARENA_LEDGER</code>): one key per arena under <code class="sp-code-inline">arenas/</code> and an append-only <code class="sp-code-inline">verdicts.jsonl</code>. Only blind verdicts on revealed arenas count. A harness ablation is a two-arm arena, such as <code class="sp-code-inline">--config control --config minus:rule-7</code>.</p>
+        <h2 id="source">Full source</h2>
+        <pre class="sp-code source-viewer" tabindex="0"><code>{source}</code></pre>
+      </div>
+    </article>
+  </div>
+</SiteLayout>

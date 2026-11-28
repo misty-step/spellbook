@@ -373,6 +373,7 @@ async function runFast(root: string, args: string[]): Promise<number> {
 	const budgetSeconds = resolveBudgetSeconds("CHECK_FAST_BUDGET_SECONDS", DEFAULT_FAST_BUDGET_SECONDS);
 	const steps = [
 		["node", "--test", "skills/foundations/scripts/misty-check.test.mjs"],
+		["node", "--test", "skills/design/scripts/slop-check.test.mjs", "skills/design-exploration/scripts/arena.test.mjs"],
 		...SHELL_SCRIPTS.map((script) => ["sh", "-n", script]),
 		[process.execPath, "scripts/stamp-version.ts", "--check"],
 		[process.execPath, "scripts/verify-plugin.ts", "--strict", "--lint-only"],

@@ -1,6 +1,6 @@
 ---
 name: design-exploration
-description: "Run high-signal design explorations: problem-first framing, genuinely distinct structural and typographic directions instead of costume themes, zero narrator copy, locked canonical assets, a headed visual pre-critique gate before human eyes, and compact Bitter-Lesson briefs and rubrics."
+description: "Run high-signal design explorations: problem-first framing, genuinely distinct structural and typographic directions instead of costume themes, zero narrator copy, locked canonical assets, a headed visual pre-critique gate before human eyes, a three-config blind Design Arena on every UI pass with durable owner verdicts fed back into taste and skills, and compact Bitter-Lesson briefs and rubrics."
 ---
 
 # Design exploration
@@ -27,7 +27,7 @@ Approved marks, logos, diagrams, icons and tokens are artifacts, not description
 
 ## Visual pre-critique gate
 
-No candidate reaches the decision-maker unseen. Render every direction in a headed browser on real or realistic data at `1440x900` and `390x844`, in light and dark, and inspect each capture at full size for overflow, clipping, contrast, focus, broken states and console errors. Then give only the captures and the brief — not your rationale — to a cold critic from a different model family, and have it grade each direction on:
+No candidate reaches the decision-maker unseen. Render every direction in a headed browser on real or realistic data at `1440x900` and `390x844`, in light and dark, and inspect each capture at full size for overflow, clipping, contrast, focus, broken states and console errors. Run `slop-check` from the `design` skill on each candidate's built output and fix what it flags. Then give only the captures and the brief — not your rationale — to a Verifier (the current name for the independent, cross-family reviewer the `verify` skill describes), and have it grade each direction on:
 
 - **Restraint** — what could be removed without loss?
 - **Copy economy** — any narrator copy left?
@@ -36,7 +36,18 @@ No candidate reaches the decision-maker unseen. Render every direction in a head
 - **Real-data fidelity** — does it hold with long names, empty, many and error states?
 - **Distinctness** — does it survive the collapse test against its siblings?
 
-Fix or drop what fails. Present the survivors side by side as the `present` skill describes; when comparing work from competing makers or models, show them blind by number and reveal the key only after verdicts are recorded.
+Fix or drop what fails. Present the survivors side by side as the `present` skill describes.
+
+## Design Arena on every UI pass
+
+Taste is learned from verdicts, not asserted, so every UI or design pass — new surface, redesign or meaningful polish — runs as an arena rather than a single attempt:
+
+1. **Three configurations.** Dispatch the same brief, fixtures and locked assets to three arms that differ in model, design-skill pack, or both, each labelled `model+pack` (for example the current house pack against a challenger pack, and a second model family on the house pack). Keep everything else identical, so the difference is the configuration.
+2. **Blind slots.** Open the arena with `node skills/design-exploration/scripts/arena.mjs open --brief <id> --config <arm> --config <arm> --config <arm>`; it shuffles the arms into numbered slots and keeps the key in the ledger. Each arm passes the pre-critique gate above. The owner sees slots `1`, `2`, `3` side by side — never model, pack or maker names.
+3. **Durable verdicts.** Record the owner's pick, optional full ranking and one-line reason with `arena.mjs verdict --arena <id> --winner <slot> --ranking 2,1,3 --reason "..."` before anyone reveals the key (`arena.mjs reveal`). Verdicts append to `verdicts.jsonl` in a ledger kept somewhere that outlives the session — the product repository or the operator's durable store, never a scratch directory. A verdict recorded after the reveal is kept but marked not blind and never counted.
+4. **Feed it back.** `arena.mjs tally` joins blind verdicts with revealed keys and reports wins and mean rank per arm and per part, so a skill pack's record shows across the models it ran with. Ship the winner. Turn recurring loss reasons into taste invariants in the `design` skill or new `slop-check` rules; route future passes toward the arms that keep winning; and when an arm or pack keeps losing, test its removal as the `reflect` skill's ablation loop describes.
+
+An arena costs three builds. When the pass is a one-line fix on a settled surface, say so and skip it; anything a user will see as new runs the arena.
 
 ## Compact briefs and rubrics
 

@@ -93,4 +93,10 @@ test('CLI exits 1 with findings, 0 when clean, 2 on bad usage, and emits parseab
   assert.equal(clean.status, 0);
   assert.match(clean.stdout, /^slop-check: clean \(2 files scanned\)/);
   assert.equal(spawnSync(process.execPath, [script, '--strict'], { encoding: 'utf8' }).status, 2);
+  const dir = mkdtempSync(path.join(tmpdir(), 'slop-check-'));
+  try {
+    writeFileSync(path.join(dir, 'release.json'), '{"at": "2026-11-28T10:00:00Z"}');
+    const named = spawnSync(process.execPath, [script, path.join(dir, 'release.json')], { encoding: 'utf8' });
+    assert.equal(named.status, 0, 'an explicitly named non-CSS, non-markup file is not scanned');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

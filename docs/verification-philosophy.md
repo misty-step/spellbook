@@ -2,6 +2,14 @@
 
 This page is for human readers. The agent-facing rules live in [`skills/verify/SKILL.md`](../skills/verify/SKILL.md); this explains why they are shaped that way.
 
+## The primitive comes first
+
+Verification is one principle: **independent proof, on the real running path, that the change achieves its stated intent.** Every rule in the skill is a consequence of it. Independence is why the reviewer comes from another model family and reproduces proof rather than reading the builder's account. The real running path is why mocks, summaries and green CI are never proof. Stated intent is why every review starts from acceptance criteria and a failure model, and why findings outside them do not block.
+
+Naming the principle before the role matters because roles get renamed. This repository called the reviewer a *cold critic*; it now calls it the **Verifier**. Both are labels for the same principle, and a future harness may choose another. When a label's connotations pull against the principle — "critic" invites hunting for faults, which is exactly the gradient described below — the principle decides.
+
+The principle also says what verification is not. Refactoring, tidying, redesign and full-project recompilation are valuable, but they answer a different question ("is this the codebase we would build today?") on a different cadence. Folded into a slice's review, they turn a bounded proof into an open-ended rewrite. So the Verifier grades simplicity and names deletions, and the structural work itself runs in separately scheduled or triggered passes: the [`reflect`](../skills/reflect/SKILL.md) loops, a recompile, a design arena.
+
 ## The symptom
 
 A recent slice shipped with a green unit suite, a passing live walkthrough on the real running path, and syscall-level proof that its writes reached disk. It still went through eight review passes. Each pass was run by a fresh, capable, cross-family critic told to be adversarial and to answer `VERDICT: FAIL` if anything was wrong, and each found something: a crash between two writes, then power loss in the same window, then a hand edit to a data file during a hundred-millisecond request, then the same edit against a legacy schema mid-upgrade. Every finding was technically real. Almost none described a failure the tool's single operator would ever meet. The builder answered each with another guard and another test, and the module came out of review larger, shallower and harder to change than it went in.
@@ -17,7 +25,7 @@ That is not one bad review. It recurs wherever a strong model is handed an open-
 
 ## The redesign
 
-The [`verify`](../skills/verify/SKILL.md) skill keeps what works — an independent verifier from a different model family that reproduces proof instead of trusting the builder — and removes each cause structurally rather than by asking reviewers to be nicer:
+The [`verify`](../skills/verify/SKILL.md) skill keeps what works — an independent Verifier from a different model family that reproduces proof instead of trusting the builder — and removes each cause structurally rather than by asking reviewers to be nicer:
 
 | Root cause | Structural counter |
 | --- | --- |

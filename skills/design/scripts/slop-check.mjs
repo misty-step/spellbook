@@ -267,16 +267,15 @@ function blocks(text) {
   return css;
 }
 
+const scannable = (name) => CSS_EXT.has(path.extname(name).toLowerCase()) || MARKUP_EXT.has(path.extname(name).toLowerCase());
+
 function walk(target, files) {
   const st = statSync(target);
-  if (st.isFile()) { files.push(target); return; }
+  if (st.isFile()) { if (scannable(target)) files.push(target); return; }
   for (const entry of readdirSync(target, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
     if (files.length >= MAX_FILES) throw new Error(`scan exceeded ${MAX_FILES} files; narrow the path`);
     const full = path.join(target, entry.name);
-    if (entry.isDirectory()) { if (!SKIP_DIRS.has(entry.name)) walk(full, files); } else if (entry.isFile()) {
-      const ext = path.extname(entry.name).toLowerCase();
-      if (CSS_EXT.has(ext) || MARKUP_EXT.has(ext)) files.push(full);
-    }
+    if (entry.isDirectory()) { if (!SKIP_DIRS.has(entry.name)) walk(full, files); } else if (entry.isFile() && scannable(entry.name)) files.push(full);
   }
 }
 
