@@ -7,7 +7,7 @@ const retiredSkills = [
   'agent-design', 'artifact-standard', 'bespoke-resume', 'boat-workers',
   'coordinator', 'daily-retro', 'daybook', 'daybook-dream', 'deepen', 'domain-modeling',
   'finance-friday', 'grilling', 'grill-me', 'grill-with-docs', 'herdr', 'merge-risk',
-  'monologue-digest', 'recompile', 'research', 'retro', 'setup-mistystack', 'ship-loop',
+  'monologue-digest', 'recompile', 'retro', 'setup-mistystack', 'ship-loop',
   'synthesize', 'system-maintenance', 'test-audit', 'to-questionnaire', 'verification',
   'verify-daybook', 'watchdog', 'whiteboard-defense', 'wiki',
 ];
@@ -39,7 +39,7 @@ const legacyPstackSkills = [
   'how/references/explainer-prompt', 'how/references/explorer-prompt', 'in-your-own-words', 'interrogate',
   'ketchup-video', 'ketchup', 'maintain-formal-verification-skill', 'maintain-verification-skill', 'make-bot-ui',
   'no-comments', 'poteto-help', 'poteto-help/references/prompting', 'poteto-help/references/recipes', 'poteto-mode',
-  'poteto-mode/references/bugbot-triage', 'recall', 'reflect', 'reflect/references/divergent-reviewer',
+  'poteto-mode/references/bugbot-triage', 'recall', 'reflect/references/divergent-reviewer',
   'reflect/references/judgment-reviewer', 'reflect/references/synthesizer', 'reflect/references/tooling-reviewer',
   'setup-pstack', 'sharpen', 'show-me-your-work', 'statechart', 'statechart/references/render', 'swarm', 'tdd',
   'teach', 'technical-writing', 'typescript-best-practices', 'typescript-best-practices/references/patterns',

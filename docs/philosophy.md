@@ -20,7 +20,7 @@ Everything else is left to the model, and improves when the model does.
 Long procedural playbooks, rigid templates, and hardcoded model tables burn context, contradict each other as tools evolve, and train agents to perform theater instead of thinking. Spellbook keeps:
 
 - **Six standing rules** in `rules/core.md` — always on, under twenty lines.
-- **Ten concise skills** in `skills/` — each a few paragraphs (or a terse checklist for `foundations`).
+- **Fourteen concise skills** in `skills/` — each a few paragraphs (or a terse checklist for `foundations`).
 - **Deterministic scripts over prose** — `misty-check.mjs` (including its structural layout thresholds, its observability guard for anything deployed, and the `.misty-check.allow` ratchet), `extract_conflict_context.py`, and `.githooks/trufflehog-gate.py`.
 - **Zero auto-mounted companion packs** — every repository and operator decides what loads into context.
 
@@ -79,12 +79,14 @@ Systems rarely fail because a pure helper computed the wrong integer; they fail 
 
 ## Portable quality multipliers
 
-- **Cross-family cold critic:** before merging meaningful work, a fresh reviewer from a different model family reads only the diff, the Folio, and real run evidence; the author never grades its own homework. After two passes, a critic blocks only with a concrete failing fixture, so reviews converge.
+- **Two-axis cross-family verification:** before merging meaningful work, a fresh verifier from a different model family reads the intent, the diff, and real run evidence and reproduces the proof; the author never grades its own homework. An open-ended adversarial gate rewards every invented edge case and charges nothing for the armor it adds, so the `verify` skill blocks only on real-path proof within a failure model scoped to the system's actual operating contract, grades simplicity as explicit counter-pressure, and caps convergence at two passes. The diagnosis lives in [Verification philosophy](verification-philosophy.md).
 - **Calm editorial evidence:** proof for the human operator is visual and legible — real screenshots, playable walkthroughs, concise takeaways — not metric soup or walls of terminal logs.
 - **Deployed means observable:** every deployed web app, worker, or service reports its own failures from the first deploy — a truthful health endpoint, production telemetry with release identity, and forwarded browser errors and CSP violations feeding automated triage — so the human operator never learns of a regression from a user. `misty-check.mjs` audits it on every repository.
 - **Show, don't tell:** after a long or multi-step run, the reader's attention is the scarcest resource left. The `present` skill picks the lowest medium that carries the meaning (three lines, an inline visual, or a self-contained interactive HTML briefing with real charts and embedded proof video, which replaces the narrated retro video) and catches the reader up in five beats — *Look at this · What differs · Pay attention to · Why · Needs you* — so the result lands in seconds and the only work left for the human is the decision.
 - **Explore wide, judge before showing:** a design exploration offers directions that differ in structure and typography rather than costume, lets layout and real content speak instead of narrator copy, passes approved assets through as checked-in files rather than prose, and puts every candidate through a headed, cross-family visual critique before a human sees it (`design-exploration`).
-- **Mine the exhaust:** every human correction and harness stall is signal about where the method is wrong. The `trace-mining` skill clusters recurring ones from raw traces, graduates each into the smallest durable fix — a check first, then a sharper rule, then a pruned workflow — deletes what the evidence shows is obsolete, and watches whether the failure stops recurring.
+- **Look before you lock:** before a one-way design decision, the `research` skill surveys at least three genuinely different approaches from primary sources — pinned docs, exemplary open-source code, postmortems — and compares them on depth, operational burden and failure modes, so the first plausible design does not win by default.
+- **Snapshots over drifting docs:** the `project-anatomy` skill derives a dated, self-contained map of a repository's real modules, live surface and Folio status from the checked-out revision, archived as a milestone to compare across time instead of an architecture document that silently goes stale.
+- **Mine the exhaust:** every human correction and harness stall is signal about where the method is wrong. The `trace-mining` skill clusters recurring ones from raw traces, graduates each into the smallest durable fix — a check first, then a sharper rule, then a pruned workflow — deletes what the evidence shows is obsolete, and watches whether the failure stops recurring. The `reflect` skill runs it beside three other loops — verification health, a day-one entropy audit, and learning extraction for the human operator — each judged by what it removes.
 
 ## Lineage
 
@@ -100,6 +102,7 @@ Spellbook restates well-tested engineering ideas in its own words:
 - **The Bitter Lesson** — methods that scale with capability win; encode intent and invariants, not procedures.
 - **Depth over breadth** (`#depth`) — start from raw data and real domain tools, set ambitious constraints, falsify assumptions against telemetry, and let an outside judge verify the outcome.
 - **Show, don't tell** (`present`) — present finished work the way a designer does: visual first, the difference made obvious, risks named, judgment calls explained, and only crisp decisions left for the reader.
+- **Measures that become targets stop measuring** — a reviewer scored on defects found will keep finding them, so the gate bounds scope instead of trusting restraint.
 - **Subtract and inline** (PufferLib's `SKILL_ISSUES.md`) — once code works, inline single-use wrappers, flatten branches, and delete test-only shims and dead code, while keeping strict validation at trust boundaries.
 
 Named credit for each idea lives in the repository's `ATTRIBUTION.md`; published method content stays in portable voice.
