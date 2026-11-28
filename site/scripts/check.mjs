@@ -333,6 +333,10 @@ async function main() {
     expect(sitemapURLs.has(`${origin}${url}`), `sitemap.xml: missing canonical route ${url}`);
   }
 
+  const favicon = required('favicon.ico');
+  expect(favicon?.readUInt32BE(0) === 0x00000100 && favicon.readUInt16LE(4) > 0, 'favicon.ico: implicit /favicon.ico requests must resolve to an ICO of the brand icon');
+  expect(/^\/favicon\.ico\n\s+Cache-Control: public, max-age=\d+$/m.test(files.get('_headers')?.toString('utf8') ?? ''), '_headers: /favicon.ico needs a Cache-Control rule');
+
   const robots = required('robots.txt')?.toString('utf8') ?? '';
   expect(/^User-agent:\s*\*\s*$/im.test(robots), 'robots.txt: missing public crawler policy');
   expect(!/^Disallow:\s*\/\s*$/im.test(robots), 'robots.txt: public artifact must not disallow the entire site');
