@@ -10,16 +10,16 @@ Read it at <https://stack.mistystep.io> · the reasoning lives in [`docs/philoso
 
 - **Intent outlives code.** Each repository keeps an **Active Folio** — `PRODUCT.md` (observable outcomes, domain terms, non-goals; no implementation lock-in), plus `DESIGN.md` for UI — as living present-tense truth while git owns history. Change the Folio first, reconcile code against it, and prove it complete with a clean-room rebuild from the Folio alone.
 - **Say only what is unique.** Universal and surface-class baselines (Web App, Native/Desktop, CLI/Service, Evidence/Artifact) live in Spellbook, so a repository's Folio states only what makes that product itself.
-- **Proof beats assertion.** Done means verified on the real running artifact, reviewed by a cold critic from a different model family — never mocks, summaries, or green CI alone.
+- **Proof beats assertion.** Done means verified on the real running artifact, checked by a verifier from a different model family on two axes — real-path proof and simplicity — never mocks, summaries, or green CI alone.
 - **Scripts beat prose.** When a check repeats, it becomes code, not another paragraph.
 
 ## What ships
 
 - [`rules/core.md`](rules/core.md) — six always-on standing rules.
-- [`skills/`](skills/) — ten short skills in open Agent Skills format: [`misty`](skills/misty/SKILL.md) (the core loop), [`foundations`](skills/foundations/SKILL.md), [`design`](skills/design/SKILL.md), [`design-exploration`](skills/design-exploration/SKILL.md) (distinct directions, judged before human eyes), [`present`](skills/present/SKILL.md) (show, don't tell), [`trace-mining`](skills/trace-mining/SKILL.md) (recurring corrections become craft), [`define-product`](skills/define-product/SKILL.md), [`security-audit`](skills/security-audit/SKILL.md), [`release-watch`](skills/release-watch/SKILL.md), and [`resolve-merge-conflicts`](skills/resolve-merge-conflicts/SKILL.md).
+- [`skills/`](skills/) — fourteen short skills in open Agent Skills format: [`misty`](skills/misty/SKILL.md) (the core loop), [`foundations`](skills/foundations/SKILL.md), [`research`](skills/research/SKILL.md) (survey before you design), [`design`](skills/design/SKILL.md), [`design-exploration`](skills/design-exploration/SKILL.md) (distinct directions, judged before human eyes), [`verify`](skills/verify/SKILL.md) (two-axis proof and simplicity review that converges), [`present`](skills/present/SKILL.md) (show, don't tell), [`project-anatomy`](skills/project-anatomy/SKILL.md) (dated snapshots instead of drifting architecture docs), [`trace-mining`](skills/trace-mining/SKILL.md) (recurring corrections become craft), [`reflect`](skills/reflect/SKILL.md) (four maintenance loops that delete as much as they add), [`define-product`](skills/define-product/SKILL.md), [`security-audit`](skills/security-audit/SKILL.md), [`release-watch`](skills/release-watch/SKILL.md), and [`resolve-merge-conflicts`](skills/resolve-merge-conflicts/SKILL.md).
 - Deterministic scripts — [`misty-check.mjs`](skills/foundations/scripts/misty-check.mjs) (a zero-dependency baseline auditor) and [`extract_conflict_context.py`](skills/resolve-merge-conflicts/scripts/extract_conflict_context.py).
 - [`.githooks/`](.githooks/) — TruffleHog secret scanning on commit and push (`./scripts/bootstrap`).
-- [`docs/philosophy.md`](docs/philosophy.md) — the why, for humans; never auto-loaded into agent prompts.
+- [`docs/philosophy.md`](docs/philosophy.md) — the why, for humans; never auto-loaded into agent prompts. [`docs/verification-philosophy.md`](docs/verification-philosophy.md) diagnoses why adversarial critics bloat code and how `verify` fixes it.
 
 ## Install
 

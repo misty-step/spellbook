@@ -3,7 +3,7 @@ import { release, repoRoot, repositoryUrl } from './release.mjs';
 import { auditRepo, formatScorecard } from '../../../skills/foundations/scripts/misty-check.mjs';
 
 const CORE = 'rules/core.md';
-const CARDINALS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+const CARDINALS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen'];
 
 function fail(message) {
   throw new Error(`Home page: ${message}`);
