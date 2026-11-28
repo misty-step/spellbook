@@ -74,15 +74,16 @@ export function reveal(ledger, { arena, now = new Date() }) {
   return key;
 }
 
-/** Join blind verdicts with revealed keys: wins, appearances and mean rank per arm and per arm part. */
+/** Join blind verdicts with revealed keys: wins, appearances and mean rank per arm, and per `+`-separated part. */
 export function tally(ledger) {
   const dir = path.join(ledger, 'arenas');
   const keys = new Map((existsSync(dir) ? readdirSync(dir) : []).filter((f) => f.endsWith('.json')).map((f) => {
     const key = JSON.parse(readFileSync(path.join(dir, f), 'utf8'));
     return [key.id, key];
   }));
-  const rows = new Map();
-  const bump = (label, rank, won) => {
+  const arms = new Map();
+  const parts = new Map();
+  const bump = (rows, label, rank, won) => {
     const row = rows.get(label) ?? { label, judged: 0, wins: 0, rankSum: 0 };
     row.judged++;
     row.wins += won ? 1 : 0;
@@ -99,13 +100,14 @@ export function tally(ledger) {
     for (const [slot, label] of Object.entries(key.slots)) {
       const idx = v.ranking.indexOf(slot);
       const rank = idx === -1 ? v.ranking.length + 1 : idx + 1;
-      const parts = label.split('+');
-      for (const name of parts.length > 1 ? [label, ...parts.map((p) => `  ${p}`)] : [label]) bump(name, rank, slot === v.winner);
+      bump(arms, label, rank, slot === v.winner);
+      const split = label.split('+');
+      if (split.length > 1) for (const part of split) bump(parts, part, rank, slot === v.winner);
     }
   }
-  const arms = [...rows.values()].map((r) => ({ label: r.label, judged: r.judged, wins: r.wins, winRate: r.wins / r.judged, meanRank: r.rankSum / r.judged }))
+  const rank = (rows) => [...rows.values()].map((r) => ({ label: r.label, judged: r.judged, wins: r.wins, winRate: r.wins / r.judged, meanRank: r.rankSum / r.judged }))
     .sort((a, b) => b.winRate - a.winRate || a.meanRank - b.meanRank || a.label.localeCompare(b.label));
-  return { verdicts: counted, pendingReveal: pending, arms };
+  return { verdicts: counted, pendingReveal: pending, arms: rank(arms), parts: rank(parts) };
 }
 
 function parse(argv) {
@@ -145,7 +147,9 @@ function main([command, ...argv]) {
       if (opts.json) process.stdout.write(`${JSON.stringify(t, null, 2)}\n`);
       else {
         process.stdout.write(`${t.verdicts} blind verdicts${t.pendingReveal ? `, ${t.pendingReveal} awaiting reveal` : ''}\n`);
-        for (const a of t.arms) process.stdout.write(`${a.label.padEnd(32)} ${String(a.wins).padStart(3)}/${String(a.judged).padEnd(3)} wins  mean rank ${a.meanRank.toFixed(2)}\n`);
+        const rows = (title, list) => list.length && process.stdout.write(`${title}\n${list.map((a) => `  ${a.label.padEnd(30)} ${String(a.wins).padStart(3)}/${String(a.judged).padEnd(3)} wins  mean rank ${a.meanRank.toFixed(2)}`).join('\n')}\n`);
+        rows('Arms', t.arms);
+        rows('Parts (model or pack, across arms)', t.parts);
       }
     } else {
       process.stderr.write('Usage: arena.mjs <open|verdict|reveal|tally> [flags]; see the header of this file.\n');

@@ -1,6 +1,6 @@
 ---
 name: verify
-description: "Principle-first verification: one independent Verifier proves on the real running path that a change achieves its stated intent, with blocking real-path functional and safety proof, a non-blocking simplicity and anti-bloat counter-pressure, a failure model scoped to the system's real operating contract, a hard two-pass convergence cap,, a fixed PASS / PASS_WITH_MINOR_FINDINGS / FAIL verdict format, and refactoring, redesign and recompilation routed to their own scheduled passes."
+description: "Principle-first verification: one independent Verifier proves on the real running path that a change achieves its stated intent, with blocking real-path functional and safety proof, a non-blocking simplicity and anti-bloat counter-pressure, a failure model scoped to the system's real operating contract, a hard two-pass convergence cap, a fixed PASS / PASS_WITH_MINOR_FINDINGS / FAIL verdict format, and refactoring, redesign and recompilation routed to their own scheduled passes."
 ---
 
 # Verify

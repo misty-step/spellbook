@@ -56,10 +56,10 @@ test('tally counts only blind verdicts on revealed arenas, per arm and per arm p
     assert.equal(t.verdicts, 2);
     assert.equal(t.pendingReveal, 1);
     const arm = (label) => t.arms.find((a) => a.label === label);
+    const part = (label) => t.parts.find((a) => a.label === label);
     assert.deepEqual([arm('m1+packA').wins, arm('m1+packA').judged, arm('m1+packA').meanRank], [2, 2, 1]);
-    assert.equal(arm('  packA').judged, 4);
-    assert.equal(arm('  packA').wins, 2);
-    assert.equal(arm('  packB').wins, 0);
+    assert.equal(t.arms[0].label, 'm1+packA', 'the arm that always won ranks first');
+    assert.deepEqual([part('packA').judged, part('packA').wins, part('packB').wins, part('m1').judged], [4, 2, 0, 4]);
   } finally { rmSync(ledger, { recursive: true, force: true }); }
 });
 
@@ -73,6 +73,7 @@ test('CLI walks open, verdict, reveal and tally with exit codes 0, 1 and 2', () 
     assert.equal(run('reveal', '--arena', 'c1').status, 0);
     const t = JSON.parse(run('tally', '--json').stdout);
     assert.equal(t.verdicts, 1);
+    assert.deepEqual([t.arms.length, t.parts], [2, []], 'labels without + have no parts');
     assert.equal(run('bogus').status, 2);
     assert.equal(run('open', '--nope', 'x').status, 2);
   } finally { rmSync(ledger, { recursive: true, force: true }); }

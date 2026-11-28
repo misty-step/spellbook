@@ -329,7 +329,7 @@ export function format(report) {
     ? `slop-check: ${report.findings.length} finding${report.findings.length === 1 ? '' : 's'} in ${fileCount} file${fileCount === 1 ? '' : 's'} (${report.filesScanned} scanned)`
     : `slop-check: clean (${report.filesScanned} file${report.filesScanned === 1 ? '' : 's'} scanned)`);
   for (const f of report.findings) {
-    lines.push(`  ${f.file}:${f.line}  ${f.rule}`);
+    lines.push(`  ${f.rule.padEnd(15)} ${f.file}:${f.line}`);
     lines.push(`    ${f.message}${f.detail ? `\n    > ${f.detail}` : ''}`);
   }
   if (report.allowed.length) lines.push(`  ${report.allowed.length} allowed by slop-check-allow comments`);

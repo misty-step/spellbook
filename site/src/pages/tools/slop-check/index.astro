@@ -13,9 +13,9 @@ const graph = await getGraph();
 const tool = TOOL_SCRIPTS.find((item) => item.id === 'slop-check');
 const source = readFileSync(path.join(repoRoot, tool.path), 'utf8');
 const lineCount = source.split('\n').length - (source.endsWith('\n') ? 1 : 0);
-const fixtures = 'skills/design/scripts/fixtures';
-const slop = format(scan([`${fixtures}/left-border-slop`], { cwd: repoRoot }));
-const calm = format(scan([`${fixtures}/calm-editorial`], { cwd: repoRoot }));
+const fixtures = path.join(repoRoot, 'skills/design/scripts/fixtures');
+const slop = format(scan(['left-border-slop'], { cwd: fixtures }));
+const calm = format(scan(['calm-editorial'], { cwd: fixtures }));
 ---
 <SiteLayout title="slop-check.mjs" description={tool.summary} section="Tools" path={tool.url}>
   <div class="frame docs-shell">
@@ -43,8 +43,10 @@ node ${tool.path} dist --json`}</code></pre>
           <tbody>{Object.entries(RULES).map(([id, text]) => <tr><td><code class="sp-code-inline">{id}</code></td><td>{text}</td></tr>)}</tbody>
         </table>
         <h2 id="slop-fixture">Against the left-border slop fixture</h2>
+        <p>Live build-time output for <code class="sp-code-inline">skills/design/scripts/fixtures/left-border-slop</code>: a card with a violet accent stripe and the usual generated-UI defaults.</p>
         <pre class="sp-code" tabindex="0"><code>{slop}</code></pre>
         <h2 id="calm-fixture">Against the Calm Editorial fixture</h2>
+        <p>The same rules against <code class="sp-code-inline">skills/design/scripts/fixtures/calm-editorial</code>: tokens, one accent, a typographic quotation rule, full button states and a reduced-motion variant.</p>
         <pre class="sp-code" tabindex="0"><code>{calm}</code></pre>
         <h2 id="source">Full source</h2>
         <pre class="sp-code source-viewer" tabindex="0"><code>{source}</code></pre>
